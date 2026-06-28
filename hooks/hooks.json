@@ -39,6 +39,12 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/script_smoke.py",
             "timeout": 5,
             "statusMessage": "Script smoke"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/escalation_advisor.py",
+            "timeout": 6,
+            "statusMessage": "Escalation advisor"
           }
         ]
       },
@@ -81,6 +87,12 @@
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/agent_patterns.py --brief",
             "timeout": 8,
             "statusMessage": "Agent patterns brief"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/improvement_injector.py",
+            "timeout": 6,
+            "statusMessage": "Improvement injector (loop closure)"
           }
         ]
       }
@@ -90,9 +102,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_prompt_search.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_ranker.py",
             "timeout": 8,
-            "statusMessage": "Memory Fabric prompt search"
+            "statusMessage": "Tier-aware recall"
           },
           {
             "type": "command",

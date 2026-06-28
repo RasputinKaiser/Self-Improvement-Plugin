@@ -7,13 +7,23 @@
   "plugins": [
     {
       "name": "harness-self-improvement",
-      "description": "Self-improving agent harness: Memory Fabric integration, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction.",
-      "version": "0.1.0",
+      "description": "Self-improving agent harness: Memory Fabric recall, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction loop, and a delegation agent surface. All agents inherit the session model (GLM 5.2 by default) — versatility comes from bounded fresh-context delegation and forced lesson capture, not model swaps.",
+      "version": "0.2.0",
       "source": "./",
       "author": {
         "name": "RasputinKaiser"
       },
-      "category": "engineering"
+      "category": "engineering",
+      "keywords": [
+        "self-improvement",
+        "memory-fabric",
+        "delegation",
+        "escalation",
+        "inherit",
+        "autonomy-gate",
+        "continuity",
+        "hooks"
+      ]
     }
   ]
 }

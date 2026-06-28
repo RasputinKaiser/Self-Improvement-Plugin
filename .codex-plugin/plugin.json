@@ -1,9 +1,11 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.1.0",
-  "description": "Self-improving agent harness: Memory Fabric integration, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction. Hooks fire across the full agent lifecycle so each task starts informed by prior work and each session closes with recorded learnings.",
+  "version": "0.2.0",
+  "description": "Self-improving agent harness with delegation agent surface.",
   "author": { "name": "RasputinKaiser" },
   "license": "MIT",
   "hooks": "./hooks/hooks.json",
-  "keywords": ["self-improvement", "memory-fabric", "autonomy-gate", "continuity", "harness", "hooks"]
+  "agents": "./agents/",
+  "commands": "./commands/",
+  "keywords": ["self-improvement", "memory-fabric", "delegation", "harness"]
 }

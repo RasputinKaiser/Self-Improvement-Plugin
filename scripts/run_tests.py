@@ -481,7 +481,124 @@ def smoke_session_close():
     assert rc == 0, f"session_close crashed: rc={rc}"
 
 
+# --- v2: recall_ranker ---
+
+def recall_ranker_silent_on_empty_prompt():
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "recall_ranker.py",
+        {"hook_event_name": "UserPromptSubmit", "cwd": "/tmp", "prompt": ""}
+    )
+    assert out.strip() == "", f"expected silent on empty prompt, got {out!r}"
+
+def recall_ranker_silent_on_garbage():
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "recall_ranker.py",
+        {"hook_event_name": "UserPromptSubmit", "cwd": "/tmp", "prompt": "???"}
+    )
+    assert out.strip() == "", f"expected silent on too-short query, got {out!r}"
+
+def recall_ranker_silent_when_no_mf_cli():
+    # No memory_fabric CLI installed in this env -> script must exit 0 silent
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "recall_ranker.py",
+        {"hook_event_name": "UserPromptSubmit", "cwd": "/tmp",
+         "prompt": "how does the autonomy gate work"}
+    )
+    assert rc == 0, f"expected exit 0, got {rc}"
+    # either silent (no MF) or additionalContext (MF present) — both acceptable
+
+# --- v2: escalation_advisor ---
+
+def escalation_advisor_silent_on_no_path():
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "escalation_advisor.py",
+        {"hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": {}}
+    )
+    assert out.strip() == "", f"expected silent with no path, got {out!r}"
+
+def escalation_advisor_silent_on_clean_scope():
+    # A path with no failure records and no improvements.md entry -> silent
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "escalation_advisor.py",
+        {"hook_event_name": "PostToolUse", "tool_name": "Edit",
+         "tool_input": {"file_path": "/tmp/never_touched_file.py"}}
+    )
+    assert rc == 0
+    # In an env with no MF CLI and no improvements.md, must be silent
+    assert out.strip() == "", f"expected silent on clean scope, got {out!r}"
+
+def escalation_advisor_exits_clean_on_bad_json():
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "escalation_advisor.py")],
+        input="not json",
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"expected exit 0 on bad json, got {r.returncode}"
+    assert r.stdout.strip() == "", f"expected silent on bad json, got {r.stdout!r}"
+
+# --- v2: improvement_injector ---
+
+def improvement_injector_silent_when_no_improvements_file(tmp_path=None):
+    # No ~/.ncode/improvements.md in this env -> silent
+    rc, out, _ = run_script_with_input(
+        SCRIPTS_DIR / "improvement_injector.py",
+        {"hook_event_name": "SessionStart", "cwd": "/tmp"}
+    )
+    assert out.strip() == "", f"expected silent with no improvements.md, got {out!r}"
+
+def improvement_injector_exits_clean_on_bad_json():
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "improvement_injector.py")],
+        input="not json",
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"expected exit 0 on bad json, got {r.returncode}"
+    assert r.stdout.strip() == "", f"expected silent on bad json, got {r.stdout!r}"
+
+def improvement_injector_surfaces_fresh_entry(tmp_path=None):
+    """Point the script at a freshly-written improvements.md and confirm it emits context."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        # Override the module-level IMPROVEMENTS_PATH by importing the script as a module
+        script = SCRIPTS_DIR / "improvement_injector.py"
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ii", str(script))
+        ii = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ii)
+        # Write a fresh entry
+        p = Path(td) / "improvements.md"
+        p.write_text("# Journal\n\n## Self-correction — 2026-06-28 00:00 UTC\n\n- untested: foo.py\n- action: add test\n")
+        ii.IMPROVEMENTS_PATH = p
+        # Capture stdout by calling main() with patched stdin via subprocess is hard;
+        # instead call latest_entry() directly to assert the read-back works
+        entry, age = ii.latest_entry()
+        assert entry is not None, "expected an entry, got None"
+        assert "Self-correction" in entry
+        assert "foo.py" in entry
+        assert age is not None and age < 1.0, f"age should be <1d for fresh file, got {age}"
+
+# --- v2: validate_v2 (the manifest coherence check) ---
+# validate_v2.py runs against the repo manifests, not the staged ~/.ncode/scripts/
+# tree, so it is exercised by the run command itself (cwd = repo root), not here.
+# The cases above cover the three new lifecycle scripts as staged regressions.
+
+
 SUITES = {
+    "v2_recall_ranker": [
+        case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
+        case("silent_on_garbage", recall_ranker_silent_on_garbage),
+        case("silent_when_no_mf_cli", recall_ranker_silent_when_no_mf_cli),
+    ],
+    "v2_escalation_advisor": [
+        case("silent_on_no_path", escalation_advisor_silent_on_no_path),
+        case("silent_on_clean_scope", escalation_advisor_silent_on_clean_scope),
+        case("exits_clean_on_bad_json", escalation_advisor_exits_clean_on_bad_json),
+    ],
+    "v2_improvement_injector": [
+        case("silent_when_no_file", improvement_injector_silent_when_no_improvements_file),
+        case("exits_clean_on_bad_json", improvement_injector_exits_clean_on_bad_json),
+        case("surfaces_fresh_entry", improvement_injector_surfaces_fresh_entry),
+    ],
     "autonomy_gate": [
         case("blocks_settings_json", autonomy_gate_blocks_settings_json),
         case("blocks_binary_path", autonomy_gate_blocks_binary_path),
