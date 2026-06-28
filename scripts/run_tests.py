@@ -539,12 +539,17 @@ def escalation_advisor_exits_clean_on_bad_json():
 # --- v2: improvement_injector ---
 
 def improvement_injector_silent_when_no_improvements_file(tmp_path=None):
-    # No ~/.ncode/improvements.md in this env -> silent
-    rc, out, _ = run_script_with_input(
-        SCRIPTS_DIR / "improvement_injector.py",
-        {"hook_event_name": "SessionStart", "cwd": "/tmp"}
-    )
-    assert out.strip() == "", f"expected silent with no improvements.md, got {out!r}"
+    # IMPROVEMENTS_PATH absent -> latest_entry returns (None, None), which is the
+    # predicate that drives the silent branch. Patch via module import so the test
+    # doesn't depend on the live env state (self_correct.py writes that file).
+    import importlib.util
+    script = SCRIPTS_DIR / "improvement_injector.py"
+    spec = importlib.util.spec_from_file_location("ii_silent", str(script))
+    ii = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ii)
+    ii.IMPROVEMENTS_PATH = Path("/tmp/__does_not_exist_improvements.md")
+    entry, age = ii.latest_entry()
+    assert entry is None and age is None, f"expected (None, None) when path missing, got ({entry!r}, {age!r})"
 
 def improvement_injector_exits_clean_on_bad_json():
     r = subprocess.run(
@@ -581,6 +586,53 @@ def improvement_injector_surfaces_fresh_entry(tmp_path=None):
 # validate_v2.py runs against the repo manifests, not the staged ~/.ncode/scripts/
 # tree, so it is exercised by the run command itself (cwd = repo root), not here.
 # The cases above cover the three new lifecycle scripts as staged regressions.
+
+# --- csi_presence_mirror ---
+
+def csi_presence_mirror_silent_when_no_source_dir():
+    """No .codex/csi/ under cwd -> silent exit 0, no stdout, no stderr."""
+    rc, out, err = run_script_with_input(
+        SCRIPTS_DIR / "csi_presence_mirror.py",
+        {"cwd": "/tmp"}
+    )
+    assert rc == 0, f"expected exit 0, got {rc}"
+    assert out == "", f"expected no stdout, got {out!r}"
+    assert err == "", f"expected no stderr, got {err!r}"
+
+def csi_presence_mirror_copies_files_when_source_exists():
+    """Source .codex/csi/ exists -> both presence files mirrored to <cwd>/.ncode/csi/."""
+    import shutil
+    td = tempfile.mkdtemp()
+    try:
+        src = Path(td) / ".codex" / "csi"
+        src.mkdir(parents=True)
+        (src / "chat-presence.md").write_text("chat presence body\n")
+        (src / "rich-presence.md").write_text("rich presence body\n")
+        rc, out, err = run_script_with_input(
+            SCRIPTS_DIR / "csi_presence_mirror.py",
+            {"cwd": td}
+        )
+        assert rc == 0, f"expected exit 0, got {rc}"
+        dst = Path(td) / ".ncode" / "csi"
+        chat = (dst / "chat-presence.md").read_text()
+        rich = (dst / "rich-presence.md").read_text()
+        assert chat == "chat presence body\n", f"chat-presence.md mismatch: {chat!r}"
+        assert rich == "rich presence body\n", f"rich-presence.md mismatch: {rich!r}"
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+def csi_presence_mirror_silent_on_malformed_stdin():
+    """Malformed JSON stdin -> silent exit 0 (falls back to getcwd, isolated below)."""
+    with tempfile.TemporaryDirectory() as td:
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "csi_presence_mirror.py")],
+            input="not json",
+            capture_output=True, text=True, timeout=10,
+            cwd=td
+        )
+        assert r.returncode == 0, f"expected exit 0 on malformed stdin, got {r.returncode}"
+        assert r.stdout == "", f"expected silent on malformed stdin, got {r.stdout!r}"
+        assert r.stderr == "", f"expected no stderr on malformed stdin, got {r.stderr!r}"
 
 
 SUITES = {
@@ -660,6 +712,11 @@ SUITES = {
         case("compact_brief", smoke_memory_fabric_compact_brief),
         case("session_record", smoke_memory_fabric_session_record),
         case("session_close", smoke_session_close),
+    ],
+    "csi_presence_mirror": [
+        case("silent_when_no_source_dir", csi_presence_mirror_silent_when_no_source_dir),
+        case("copies_files_when_source_exists", csi_presence_mirror_copies_files_when_source_exists),
+        case("silent_on_malformed_stdin", csi_presence_mirror_silent_on_malformed_stdin),
     ],
 }
 
