@@ -635,6 +635,70 @@ def csi_presence_mirror_silent_on_malformed_stdin():
         assert r.stderr == "", f"expected no stderr on malformed stdin, got {r.stderr!r}"
 
 
+# --- probe_hook ---
+# Note: probe_hook.py does NOT read stdin — it always emits JSON to stdout and
+# appends a marker line to LOG. The riskiest branch is the try/except OSError
+# around the log write; if that swallows an error silently, the JSON channel
+# must still keep working (that's the probe's whole purpose).
+# Source rewrite isolates LOG so the tests never touch /tmp/hook_probe.log.
+
+def _run_probe_hook_with_log(log_path):
+    """Exec probe_hook.py with module-level LOG overridden. Returns (stdout, rc)."""
+    import io
+    import contextlib
+    script = SCRIPTS_DIR / "probe_hook.py"
+    source = script.read_text().replace(
+        'LOG = Path("/tmp/hook_probe.log")',
+        f'LOG = Path({str(log_path)!r})'
+    )
+    ns = {"__name__": "probe_hook_test", "__file__": str(script)}
+    buf = io.StringIO()
+    exit_code = 0
+    try:
+        with contextlib.redirect_stdout(buf):
+            exec(compile(source, str(script), "exec"), ns)
+    except SystemExit as e:
+        exit_code = e.code if e.code is not None else 0
+    return buf.getvalue(), exit_code
+
+def probe_hook_writes_marker_to_log_and_emits_json():
+    """Happy path: marker line written to log AND JSON emitted to stdout."""
+    import re
+    with tempfile.TemporaryDirectory() as td:
+        log_path = Path(td) / "hook_probe_test.log"
+        out, rc = _run_probe_hook_with_log(log_path)
+        assert rc == 0, f"expected exit 0, got {rc}"
+        assert log_path.exists(), f"log file not created at {log_path}"
+        log_content = log_path.read_text()
+        m = re.search(r"(PROBE_\d+) hook_event=priority_button", log_content)
+        assert m, f"log content doesn't match expected pattern: {log_content!r}"
+        marker = m.group(1)
+        d = json.loads(out)
+        assert "additionalContext" in d, f"missing additionalContext: {d}"
+        ctx = d["additionalContext"]
+        assert "[PROBE]" in ctx, f"missing [PROBE] in {ctx!r}"
+        assert f"marker={marker}" in ctx, (
+            f"stdout marker doesn't match log marker: stdout={ctx!r}, log={marker!r}"
+        )
+
+def probe_hook_silent_on_log_write_error():
+    """OSError on log open (missing parent dir) -> JSON still emitted, exit 0."""
+    with tempfile.TemporaryDirectory() as td:
+        # Parent dir doesn't exist -> open(LOG, "a") raises FileNotFoundError
+        # (subclass of OSError); the script's except OSError swallows it.
+        log_path = Path(td) / "missing_subdir" / "hook_probe_test.log"
+        out, rc = _run_probe_hook_with_log(log_path)
+        assert rc == 0, f"expected exit 0 on log write error, got {rc}"
+        d = json.loads(out)
+        assert "additionalContext" in d, (
+            f"missing additionalContext on log error: {d}"
+        )
+        assert "PROBE_" in d["additionalContext"], (
+            f"marker missing from stdout on log error: {d}"
+        )
+        assert not log_path.exists(), "log file should not exist when parent dir missing"
+
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -717,6 +781,10 @@ SUITES = {
         case("silent_when_no_source_dir", csi_presence_mirror_silent_when_no_source_dir),
         case("copies_files_when_source_exists", csi_presence_mirror_copies_files_when_source_exists),
         case("silent_on_malformed_stdin", csi_presence_mirror_silent_on_malformed_stdin),
+    ],
+    "probe_hook": [
+        case("writes_marker_to_log_and_emits_json", probe_hook_writes_marker_to_log_and_emits_json),
+        case("silent_on_log_write_error", probe_hook_silent_on_log_write_error),
     ],
 }
 
