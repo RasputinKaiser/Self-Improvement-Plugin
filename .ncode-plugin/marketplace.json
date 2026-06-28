@@ -1,0 +1,19 @@
+{
+  "name": "harness-local",
+  "description": "Local marketplace for the self-improving NCode agent harness",
+  "owner": {
+    "name": "RasputinKaiser"
+  },
+  "plugins": [
+    {
+      "name": "harness-self-improvement",
+      "description": "Self-improving agent harness: Memory Fabric integration, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction.",
+      "version": "0.1.0",
+      "source": "./",
+      "author": {
+        "name": "RasputinKaiser"
+      },
+      "category": "engineering"
+    }
+  ]
+}

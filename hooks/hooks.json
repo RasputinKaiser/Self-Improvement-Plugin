@@ -1,0 +1,163 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/autonomy_gate.py",
+            "timeout": 5,
+            "statusMessage": "Autonomy gate"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_preflight.py",
+            "timeout": 8,
+            "statusMessage": "Memory Fabric preflight"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/autonomy_gate.py",
+            "timeout": 5,
+            "statusMessage": "Autonomy gate"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/script_smoke.py",
+            "timeout": 5,
+            "statusMessage": "Script smoke"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/csi_presence_mirror.py || true",
+            "timeout": 5,
+            "statusMessage": "CSI mirror"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/validate_harness.py",
+            "timeout": 10,
+            "statusMessage": "Harness drift check"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_doctor.py",
+            "timeout": 8,
+            "statusMessage": "Memory Fabric doctor + recent"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/proactive_drift.py",
+            "timeout": 5,
+            "statusMessage": "Proactive drift"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/agent_patterns.py --brief",
+            "timeout": 8,
+            "statusMessage": "Agent patterns brief"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_prompt_search.py",
+            "timeout": 8,
+            "statusMessage": "Memory Fabric prompt search"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/probe_hook.py",
+            "timeout": 3,
+            "statusMessage": "Probe"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_compact_brief.py",
+            "timeout": 10,
+            "statusMessage": "Memory Fabric compact brief"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_continuity.py",
+            "timeout": 10,
+            "statusMessage": "Continuity write"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory_fabric_session_record.py",
+            "timeout": 10,
+            "statusMessage": "Memory Fabric session record"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_continuity.py",
+            "timeout": 10,
+            "statusMessage": "Continuity restore"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/session_close.py",
+            "timeout": 10,
+            "statusMessage": "Session close"
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/task_outcome_tracker.py --record",
+            "timeout": 10,
+            "statusMessage": "Task outcome tracker"
+          }
+        ]
+      }
+    ]
+  }
+}
