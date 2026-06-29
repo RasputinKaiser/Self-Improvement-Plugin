@@ -1,0 +1,11 @@
+[
+  {"id":"fileexists_pass","check":{"kind":"fileExists","arguments":{"path":"hello.txt"},"weight":1},"sandboxFiles":{"hello.txt":"hello world"},"toolSequence":[],"expected":{"score":1.0,"passed":true,"evidence_contains":"exists"}},
+  {"id":"fileexists_fail","check":{"kind":"fileExists","arguments":{"path":"missing.txt"},"weight":1},"sandboxFiles":{},"toolSequence":[],"expected":{"score":0.0,"passed":false,"evidence_contains":"missing"}},
+  {"id":"filemissing_pass","check":{"kind":"fileMissing","arguments":{"path":"should-not-exist.txt"},"weight":1},"sandboxFiles":{},"toolSequence":[],"expected":{"score":1.0,"passed":true,"evidence_contains":"absent"}},
+  {"id":"filemissing_fail","check":{"kind":"fileMissing","arguments":{"path":"present.txt"},"weight":1},"sandboxFiles":{"present.txt":"content"},"toolSequence":[],"expected":{"score":0.0,"passed":false,"evidence_contains":"present"}},
+  {"id":"grep_match","check":{"kind":"grep","arguments":{"path":"file.txt","pattern":"hello world"},"weight":1},"sandboxFiles":{"file.txt":"hello world\nsecond line"},"toolSequence":[],"expected":{"score":1.0,"passed":true,"evidence_contains":"matched"}},
+  {"id":"grep_no_match","check":{"kind":"grep","arguments":{"path":"file.txt","pattern":"nonexistent"},"weight":1},"sandboxFiles":{"file.txt":"hello world"},"toolSequence":[],"expected":{"score":0.0,"passed":false,"evidence_contains":"not found"}},
+  {"id":"transcript_sequence_correct_order","check":{"kind":"transcriptSequence","arguments":{"first":"Read","before":"Edit|Write"},"weight":1},"sandboxFiles":{},"toolSequence":["Read","Write"],"expected":{"score":1.0,"passed":true,"evidence_contains":"first(Read) at 0"}},
+  {"id":"transcript_sequence_wrong_order","check":{"kind":"transcriptSequence","arguments":{"first":"Read","before":"Edit|Write"},"weight":1},"sandboxFiles":{},"toolSequence":["Write","Read"],"expected":{"score":0.0,"passed":false,"evidence_contains":"first(Read) at 1"}},
+  {"id":"transcript_sequence_before_never_matched","check":{"kind":"transcriptSequence","arguments":{"first":"Read","before":"Edit|Write"},"weight":1},"sandboxFiles":{},"toolSequence":["Read","Bash"],"expected":{"score":1.0,"passed":true,"evidence_contains":"never matched"}}
+]

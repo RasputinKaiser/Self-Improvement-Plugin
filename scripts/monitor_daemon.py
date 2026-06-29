@@ -141,6 +141,25 @@ def check_untested_scripts():
     return issues
 
 
+def check_install_drift():
+    """Is the installed plugin out of sync with the source repo?"""
+    install_sh = Path.home() / "Code/harness-self-improvement/install.sh"
+    if not install_sh.exists():
+        return []  # No source repo — can't check drift
+    r = subprocess.run(
+        ["bash", str(install_sh), "--check"],
+        capture_output=True, text=True, timeout=15,
+    )
+    if r.returncode == 0:
+        return []
+    return [{
+        "severity": "warning",
+        "category": "drift",
+        "title": "Plugin install drift detected",
+        "detail": (r.stdout or r.stderr or "").strip()[:200],
+    }]
+
+
 def check_large_debug_dirs():
     """Are there large debug dirs bloating ~/.ncode?"""
     r = run_script("harness_gc.py", args=["--deep"], timeout=30)
@@ -178,6 +197,7 @@ def run_all_checks():
     issues.extend(check_validator_present())
     issues.extend(check_tests_pass())
     issues.extend(check_cron_installed())
+    issues.extend(check_install_drift())
     issues.extend(check_pip_outdated())
     issues.extend(check_untested_scripts())
     issues.extend(check_large_debug_dirs())

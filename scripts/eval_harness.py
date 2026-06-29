@@ -250,6 +250,7 @@ def run_case(eval_case, timeout_seconds=None):
     tool_sequence = []
     result_seen = False
     error_msg = None
+    run_tokens = 0
 
     try:
         proc = subprocess.Popen(
@@ -295,6 +296,12 @@ def run_case(eval_case, timeout_seconds=None):
                             tool_sequence.append(name)
             elif etype == "result":
                 result_seen = True
+                # Extract token usage from the result event for budget tracking
+                usage = event.get("usage", {})
+                run_tokens = (usage.get("input_tokens", 0)
+                               + usage.get("output_tokens", 0)
+                               + usage.get("cache_read_input_tokens", 0)
+                               + usage.get("cache_creation_input_tokens", 0))
                 break
         if proc.poll() is None:
             proc.terminate()
@@ -334,6 +341,7 @@ def run_case(eval_case, timeout_seconds=None):
         "sandboxURL": str(sandbox),
         "checkResults": check_results,
         "toolCount": len(tool_sequence),
+        "totalTokens": run_tokens,
         "model": None,
         "errorMessage": None,
     }
@@ -354,7 +362,7 @@ def main():
     ap.add_argument("--case", help="run one case by id")
     ap.add_argument("--json", action="store_true", help="emit summary JSON")
     ap.add_argument("--total-budget-tokens", type=int, default=0,
-                    help="cap total tokens across all cases (informational only in this version)")
+                    help="cap total tokens across all cases; abort remaining when exceeded")
     args = ap.parse_args()
 
     cases = load_cases()
@@ -364,10 +372,24 @@ def main():
             print(f"case not found: {args.case}", file=sys.stderr)
             return 2
 
+    budget = args.total_budget_tokens
+    cumulative_tokens = 0
+    budget_exceeded = False
+    skipped = 0
+
     summary = {"ran": 0, "passed": 0, "failed": 0, "errors": 0,
-               "cases": [], "total_cost_tokens": 0}
+               "skipped": 0, "cases": [], "total_tokens": 0,
+               "budget_tokens": budget}
     for c in cases:
+        if budget > 0 and cumulative_tokens >= budget:
+            budget_exceeded = True
+            skipped += 1
+            summary["skipped"] = skipped
+            continue
         r = run_case(c)
+        case_tokens = r.get("totalTokens", 0)
+        cumulative_tokens += case_tokens
+        summary["total_tokens"] = cumulative_tokens
         summary["ran"] += 1
         if r.get("errorMessage"):
             summary["errors"] += 1
@@ -378,7 +400,11 @@ def main():
         summary["cases"].append({
             "id": c["id"], "passed": r.get("passed"), "score": r.get("score"),
             "errorMessage": r.get("errorMessage"), "toolCount": r.get("toolCount"),
+            "tokens": case_tokens,
         })
+
+    if budget_exceeded:
+        summary["budget_exceeded"] = True
 
     if args.json:
         print(json.dumps(summary, indent=2))

@@ -694,18 +694,17 @@ def csi_presence_mirror_silent_on_malformed_stdin():
 # --- hook_event_tap (Phase 3) ---
 
 def hook_event_tap_passes_through_and_records():
-    """Tap runs wrapped hook, passes stdout through, writes JSONL side log."""
+    """Tap runs wrapped hook, passes stdout through, writes JSONL side log.
+
+    Race-tolerant: filters the new lines to only those matching this test's
+    invocation (script == '_smoke_inner.py'). Concurrent Edit/Bash hooks
+    may fire during the test and append to the real log, so asserting
+    exactly-1-new-line flakes in an active session.
+    """
     import tempfile
-    # Use a temp log so the real ~/.ncode/hook_events.jsonl is untouched
     with tempfile.TemporaryDirectory() as td:
         log_path = f"{td}/hook_events.jsonl"
         env = dict(os.environ)
-        # The tap hard-codes LOG_PATH, so override via monkey-patch by sourcing
-        # the script text and rewriting the constant (similar to probe_hook test).
-        # For a simpler smoke test, run the actual tap against an inner /bin/echo
-        # and verify the LOG_PATH it writes to still gets a line.
-        # Since LOG_PATH is hard-coded, we accept the side effect on the real file
-        # and clean up the last line afterward.
         native_log = os.path.expanduser("~/.ncode/hook_events.jsonl")
         before_size = os.path.getsize(native_log) if os.path.exists(native_log) else 0
 
@@ -719,22 +718,29 @@ def hook_event_tap_passes_through_and_records():
         )
 
         assert r.returncode == 0, f"tap exit non-zero: {r.returncode}, stderr={r.stderr!r}"
-        # stdout passed through — echo output lands here
         assert "approve" in r.stdout, f"stdout not passed through: {r.stdout!r}"
 
-        # Side log got exactly one new line
         after_size = os.path.getsize(native_log)
         assert after_size > before_size, f"no JSONL line appended to {native_log}"
 
-        # Read the last line and verify shape
+        # Read new bytes and filter to lines from THIS test invocation only.
+        # Concurrent hooks may have appended other lines; we only care that
+        # our _smoke_inner.py invocation landed exactly once.
         with open(native_log, "rb") as f:
             f.seek(max(0, before_size))
             new_bytes = f.read(after_size - before_size)
-        lines = [l for l in new_bytes.decode("utf-8", errors="replace").split("\n") if l.strip()]
-        assert len(lines) == 1, f"expected 1 new line, got {len(lines)}: {lines}"
-        d = json.loads(lines[0])
+        all_new_lines = [l for l in new_bytes.decode("utf-8", errors="replace").split("\n") if l.strip()]
+        my_lines = []
+        for l in all_new_lines:
+            try:
+                d = json.loads(l)
+                if d.get("script") == "_smoke_inner.py":
+                    my_lines.append(d)
+            except json.JSONDecodeError:
+                continue
+        assert len(my_lines) == 1, f"expected exactly 1 line for _smoke_inner.py, got {len(my_lines)} (total new lines: {len(all_new_lines)})"
+        d = my_lines[0]
         assert d["event"] == "PreToolUse"
-        assert d["script"] == "_smoke_inner.py"
         assert d["exitCode"] == 0
         assert d["outcome"] == "fire"  # decision=approve
         assert "durationMs" in d and d["durationMs"] >= 0
@@ -1529,6 +1535,21 @@ def smoke_branch_session():
     assert r.returncode == 0, f"branch_session.py --help failed: {r.stderr}"
 
 
+def eval_grader_parity_passes_all_golden_vectors():
+    """Python grader matches expected outputs for all golden vectors in references/eval_grader_golden.json.
+
+    This is the Phase B drift gate: if the Python grader in eval_harness.py
+    drifts from the Swift EvalGrader.swift behavior, this test fails.
+    """
+    import sys as _sys
+    _sys.path.insert(0, str(SCRIPTS_DIR))
+    import eval_grader_parity as egp
+    passed, failed = egp.run_parity_test()
+    assert not failed, f"{len(failed)} parity vectors failed:\n" + "\n".join(
+        f"  {f['id']}: expected={f['expected']}, actual={f['actual']}" for f in failed
+    )
+
+
 def branch_session_creates_fork_with_subset_of_lines():
     """branch_session.py branch creates a new transcript with lines up to the target."""
     import tempfile
@@ -1614,6 +1635,59 @@ def eval_llm_judge_mock_response_parses():
         d = json.loads(r.stdout)
         assert d["passed"] is False
         assert d["score"] == 0.0
+
+
+# --- Fix drafter (Phase C) ---
+
+
+def smoke_fix_drafter():
+    """fix_drafter.py --help exits 0."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "fix_drafter.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"fix_drafter.py --help failed: {r.stderr}"
+
+
+def fix_drafter_produces_analysis_for_failing_case():
+    """fix_drafter analyze_failure + draft_fix produce structured output for a failing case."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import fix_drafter as fd
+
+    case = {
+        "id": "fix-drafter-test-001",
+        "version": 1,
+        "prompt": "Create a file called test.txt with 'hello'",
+        "timeoutSeconds": 10,
+        "grading": [
+            {"kind": "fileExists", "arguments": {"path": "test.txt"}, "weight": 1.0},
+        ],
+        "passThreshold": 1.0,
+    }
+
+    run = {
+        "id": "test-run",
+        "caseId": "fix-drafter-test-001",
+        "caseVersion": 1,
+        "score": 0.0,
+        "passed": False,
+        "sandboxURL": "/tmp/test-sandbox",
+        "checkResults": [
+            {"score": 0.0, "evidence": "test.txt missing", "passed": False}
+        ],
+        "toolCount": 1,
+        "errorMessage": None,
+    }
+
+    analysis = fd.analyze_failure(case, run)
+    assert analysis["fixType"] == "prompt_nudge", f"expected prompt_nudge, got {analysis['fixType']}"
+    assert "did not create" in analysis["rootCause"].lower(), f"unexpected root cause: {analysis['rootCause']}"
+    assert "strengthen" in analysis["proposedFix"].lower() or "create" in analysis["proposedFix"].lower()
+
+    markdown = fd.draft_fix(case, run, analysis)
+    assert "Proposed Fix" in markdown
+    assert "Root cause" in markdown
+    assert "prompt_nudge" in markdown
 
 
 SUITES = {
@@ -1702,6 +1776,7 @@ SUITES = {
         case("monitor_daemon", smoke_monitor_daemon),
         case("fan_out", smoke_fan_out),
         case("branch_session", smoke_branch_session),
+        case("fix_drafter", smoke_fix_drafter),
     ],
     "monitor": [
         case("json_emits_issues", monitor_daemon_json_emits_issues_list),
@@ -1718,6 +1793,10 @@ SUITES = {
     ],
     "branch_session": [
         case("creates_fork_with_subset_of_lines", branch_session_creates_fork_with_subset_of_lines),
+    ],
+    "fix_drafter": [
+        case("smoke", smoke_fix_drafter),
+        case("produces_analysis_for_failing_case", fix_drafter_produces_analysis_for_failing_case),
     ],
     "tool_factory": [
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),
@@ -1754,6 +1833,7 @@ SUITES = {
         case("regression_skips_error_runs", eval_regression_skips_error_runs),
         case("brief_emits_when_results_exist", eval_brief_emits_when_results_exist),
         case("llm_judge_mock_pass_fail_parses", eval_llm_judge_mock_response_parses),
+        case("grader_parity_passes_all_golden_vectors", eval_grader_parity_passes_all_golden_vectors),
     ],
 }
 
