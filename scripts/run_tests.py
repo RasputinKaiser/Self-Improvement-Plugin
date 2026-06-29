@@ -1520,6 +1520,67 @@ def smoke_fan_out():
     assert r.returncode == 0, f"fan_out.py --help failed: {r.stderr}"
 
 
+def smoke_branch_session():
+    """branch_session.py --help exits 0."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "branch_session.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"branch_session.py --help failed: {r.stderr}"
+
+
+def branch_session_creates_fork_with_subset_of_lines():
+    """branch_session.py branch creates a new transcript with lines up to the target."""
+    import tempfile
+    import uuid as uuid_mod
+    with tempfile.TemporaryDirectory() as tmp:
+        project_dir = Path(tmp)
+        source_sid = str(uuid_mod.uuid4())
+        source_path = project_dir / f"{source_sid}.jsonl"
+        # Write a fake transcript: 2 system lines + 4 user/assistant + 2 trailing
+        lines = [
+            {"type": "system", "subtype": "init", "uuid": str(uuid_mod.uuid4())},
+            {"type": "user", "message": {"content": "hello"}, "uuid": "msg-1-uuid", "timestamp": "2026-06-29T01:00:00Z", "parentUuid": None},
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "hi there"}]}, "uuid": "msg-2-uuid", "timestamp": "2026-06-29T01:00:01Z", "parentUuid": "msg-1-uuid"},
+            {"type": "user", "message": {"content": "do something"}, "uuid": "msg-3-uuid", "timestamp": "2026-06-29T01:00:02Z", "parentUuid": "msg-2-uuid"},
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "done"}]}, "uuid": "msg-4-uuid", "timestamp": "2026-06-29T01:00:03Z", "parentUuid": "msg-3-uuid"},
+            {"type": "user", "message": {"content": "more"}, "uuid": "msg-5-uuid", "timestamp": "2026-06-29T01:00:04Z", "parentUuid": "msg-4-uuid"},
+        ]
+        with open(source_path, "w") as fp:
+            for l in lines:
+                fp.write(json.dumps(l) + "\n")
+
+        # Branch after index 1 (msg-2-uuid, the first assistant response)
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "branch_session.py"), "branch",
+             "--source", source_sid, "--at-uuid", "msg-2-uuid",
+             "--project-dir", str(project_dir)],
+            capture_output=True, text=True, timeout=10
+        )
+        assert r.returncode == 0, f"branch failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["ok"] is True
+        assert d["sourceSid"] == source_sid
+        assert d["branchLineCount"] < d["originalLineCount"], "branch should have fewer lines"
+        assert d["branchLineCount"] == 3, f"expected 3 lines (init + user + first assistant), got {d['branchLineCount']}"
+
+        # Verify new file exists + has correct content
+        new_path = Path(d["newPath"])
+        assert new_path.exists(), "new transcript file missing"
+        with open(new_path) as fp:
+            new_lines = [json.loads(l) for l in fp]
+        uuids = [l.get("uuid") for l in new_lines]
+        assert "msg-1-uuid" in uuids, "first user msg should be in branch"
+        assert "msg-2-uuid" in uuids, "target msg should be in branch (inclusive)"
+        assert "msg-3-uuid" not in uuids, "msg after target should NOT be in branch"
+        assert "msg-5-uuid" not in uuids, "last msg should NOT be in branch"
+
+        # Verify source is untouched
+        with open(source_path) as fp:
+            source_lines = [json.loads(l) for l in fp]
+        assert len(source_lines) == len(lines), "source transcript was modified"
+
+
 def eval_llm_judge_mock_response_parses():
     """eval_llm_judge.py with --mock-response PASS / FAIL parses correctly."""
     import tempfile
@@ -1640,6 +1701,7 @@ SUITES = {
         case("eval_llm_judge", smoke_eval_llm_judge),
         case("monitor_daemon", smoke_monitor_daemon),
         case("fan_out", smoke_fan_out),
+        case("branch_session", smoke_branch_session),
     ],
     "monitor": [
         case("json_emits_issues", monitor_daemon_json_emits_issues_list),
@@ -1653,6 +1715,9 @@ SUITES = {
         case("parse_handles_slice_diff_lesson", fan_out_parse_agent_response_handles_slice_diff_lesson),
         case("parse_handles_blocked", fan_out_parse_agent_response_handles_blocked),
         case("ingest_updates_run_state", fan_out_ingest_updates_run_state),
+    ],
+    "branch_session": [
+        case("creates_fork_with_subset_of_lines", branch_session_creates_fork_with_subset_of_lines),
     ],
     "tool_factory": [
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),

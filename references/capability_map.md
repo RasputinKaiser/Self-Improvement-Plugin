@@ -47,7 +47,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [ ] Dynamic capability synthesis (agent scaffolds a new tool at runtime via tool_factory.py, validates against tests, auto-promotes to skills/ after approval)
 - [ ] Persistent task DAG (/goal state survives crashes; subtasks with dependencies persist; RALPH loop resumes from last checkpoint)
 - [ ] Multi-agent fan-out coordination (Workflow tool orchestration with parallel subagents, merge outputs, surface disagreements)
-- [ ] Session branching (fork a session at any message, explore alternatives in parallel windows, diff outcomes)
+- [x] Session branching (fork a transcript at any message via branch_session.py; new SID inherits history up to the branch point; source untouched)
 - [ ] LLM-as-judge eval grader / Tier C (rubric-based judging for cases deterministic checks can't decide; temp 0, fixed seed, majority-of-3)
 - [x] Proactive monitoring daemon (scripts/monitor_daemon.py — checks validator/tests/cron/deps/drift/disk; writes monitor_status.md + monitor_results.jsonl; WARNING+ appends to improvements.md)
 - [x] Voice output / TTS (AVSpeechSynthesizer reads assistant responses aloud; companion to voice input)
