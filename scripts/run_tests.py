@@ -835,6 +835,57 @@ def brainstorm_py_returns_gaps():
     # Top gap should have leverage >= 3 (Tier 3 fully shipped, Tier 4 items have lower scores)
     assert d["gaps"][0]["leverage"] >= 3, f"top gap leverage too low: {d['gaps'][0]}"
 
+# --- goal_state (Phase 4) ---
+
+def goal_state_set_status_complete_cycle():
+    """goal_state: set → status → complete → clear cycle."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "set", "Test goal: write 3 files"],
+        capture_output=True, text=True, timeout=5
+    )
+    assert r.returncode == 0, f"set failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["ok"] is True
+    assert d["objective"] == "Test goal: write 3 files"
+    assert d["status"] == "active"
+
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "status"],
+        capture_output=True, text=True, timeout=5
+    )
+    assert r.returncode == 0, f"status failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["objective"] == "Test goal: write 3 files"
+    assert d["status"] == "active"
+
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"is-active should be exit 0 when goal active"
+
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "complete"],
+        capture_output=True, text=True, timeout=5
+    )
+    assert r.returncode == 0, f"complete failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["status"] == "complete"
+
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 1, f"is-active should be exit 1 when goal complete"
+
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "clear"],
+        capture_output=True, text=True, timeout=5
+    )
+    assert r.returncode == 0, f"clear failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["ok"] is True
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -932,6 +983,9 @@ SUITES = {
     ],
     "brainstorm": [
         case("returns_gaps", brainstorm_py_returns_gaps),
+    ],
+    "goal_state": [
+        case("set_status_complete_cycle", goal_state_set_status_complete_cycle),
     ],
 }
 
