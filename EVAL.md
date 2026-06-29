@@ -72,29 +72,29 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 29 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
 | 30 | agent escalate has frontmatter + model: | PASS |
 | 31 | agent escalate model: inherit | PASS |
-| 32 | agent test-author has frontmatter + model: | PASS |
-| 33 | agent test-author model: inherit | PASS |
+| 32 | agent fan-out has frontmatter + model: | PASS |
+| 33 | agent fan-out model: inherit | PASS |
 | 34 | agent memory-curator has frontmatter + model: | PASS |
 | 35 | agent memory-curator model: inherit | PASS |
 | 36 | agent repo-scout has frontmatter + model: | PASS |
 | 37 | agent repo-scout model: inherit | PASS |
-| 38 | agent fan-out has frontmatter + model: | PASS |
-| 39 | agent fan-out model: inherit | PASS |
+| 38 | agent test-author has frontmatter + model: | PASS |
+| 39 | agent test-author model: inherit | PASS |
 | 40 | all 5 agents present | PASS |
-| 41 | command improve has description | PASS |
-| 42 | command escalate has description | PASS |
-| 43 | command goal has description | PASS |
-| 44 | command verify has description | PASS |
-| 45 | command checkpoint has description | PASS |
-| 46 | command patterns has description | PASS |
-| 47 | command recall has description | PASS |
-| 48 | command teach has description | PASS |
-| 49 | command fan-out has description | PASS |
-| 50 | command brainstorm has description | PASS |
+| 41 | command brainstorm has description | PASS |
+| 42 | command checkpoint has description | PASS |
+| 43 | command escalate has description | PASS |
+| 44 | command fan-out has description | PASS |
+| 45 | command goal has description | PASS |
+| 46 | command improve has description | PASS |
+| 47 | command patterns has description | PASS |
+| 48 | command recall has description | PASS |
+| 49 | command teach has description | PASS |
+| 50 | command verify has description | PASS |
 | 51 | all 10 commands present | PASS |
 | 52 | new script escalation_advisor.py exec | PASS |
-| 53 | new script recall_ranker.py exec | PASS |
-| 54 | new script improvement_injector.py exec | PASS |
+| 53 | new script improvement_injector.py exec | PASS |
+| 54 | new script recall_ranker.py exec | PASS |
 | 55 | no runtime script imports model_router (v2 pivot) | PASS |
 | 56 | observe (Stop: task_outcome_tracker) | PASS |
 | 57 | distill (self_correct.py exists) | PASS |

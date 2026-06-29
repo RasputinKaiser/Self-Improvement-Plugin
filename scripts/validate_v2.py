@@ -28,14 +28,16 @@ AGENTS_DIR = ROOT / "agents"
 COMMANDS_DIR = ROOT / "commands"
 EVAL = ROOT / "EVAL.md"
 
-EXPECTED_AGENTS = {"escalate", "repo-scout", "memory-curator", "test-author", "fan-out"}
-EXPECTED_COMMANDS = {
+EXPECTED_AGENTS = ("escalate", "repo-scout", "memory-curator", "test-author", "fan-out")
+EXPECTED_COMMANDS = (
     "improve", "recall", "escalate", "checkpoint", "verify", "patterns", "teach",
     "goal", "brainstorm", "fan-out",
-}
-NEW_SCRIPTS = {
+)
+NEW_SCRIPTS = (
     "escalation_advisor.py", "improvement_injector.py", "recall_ranker.py",
-}
+)
+EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
+EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
 
 errors = []
 warnings = []
@@ -100,26 +102,26 @@ if hk:
 # 4. agents — all must declare model: inherit
 agent_names = set()
 if AGENTS_DIR.is_dir():
-    for f in AGENTS_DIR.glob("*.md"):
+    for f in sorted(AGENTS_DIR.glob("*.md")):
         agent_names.add(f.stem)
         body = f.read_text(encoding="utf-8", errors="replace")
         fm = body.split("---", 2)[1] if body.count("---") >= 2 else ""
         has_fm = body.startswith("---") and "model:" in fm
         check(f"agent {f.stem} has frontmatter + model:", has_fm, f.name)
         check(f"agent {f.stem} model: inherit", "model: inherit" in fm, fm.strip())
-check(f"all {len(EXPECTED_AGENTS)} agents present", EXPECTED_AGENTS == agent_names,
-      f"missing={EXPECTED_AGENTS - agent_names}, extra={agent_names - EXPECTED_AGENTS}")
+check(f"all {len(EXPECTED_AGENTS)} agents present", EXPECTED_AGENT_SET == agent_names,
+      f"missing={EXPECTED_AGENT_SET - agent_names}, extra={agent_names - EXPECTED_AGENT_SET}")
 
 # 5. commands
 cmd_names = set()
 if COMMANDS_DIR.is_dir():
-    for f in COMMANDS_DIR.glob("*.md"):
+    for f in sorted(COMMANDS_DIR.glob("*.md")):
         cmd_names.add(f.stem)
         body = f.read_text(encoding="utf-8", errors="replace")
         has_desc = body.startswith("---") and "description:" in body.split("---", 2)[1] if body.count("---") >= 2 else False
         check(f"command {f.stem} has description", has_desc, f.name)
-check(f"all {len(EXPECTED_COMMANDS)} commands present", EXPECTED_COMMANDS == cmd_names,
-      f"missing={EXPECTED_COMMANDS - cmd_names}, extra={cmd_names - EXPECTED_COMMANDS}")
+check(f"all {len(EXPECTED_COMMANDS)} commands present", EXPECTED_COMMAND_SET == cmd_names,
+      f"missing={EXPECTED_COMMAND_SET - cmd_names}, extra={cmd_names - EXPECTED_COMMAND_SET}")
 
 # 6. new scripts executable
 for name in NEW_SCRIPTS:
@@ -187,8 +189,8 @@ lines.append("| Layer | Surface | Count | Status |")
 lines.append("|---|---|---|---|")
 hook_count = sum(len(e.get('hooks', [])) for ev in (hk.get('hooks', {}) if hk else {}).values() for e in ev)
 lines.append(f"| L0 live surface | hooks wired | {hook_count} | ok |")
-lines.append(f"| L0 live surface | slash commands | {len(cmd_names)} | {'ok' if cmd_names==EXPECTED_COMMANDS else 'gap'} |")
-lines.append(f"| L0 live surface | subagents (all model: inherit) | {len(agent_names)} | {'ok' if agent_names==EXPECTED_AGENTS else 'gap'} |")
+lines.append(f"| L0 live surface | slash commands | {len(cmd_names)} | {'ok' if cmd_names==EXPECTED_COMMAND_SET else 'gap'} |")
+lines.append(f"| L0 live surface | subagents (all model: inherit) | {len(agent_names)} | {'ok' if agent_names==EXPECTED_AGENT_SET else 'gap'} |")
 lines.append(f"| L1 guardrails | autonomy_gate + script_smoke + snapshot | 3 | ok |")
 lines.append(f"| L2 observation | session_close + outcome_tracker | 2 | ok |")
 lines.append(f"| L3 recall | preflight + recall_ranker + continuity | 3 | ok |")
