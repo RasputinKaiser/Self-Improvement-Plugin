@@ -51,25 +51,25 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 8 | agents/ exists | PASS |
 | 9 | commands/ exists | PASS |
 | 10 | no lib/ directory (model_router dropped) | PASS |
-| 11 | hook script exists+exec: autonomy_gate.py (PreToolUse) | PASS |
-| 12 | hook script exists+exec: memory_fabric_preflight.py (PreToolUse) | PASS |
-| 13 | hook script exists+exec: autonomy_gate.py (PreToolUse) | PASS |
-| 14 | hook script exists+exec: script_smoke.py (PostToolUse) | PASS |
-| 15 | hook script exists+exec: escalation_advisor.py (PostToolUse) | PASS |
-| 16 | hook script exists+exec: csi_presence_mirror.py (PostToolUse) | PASS |
-| 17 | hook script exists+exec: validate_harness.py (SessionStart) | PASS |
-| 18 | hook script exists+exec: memory_fabric_doctor.py (SessionStart) | PASS |
-| 19 | hook script exists+exec: proactive_drift.py (SessionStart) | PASS |
-| 20 | hook script exists+exec: agent_patterns.py (SessionStart) | PASS |
-| 21 | hook script exists+exec: improvement_injector.py (SessionStart) | PASS |
-| 22 | hook script exists+exec: recall_ranker.py (UserPromptSubmit) | PASS |
-| 23 | hook script exists+exec: probe_hook.py (UserPromptSubmit) | PASS |
-| 24 | hook script exists+exec: memory_fabric_compact_brief.py (PreCompact) | PASS |
-| 25 | hook script exists+exec: compact_continuity.py (PreCompact) | PASS |
-| 26 | hook script exists+exec: memory_fabric_session_record.py (PostCompact) | PASS |
-| 27 | hook script exists+exec: compact_continuity.py (PostCompact) | PASS |
-| 28 | hook script exists+exec: session_close.py (Stop) | PASS |
-| 29 | hook script exists+exec: task_outcome_tracker.py (Stop) | PASS |
+| 11 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 12 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 13 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 14 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 15 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 16 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 17 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 18 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 19 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 20 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 21 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 22 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 23 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 24 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 25 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 26 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 27 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 28 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
+| 29 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
 | 30 | agent escalate has frontmatter + model: | PASS |
 | 31 | agent escalate model: inherit | PASS |
 | 32 | agent test-author has frontmatter + model: | PASS |
@@ -88,8 +88,8 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 45 | command teach has description | PASS |
 | 46 | all 7 commands present | PASS |
 | 47 | new script improvement_injector.py exec | PASS |
-| 48 | new script escalation_advisor.py exec | PASS |
-| 49 | new script recall_ranker.py exec | PASS |
+| 48 | new script recall_ranker.py exec | PASS |
+| 49 | new script escalation_advisor.py exec | PASS |
 | 50 | no runtime script imports model_router (v2 pivot) | PASS |
 | 51 | observe (Stop: task_outcome_tracker) | PASS |
 | 52 | distill (self_correct.py exists) | PASS |
