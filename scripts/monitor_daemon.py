@@ -160,6 +160,33 @@ def check_install_drift():
     }]
 
 
+def check_script_permissions():
+    """Are all installed scripts executable?
+
+    Root-cause check for the recurring '+x drift' pattern: install.sh
+    now chmod +x post-rsync, but this catches regressions if new scripts
+    are added without that step catching them.
+    """
+    issues = []
+    if not SCRIPTS_DIR.is_dir():
+        return []
+    non_exec = []
+    for f in SCRIPTS_DIR.iterdir():
+        if f.suffix not in (".py", ".sh"):
+            continue
+        if not os.access(f, os.X_OK):
+            non_exec.append(f.name)
+    if non_exec:
+        issues.append({
+            "severity": "info",
+            "category": "permissions",
+            "title": f"{len(non_exec)} script(s) not executable",
+            "detail": ", ".join(non_exec[:8]) +
+                      (f" ...({len(non_exec)-8} more)" if len(non_exec) > 8 else ""),
+        })
+    return issues
+
+
 def check_large_debug_dirs():
     """Are there large debug dirs bloating ~/.ncode?"""
     r = run_script("harness_gc.py", args=["--deep"], timeout=30)
@@ -198,6 +225,7 @@ def run_all_checks():
     issues.extend(check_tests_pass())
     issues.extend(check_cron_installed())
     issues.extend(check_install_drift())
+    issues.extend(check_script_permissions())
     issues.extend(check_pip_outdated())
     issues.extend(check_untested_scripts())
     issues.extend(check_large_debug_dirs())

@@ -43,7 +43,7 @@ def hash_set(files):
     return h.hexdigest()[:16]
 
 
-def create_snapshot(reason):
+def create_snapshot(reason, force=False):
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     if not SCRIPTS_DIR.is_dir():
         print("ERR: scripts dir not found", file=sys.stderr)
@@ -56,10 +56,14 @@ def create_snapshot(reason):
     set_hash = hash_set([p.name for p in files])
     snapshot_dir = BACKUP_ROOT / set_hash
 
-    if snapshot_dir.exists():
+    if snapshot_dir.exists() and not force:
         print(f"snapshot already exists: {snapshot_dir}")
         print("use --force to overwrite, or accept existing")
         return 0
+
+    if snapshot_dir.exists() and force:
+        import shutil
+        shutil.rmtree(snapshot_dir)
 
     snapshot_dir.mkdir(parents=True)
     for p in files:
@@ -110,7 +114,7 @@ def main():
 
     if args.list:
         return list_snapshots()
-    return create_snapshot(args.reason)
+    return create_snapshot(args.reason, force=args.force)
 
 
 if __name__ == "__main__":

@@ -1416,6 +1416,36 @@ def install_cron_plist_present_after_install():
     assert r.returncode == 0, "launchctl doesn't list the cron job — not loaded?"
 
 
+def snapshot_harness_force_overwrites_existing():
+    """snapshot_harness.py --force actually overwrites an existing snapshot (was a no-op bug)."""
+    # Take a snapshot with --force — should succeed, not early-return
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "snapshot_harness.py"),
+         "--reason", "force-test", "--force"],
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"snapshot --force failed: {r.stderr}"
+    # Should NOT print "use --force to overwrite" when --force IS passed
+    assert "use --force to overwrite" not in r.stdout, \
+        f"--force was passed but snapshot still declined to overwrite: {r.stdout}"
+    # Should print "snapshot created" or "hash:" confirming it actually wrote
+    assert "hash:" in r.stdout or "snapshot created" in r.stdout, \
+        f"expected snapshot creation output, got: {r.stdout}"
+
+
+def monitor_daemon_detects_non_executable_scripts():
+    """check_script_permissions flags scripts without +x bit."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import monitor_daemon as md
+    issues = md.check_script_permissions()
+    # After the install.sh chmod +x post-rsync fix, there should be 0 issues.
+    # If this test fails, a new script was added without +x — install.sh
+    # should have caught it but didn't (drift regression).
+    non_exec_issues = [i for i in issues if i["category"] == "permissions"]
+    assert len(non_exec_issues) == 0, \
+        f"Found non-executable scripts (install.sh chmod +x post-rsync regression): {non_exec_issues}"
+
+
 def fan_out_prepare_writes_handoff_per_slice():
     """fan_out.py prepare writes one HANDOFF.md per slice + run.json state."""
     import shutil
@@ -1784,6 +1814,8 @@ SUITES = {
     "install_cron": [
         case("install_cron_flag_recognized", install_sh_install_cron_flag_recognized),
         case("install_cron_plist_present_after_install", install_cron_plist_present_after_install),
+        case("snapshot_force_overwrites_existing", snapshot_harness_force_overwrites_existing),
+        case("monitor_detects_non_executable_scripts", monitor_daemon_detects_non_executable_scripts),
     ],
     "fan_out": [
         case("prepare_writes_handoff_per_slice", fan_out_prepare_writes_handoff_per_slice),

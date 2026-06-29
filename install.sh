@@ -174,6 +174,11 @@ rsync -a --delete \
   --exclude='*.tmp' \
   "${SCRIPT_DIR}/" "${DEST}/"
 
+# Ensure all installed scripts are executable (prevents recurring +x drift
+# when new scripts are committed without the executable bit). Root cause of
+# the 4× recurring "N scripts not executable" validator warnings.
+chmod +x "${DEST}/scripts/"*.py "${DEST}/scripts/"*.sh 2>/dev/null || true
+
 # Write a manifest the harness-app reads for drift detection
 echo "=== writing manifest ==="
 python3 - "$MANIFEST" "$SCRIPT_DIR" <<'PY'
