@@ -262,9 +262,10 @@ def cmd_is_active() -> None:
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print("usage: goal_state.py {set|status|complete|clear|pause|resume|increment-turn|is-active|add-subtask|complete-subtask|fail-subtask|next|progress|reset-subtasks} [args]")
-        sys.exit(2)
+        print("\nSubtask DAG: add-subtask, complete-subtask, fail-subtask, next, progress, reset-subtasks")
+        sys.exit(0 if sys.argv[1:] and sys.argv[1] in ("-h", "--help") else 2)
 
     cmd = sys.argv[1]
     if cmd == "set":

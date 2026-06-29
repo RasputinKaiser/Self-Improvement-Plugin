@@ -1,25 +1,38 @@
 #!/usr/bin/env python3
 """Tool factory for ~/.ncode/.
 
-Scaffolds deterministic local helpers under ~/.ncode/scripts/. Does NOT
-auto-promote into skills/, agents/, or commands/. Output is a starting point
-that the agent/user reviews, edits, and only then promotes.
+Scaffolds deterministic local helpers under ~/.ncode/scripts/ and now also
+supports validation + promotion to skills/. Output is always a starting
+point; promotion only proceeds after validate succeeds.
 
-Usage:
-  python3 tool_factory.py <name> --summary "..." [--lang py|sh]
-  python3 tool_factory.py <name> --summary "..." --dry-run
+Subcommands:
+  scaffold <name> --summary "..." [--lang py|sh] [--dry-run]
+    Create ~/.ncode/scripts/<name>.<ext> + <name>.md spec.
+  validate <name> [--lang py|sh]
+    Syntax-check + --help + check for tests in run_tests.py mentioning <name>.
+  promote <name> [--lang py|sh]
+    Copy validated script + doc to ~/.ncode/skills/<name>/ as a readable skill
+    (writes SKILL.md frontmatter + copies the script).
 
-Produces:
-  ~/.ncode/scripts/<name>.<ext>
-  ~/.ncode/scripts/<name>.md   (purpose/spec doc)
+Legacy form (backwards compat):
+  tool_factory.py <name> --summary "..." [--lang py|sh] [--dry-run]
+  → same as `scaffold <name> --summary "..."` (shim rewrites argv).
 """
 import argparse
+import json
 import os
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 SCRIPTS_DIR = Path.home() / ".ncode" / "scripts"
 SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+SKILLS_DIR = Path.home() / ".ncode" / "skills"
+RUN_TESTS_PATH = SCRIPTS_DIR / "run_tests.py"
+
+SUBCOMMANDS = {"scaffold", "validate", "promote"}
 
 
 PY_TEMPLATE = '''#!/usr/bin/env python3
@@ -93,19 +106,35 @@ Promote to skills/ only after:
 3. orphan/drift not flagged by `validate_harness.py`
 '''
 
+SKILL_MD_TEMPLATE = '''---
+name: {name}
+description: {summary}
+---
 
-def main():
-    parser = argparse.ArgumentParser(description="Scaffold a local helper")
-    parser.add_argument("name", help="helper name")
-    parser.add_argument("--summary", required=True, help="one-line purpose")
-    parser.add_argument("--lang", choices=["py", "sh"], default="py")
-    parser.add_argument("--dry-run", action="store_true", help="show plan without writing")
-    args = parser.parse_args()
+# {name}
 
-    name = args.name.replace("-", "_") if args.lang == "py" else args.name
-    ext = args.lang
-    script_path = SCRIPTS_DIR / f"{name}.{ext}"
-    doc_path = SCRIPTS_DIR / f"{name}.md"
+{summary}
+
+## Usage
+
+Run `{name}` from the scripts directory:
+
+```
+python3 ~/.ncode/scripts/{filename} [--dry-run] [--json]
+```
+
+See `~/.ncode/scripts/{name}.md` for the full spec.
+'''
+
+
+def _resolve_paths(name: str, lang: str):
+    sanitized = name.replace("-", "_") if lang == "py" else name
+    ext = lang
+    return sanitized, SCRIPTS_DIR / f"{sanitized}.{ext}", SCRIPTS_DIR / f"{sanitized}.md"
+
+
+def cmd_scaffold(args):
+    name, script_path, doc_path = _resolve_paths(args.name, args.lang)
 
     if script_path.exists() and not args.dry_run:
         print(f"ERR: {script_path} already exists", file=sys.stderr)
@@ -123,18 +152,142 @@ def main():
             print(f"  {p}")
         return
 
-    if ext == "py":
-        content = PY_TEMPLATE.format(summary=args.summary)
-        script_path.write_text(content, encoding="utf-8")
-        os.chmod(script_path, 0o755)
-    else:
-        content = SH_TEMPLATE.format(summary=args.summary)
-        script_path.write_text(content, encoding="utf-8")
-        os.chmod(script_path, 0o755)
-
+    template = PY_TEMPLATE if args.lang == "py" else SH_TEMPLATE
+    script_path.write_text(template.format(summary=args.summary), encoding="utf-8")
+    os.chmod(script_path, 0o755)
     doc_path.write_text(DOC_TEMPLATE.format(name=name, summary=args.summary), encoding="utf-8")
     print(f"scaffolded:\n  {script_path}\n  {doc_path}")
-    print("\nreview, edit, then run: python3 ~/.ncode/scripts/validate_harness.py")
+    print("\nreview, edit, then run: python3 ~/.ncode/scripts/tool_factory.py validate " + name)
+
+
+def cmd_validate(args):
+    name, script_path, doc_path = _resolve_paths(args.name, args.lang)
+    if not script_path.exists():
+        print(f"ERR: {script_path} does not exist", file=sys.stderr)
+        sys.exit(1)
+
+    # Syntax check (py only — sh doesn't have a portable equivalent)
+    if args.lang == "py":
+        r = subprocess.run(["python3", "-c", f"import ast; ast.parse(open('{script_path}').read())"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            print(json.dumps({"ok": False, "error": "syntax", "detail": r.stderr}))
+            sys.exit(1)
+
+    # --help exits 0
+    r = subprocess.run(["python3", str(script_path), "--help"],
+                       capture_output=True, text=True, timeout=5)
+    help_ok = r.returncode == 0
+
+    # Check run_tests.py for cases mentioning the name
+    test_count = 0
+    if RUN_TESTS_PATH.exists():
+        try:
+            content = RUN_TESTS_PATH.read_text(encoding="utf-8")
+            test_count = len(re.findall(rf"\b{re.escape(name)}\b", content))
+        except OSError:
+            pass
+
+    result = {
+        "ok": help_ok,
+        "script": str(script_path),
+        "lang": args.lang,
+        "help_ok": help_ok,
+        "test_mentions": test_count,
+        "has_doc": doc_path.exists(),
+        "ready_for_promote": help_ok and test_count > 0,
+    }
+    print(json.dumps(result, indent=2))
+    if not result["ready_for_promote"]:
+        if not help_ok:
+            print(f"\nERR: --help failed for {script_path}", file=sys.stderr)
+        if test_count == 0:
+            print(f"\nWARN: no tests mention '{name}' in run_tests.py", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_promote(args):
+    name, script_path, doc_path = _resolve_paths(args.name, args.lang)
+    if not script_path.exists():
+        print(f"ERR: {script_path} does not exist", file=sys.stderr)
+        sys.exit(1)
+
+    # Require validate to pass first
+    validate_args = argparse.Namespace(name=args.name, lang=args.lang)
+    try:
+        cmd_validate(validate_args)
+    except SystemExit as e:
+        if e.code != 0:
+            print(f"\nERR: validate failed — fix before promoting", file=sys.stderr)
+            sys.exit(1)
+
+    # Copy to skills/
+    skill_dir = SKILLS_DIR / name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    target_script = skill_dir / f"{name}.{args.lang}"
+    target_skill_md = skill_dir / "SKILL.md"
+    target_doc = skill_dir / f"{name}.md"
+
+    shutil.copy(script_path, target_script)
+    os.chmod(target_script, 0o755)
+    if doc_path.exists():
+        shutil.copy(doc_path, target_doc)
+    filename = target_script.name
+    target_skill_md.write_text(
+        SKILL_MD_TEMPLATE.format(name=name, summary=args.summary, filename=filename),
+        encoding="utf-8"
+    )
+
+    print(json.dumps({
+        "ok": True,
+        "promoted_to": str(skill_dir),
+        "script": str(target_script),
+        "skill_md": str(target_skill_md),
+        "doc": str(target_doc) if doc_path.exists() else None,
+    }, indent=2))
+
+
+def _rewrite_legacy_argv(argv):
+    """If argv[0] is not a known subcommand, prepend 'scaffold'."""
+    if not argv:
+        return argv
+    first = argv[0]
+    if first in SUBCOMMANDS or first.startswith("-"):
+        return argv
+    return ["scaffold"] + argv
+
+
+def main():
+    argv = _rewrite_legacy_argv(sys.argv[1:])
+    parser = argparse.ArgumentParser(description="Scaffold, validate, or promote a local helper")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_scaffold = sub.add_parser("scaffold", help="create ~/.ncode/scripts/<name>.<ext> + .md spec")
+    p_scaffold.add_argument("name", help="helper name")
+    p_scaffold.add_argument("--summary", required=True, help="one-line purpose")
+    p_scaffold.add_argument("--lang", choices=["py", "sh"], default="py")
+    p_scaffold.add_argument("--dry-run", action="store_true", help="show plan without writing")
+    p_scaffold.set_defaults(func=cmd_scaffold)
+
+    p_validate = sub.add_parser("validate", help="syntax-check + --help + test-presence check")
+    p_validate.add_argument("name", help="helper name")
+    p_validate.add_argument("--lang", choices=["py", "sh"], default="py")
+    p_validate.add_argument("--summary", default="(no summary)",
+                            help=argparse.SUPPRESS)  # accept but ignore for cmd_validate parity
+    p_validate.set_defaults(func=cmd_validate)
+
+    p_promote = sub.add_parser("promote", help="copy validated helper to ~/.ncode/skills/<name>/")
+    p_promote.add_argument("name", help="helper name")
+    p_promote.add_argument("--lang", choices=["py", "sh"], default="py")
+    p_promote.add_argument("--summary", default="(promoted from tool_factory)",
+                            help=argparse.SUPPRESS)  # accept but ignore
+    p_promote.set_defaults(func=cmd_promote)
+
+    args = parser.parse_args(argv)
+    if not hasattr(args, "func"):
+        parser.print_help(sys.stderr)
+        sys.exit(2)
+    args.func(args)
 
 
 if __name__ == "__main__":

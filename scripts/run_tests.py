@@ -441,7 +441,7 @@ def smoke_harness_gc():
     assert "summary" in r.stdout.lower(), "missing summary"
 
 def smoke_tool_factory():
-    """tool_factory scaffolds a dummy helper in --dry-run mode."""
+    """tool_factory scaffolds a dummy helper in --dry-run mode (legacy form)."""
     r = subprocess.run(
         ["python3", str(SCRIPTS_DIR / "tool_factory.py"),
          "_smoke_test_dummy", "--summary", "smoke test", "--lang", "py", "--dry-run"],
@@ -449,6 +449,61 @@ def smoke_tool_factory():
     )
     assert r.returncode == 0, f"tool_factory --dry-run failed: {r.stderr}"
     assert "dry-run" in r.stdout.lower(), f"missing dry-run plan: {r.stdout}"
+
+
+def tool_factory_subcommand_scaffold_works():
+    """tool_factory.py scaffold <name> --summary ... --dry-run reports plan."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "scaffold",
+         "_subcmd_smoke", "--summary", "via subcommand", "--lang", "py", "--dry-run"],
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"scaffold subcommand failed: {r.stderr}"
+    assert "script:" in r.stdout
+    assert "_subcmd_smoke.py" in r.stdout
+
+
+def tool_factory_validate_detects_tests_on_known_script():
+    """validate on goal_state (which has tests) returns ready_for_promote=True."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "validate",
+         "goal_state", "--lang", "py"],
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"validate failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["ok"] is True, f"validate not ok: {d}"
+    assert d["help_ok"] is True
+    assert d["test_mentions"] > 0, f"expected test mentions, got {d['test_mentions']}"
+    assert d["ready_for_promote"] is True
+
+
+def tool_factory_validate_warns_when_no_tests():
+    """validate on a freshly-scaffolded helper (no tests) returns ready_for_promote=False."""
+    # Scaffold a fresh helper with no tests referencing it
+    unique = f"_no_tests_smoke_{int(time.time())}"
+    subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "scaffold",
+         unique, "--summary", "no tests yet", "--lang", "py"],
+        capture_output=True, timeout=10
+    )
+    try:
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "validate",
+             unique, "--lang", "py"],
+            capture_output=True, text=True, timeout=10
+        )
+        # Validate exits non-zero when not ready_for_promote
+        assert r.returncode != 0, f"validate should fail when no tests, got: {r.stdout}"
+        d = json.loads(r.stdout)
+        assert d["ready_for_promote"] is False
+        assert d["test_mentions"] == 0
+    finally:
+        for path in (SCRIPTS_DIR / f"{unique}.py", SCRIPTS_DIR / f"{unique}.md"):
+            try:
+                path.unlink()
+            except OSError:
+                pass
 
 def smoke_memory_fabric_compact_brief():
     """compact_brief returns valid JSON on simulated PreCompact."""
@@ -1367,11 +1422,16 @@ SUITES = {
         case("self_correct", smoke_self_correct),
         case("harness_gc", smoke_harness_gc),
         case("tool_factory", smoke_tool_factory),
+        case("tool_factory_subcmd_scaffold", tool_factory_subcommand_scaffold_works),
         case("compact_brief", smoke_memory_fabric_compact_brief),
         case("session_record", smoke_memory_fabric_session_record),
         case("session_close", smoke_session_close),
         case("eval_harness", smoke_eval_harness),
         case("weekly_sweep", smoke_weekly_sweep),
+    ],
+    "tool_factory": [
+        case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),
+        case("validate_warns_when_no_tests", tool_factory_validate_warns_when_no_tests),
     ],
     "csi_presence_mirror": [
         case("silent_when_no_source_dir", csi_presence_mirror_silent_when_no_source_dir),
