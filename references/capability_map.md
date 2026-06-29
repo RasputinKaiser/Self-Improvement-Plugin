@@ -44,7 +44,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 ## Tier 4 — Advanced (FUTURE)
 
 - [ ] Worktree-aware harness (hooks fire correctly inside `--worktree` sessions)
-- [ ] Cost/budget tracking per session with real-time warnings
+- [x] Cost/budget tracking per session with real-time warnings
 - [ ] Prompt template library + hot-swap
 - [ ] Skill marketplace mirror (browse/install skills from the app)
 - [ ] MCP server browser (list connected MCPs, toggle tools, view call log)

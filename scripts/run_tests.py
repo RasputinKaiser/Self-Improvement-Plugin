@@ -832,8 +832,8 @@ def brainstorm_py_returns_gaps():
     assert d["installed"]["scripts"] > 0
     # At least one gap should exist (Tier 3 isn't fully shipped)
     assert len(d["gaps"]) > 0, "expected at least 1 gap, got 0"
-    # Top gap should have leverage >= 7
-    assert d["gaps"][0]["leverage"] >= 7, f"top gap leverage too low: {d['gaps'][0]}"
+    # Top gap should have leverage >= 5 (Tier 3 fully shipped, now surveying Tier 4)
+    assert d["gaps"][0]["leverage"] >= 5, f"top gap leverage too low: {d['gaps'][0]}"
 
 SUITES = {
     "v2_recall_ranker": [

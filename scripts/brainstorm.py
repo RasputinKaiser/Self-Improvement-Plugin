@@ -101,7 +101,9 @@ def find_gaps(capability_map, installed, app):
             continue
         # Skip Tier 4 (future) unless explicitly requested
         if "Tier 4" in entry["tier"]:
-            continue
+            # Only skip if we already have enough Tier 3 gaps
+            if len(gaps) >= 3:
+                continue
 
         name = entry["name"]
 
@@ -141,9 +143,41 @@ def find_gaps(capability_map, installed, app):
             effort = "low"
             area = "Self-improvement"
         elif "cost" in lower or "budget" in lower:
-            leverage = 5
+            leverage = 6
             effort = "low"
             area = "Safety"
+        elif "mcp" in lower and "browser" in lower:
+            leverage = 5
+            effort = "medium"
+            area = "External surfaces"
+        elif "voice" in lower:
+            leverage = 4
+            effort = "medium"
+            area = "Interaction"
+        elif "worktree" in lower:
+            leverage = 3
+            effort = "medium"
+            area = "Action"
+        elif "skill" in lower and "market" in lower:
+            leverage = 4
+            effort = "medium"
+            area = "External surfaces"
+        elif "evaluation" in lower or "benchmark" in lower:
+            leverage = 5
+            effort = "high"
+            area = "Self-improvement"
+        elif "telemetry" in lower or "dashboard" in lower:
+            leverage = 4
+            effort = "low"
+            area = "Observation"
+        elif "prompt" in lower and "template" in lower:
+            leverage = 3
+            effort = "low"
+            area = "Interaction"
+        elif "scheduled" in lower or "cron" in lower:
+            leverage = 4
+            effort = "low"
+            area = "Self-improvement"
 
         gaps.append({
             "name": name,

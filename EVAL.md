@@ -4,24 +4,24 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 ## Summary
 
-- **checks passed**: 56/56 (100%)
-- **errors**: 0
+- **checks passed**: 56/57 (98%)
+- **errors**: 1
 - **warnings**: 0
-- **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
+- **verdict**: INCOHERENT — see errors
 
 ## Coverage
 
 | Layer | Surface | Count | Status |
 |---|---|---|---|
 | L0 live surface | hooks wired | 19 | ok |
-| L0 live surface | slash commands | 7 | ok |
+| L0 live surface | slash commands | 8 | gap |
 | L0 live surface | subagents (all model: inherit) | 4 | ok |
 | L1 guardrails | autonomy_gate + script_smoke + snapshot | 3 | ok |
 | L2 observation | session_close + outcome_tracker | 2 | ok |
 | L3 recall | preflight + recall_ranker + continuity | 3 | ok |
 | L4 distillation | self_correct + agent_patterns | 2 | ok |
 | L5 promotion | tool_factory + test-author agent + /improve | 3 | ok |
-| delegation | escalate agent + escalation_advisor + /escalate | 3 | ok |
+| delegation | escalate agent + escalation_advisor + /escalate | 3 | gap |
 | model routing | (dropped — all agents inherit) | 0 | ok by design |
 
 ## Loop-closure chain
@@ -86,17 +86,22 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 43 | command patterns has description | PASS |
 | 44 | command recall has description | PASS |
 | 45 | command teach has description | PASS |
-| 46 | all 7 commands present | PASS |
-| 47 | new script recall_ranker.py exec | PASS |
-| 48 | new script escalation_advisor.py exec | PASS |
-| 49 | new script improvement_injector.py exec | PASS |
-| 50 | no runtime script imports model_router (v2 pivot) | PASS |
-| 51 | observe (Stop: task_outcome_tracker) | PASS |
-| 52 | distill (self_correct.py exists) | PASS |
-| 53 | inject (SessionStart: improvement_injector) | PASS |
-| 54 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 55 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 56 | delegate target (escalate agent exists, model: inherit) | PASS |
+| 46 | command brainstorm has description | PASS |
+| 47 | all 7 commands present | FAIL |
+| 48 | new script improvement_injector.py exec | PASS |
+| 49 | new script escalation_advisor.py exec | PASS |
+| 50 | new script recall_ranker.py exec | PASS |
+| 51 | no runtime script imports model_router (v2 pivot) | PASS |
+| 52 | observe (Stop: task_outcome_tracker) | PASS |
+| 53 | distill (self_correct.py exists) | PASS |
+| 54 | inject (SessionStart: improvement_injector) | PASS |
+| 55 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 56 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 57 | delegate target (escalate agent exists, model: inherit) | PASS |
+
+## Errors
+
+- all 7 commands present: missing=set(), extra={'brainstorm'}
 
 ## What v2 adds over v1
 
