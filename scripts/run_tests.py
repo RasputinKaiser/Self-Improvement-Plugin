@@ -1023,6 +1023,138 @@ def behavior_normal_session_scope_unchanged():
         f"normal repo scope should be itself, got {result}"
 
 
+# --- Eval loop closure ---
+
+
+def _write_eval_results(path, runs):
+    """Helper: write a list of run dicts to a JSONL file."""
+    with open(path, "w", encoding="utf-8") as fp:
+        for r in runs:
+            fp.write(json.dumps(r) + "\n")
+
+
+def _make_eval_run(case_id, score, passed, ts_iso, error=None):
+    """Helper: build a minimal EvalRun-shaped dict."""
+    return {
+        "id": "test-" + ts_iso,
+        "caseId": case_id,
+        "caseVersion": 1,
+        "startedAtISO": ts_iso,
+        "finishedAtISO": ts_iso,
+        "score": score,
+        "passed": passed,
+        "sandboxURL": "/tmp/sandbox",
+        "checkResults": [],
+        "toolCount": 1,
+        "model": None,
+        "errorMessage": error,
+    }
+
+
+def eval_regression_detected_when_latest_drops():
+    """find_eval_regressions flags case where latest < baseline - threshold."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import self_correct as sc
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        # 4 runs at 0.9, latest at 0.4 → should flag
+        runs = [
+            _make_eval_run("qual-x-001", 0.9, True, "2026-06-29T01:00:00Z"),
+            _make_eval_run("qual-x-001", 0.9, True, "2026-06-29T02:00:00Z"),
+            _make_eval_run("qual-x-001", 0.9, True, "2026-06-29T03:00:00Z"),
+            _make_eval_run("qual-x-001", 0.4, False, "2026-06-29T04:00:00Z"),
+        ]
+        _write_eval_results(f.name, runs)
+        tmp = f.name
+    try:
+        regs = sc.find_eval_regressions(results_path=Path(tmp))
+        assert len(regs) == 1, f"expected 1 regression, got {len(regs)}"
+        assert regs[0]["caseId"] == "qual-x-001"
+        assert regs[0]["baseline"] == 0.9, f"baseline should be 0.9, got {regs[0]['baseline']}"
+        assert regs[0]["latest"] == 0.4, f"latest should be 0.4, got {regs[0]['latest']}"
+    finally:
+        os.unlink(tmp)
+
+
+def eval_regression_skipped_with_insufficient_runs():
+    """find_eval_regressions needs at least baseline_runs + 1 to flag."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import self_correct as sc
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        runs = [
+            _make_eval_run("qual-y-001", 0.9, True, "2026-06-29T01:00:00Z"),
+            _make_eval_run("qual-y-001", 0.4, False, "2026-06-29T02:00:00Z"),
+        ]
+        _write_eval_results(f.name, runs)
+        tmp = f.name
+    try:
+        regs = sc.find_eval_regressions(results_path=Path(tmp))
+        assert len(regs) == 0, f"expected 0 regressions with insufficient runs, got {len(regs)}"
+    finally:
+        os.unlink(tmp)
+
+
+def eval_regression_skips_error_runs():
+    """find_eval_regressions ignores runs with errorMessage."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import self_correct as sc
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+        runs = [
+            _make_eval_run("qual-z-001", 0.9, True, "2026-06-29T01:00:00Z"),
+            _make_eval_run("qual-z-001", 0.9, True, "2026-06-29T02:00:00Z"),
+            _make_eval_run("qual-z-001", 0.9, True, "2026-06-29T03:00:00Z"),
+            _make_eval_run("qual-z-001", 0.0, False, "2026-06-29T04:00:00Z",
+                           error="timeout"),  # error run, should be skipped
+        ]
+        _write_eval_results(f.name, runs)
+        tmp = f.name
+    try:
+        regs = sc.find_eval_regressions(results_path=Path(tmp))
+        # Latest run errored → skipped; no regression from the four entries
+        # (the third run at 0.9 becomes the latest, with 2 baseline runs → insufficient)
+        assert len(regs) == 0, f"expected 0 regressions when latest errored, got {len(regs)}"
+    finally:
+        os.unlink(tmp)
+
+
+def eval_brief_emits_when_results_exist():
+    """latest_eval_summary returns a string when results.jsonl has runs."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import improvement_injector as ii
+    ii.EVAL_RESULTS_PATH = Path(tempfile.gettempdir()) / "test_eval_brief.jsonl"
+    try:
+        runs = [
+            _make_eval_run("case-a", 1.0, True, "2026-06-29T01:00:00Z"),
+            _make_eval_run("case-b", 0.0, False, "2026-06-29T01:30:00Z"),
+            _make_eval_run("case-c", 1.0, True, "2026-06-29T02:00:00Z"),
+        ]
+        _write_eval_results(ii.EVAL_RESULTS_PATH, runs)
+        brief = ii.latest_eval_summary()
+        assert brief is not None, "expected a brief string, got None"
+        assert "2/3" in brief, f"expected '2/3' in brief, got: {brief}"
+        assert "passed" in brief
+    finally:
+        if ii.EVAL_RESULTS_PATH.exists():
+            os.unlink(ii.EVAL_RESULTS_PATH)
+
+
+def smoke_eval_harness():
+    """eval_harness.py --help exits 0 (script_smoke.py catches this at edit time)."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "eval_harness.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"eval_harness.py --help failed: {r.stderr}"
+
+
+def smoke_weekly_sweep():
+    """weekly_sweep.py --help exits 0."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "weekly_sweep.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"weekly_sweep.py --help failed: {r.stderr}"
+
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -1102,6 +1234,8 @@ SUITES = {
         case("compact_brief", smoke_memory_fabric_compact_brief),
         case("session_record", smoke_memory_fabric_session_record),
         case("session_close", smoke_session_close),
+        case("eval_harness", smoke_eval_harness),
+        case("weekly_sweep", smoke_weekly_sweep),
     ],
     "csi_presence_mirror": [
         case("silent_when_no_source_dir", csi_presence_mirror_silent_when_no_source_dir),
@@ -1125,6 +1259,12 @@ SUITES = {
     ],
     "goal_state": [
         case("set_status_complete_cycle", goal_state_set_status_complete_cycle),
+    ],
+    "eval_loop": [
+        case("regression_detected_when_latest_drops", eval_regression_detected_when_latest_drops),
+        case("regression_skipped_with_insufficient_runs", eval_regression_skipped_with_insufficient_runs),
+        case("regression_skips_error_runs", eval_regression_skips_error_runs),
+        case("brief_emits_when_results_exist", eval_brief_emits_when_results_exist),
     ],
 }
 

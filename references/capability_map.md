@@ -41,6 +41,17 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Multi-agent orchestration dashboard (Agents pane)
 - [x] Plan approval UI (structured plan dialog with accept/reject/modify)
 
+## Tier 5 — Post-Complete Extensions (FUTURE)
+
+- [x] Eval loop closure (weekly sweep runs eval_harness.py + self_correct.py reads results + improvement_injector surfaces brief at SessionStart + recall_ranker boosts eval-adjacent tags)
+- [ ] Dynamic capability synthesis (agent scaffolds a new tool at runtime via tool_factory.py, validates against tests, auto-promotes to skills/ after approval)
+- [ ] Persistent task DAG (/goal state survives crashes; subtasks with dependencies persist; RALPH loop resumes from last checkpoint)
+- [ ] Multi-agent fan-out coordination (Workflow tool orchestration with parallel subagents, merge outputs, surface disagreements)
+- [ ] Session branching (fork a session at any message, explore alternatives in parallel windows, diff outcomes)
+- [ ] LLM-as-judge eval grader / Tier C (rubric-based judging for cases deterministic checks can't decide; temp 0, fixed seed, majority-of-3)
+- [ ] Proactive monitoring daemon (long-running watcher for test failures, stale deps, security advisories; auto-fixes or alerts)
+- [x] Voice output / TTS (AVSpeechSynthesizer reads assistant responses aloud; companion to voice input)
+
 ## Tier 4 — Advanced (SHIPPED)
 
 - [x] Worktree-aware harness (scopes mapped via `git rev-parse --absolute-git-dir`; 8 hook scripts route through `worktree_scope.resolve_scope`)

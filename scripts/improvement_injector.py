@@ -21,8 +21,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
+EVAL_RESULTS_PATH = Path.home() / ".ncode" / "eval" / "results.jsonl"
 MAX_AGE_DAYS = 14
 MAX_LINES = 12
+EVAL_STALE_SECONDS = 7 * 86400
 
 
 def emit(context):
@@ -50,21 +52,96 @@ def latest_entry():
     return entry, age_days
 
 
+def latest_eval_summary():
+    """One-line eval brief from ~/.ncode/eval/results.jsonl.
+
+    Returns None if no runs in the last EVAL_STALE_SECONDS or on any error.
+    Format: "Last eval: 12/15 cases passed. Regressed: qual-x (0.4→0.9)."
+    """
+    if not EVAL_RESULTS_PATH.exists():
+        return None
+    try:
+        with open(EVAL_RESULTS_PATH, encoding="utf-8") as fp:
+            lines = [ln.strip() for ln in fp if ln.strip()]
+    except OSError:
+        return None
+
+    now = datetime.now(timezone.utc).timestamp()
+    runs_by_case = {}
+    latest_ts = 0.0
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ft = r.get("finishedAtISO", "")
+        try:
+            ts = datetime.fromisoformat(ft.replace("Z", "+00:00")).timestamp()
+        except (ValueError, TypeError):
+            continue
+        if now - ts > EVAL_STALE_SECONDS:
+            continue
+        cid = r.get("caseId", "")
+        if not cid:
+            continue
+        runs_by_case.setdefault(cid, []).append((ts, r))
+        latest_ts = max(latest_ts, ts)
+
+    if not runs_by_case:
+        return None
+
+    # Use the latest run per case
+    latest_runs = []
+    for cid, runs in runs_by_case.items():
+        runs.sort(key=lambda x: x[0])
+        latest_runs.append(runs[-1][1])
+
+    total = len(latest_runs)
+    passed = sum(1 for r in latest_runs if r.get("passed"))
+
+    # Detect regressions: latest score < (median - 0.2)
+    regressed = []
+    for cid, runs in runs_by_case.items():
+        if len(runs) < 4:
+            continue
+        history = [r for _, r in runs[:-1] if not r.get("errorMessage")]
+        if len(history) < 3:
+            continue
+        scores = sorted(float(r.get("score") or 0.0) for r in history)
+        mid = len(scores) // 2
+        baseline = scores[mid] if len(scores) % 2 == 1 else (scores[mid-1] + scores[mid]) / 2
+        latest_score = float(runs[-1][1].get("score") or 0.0)
+        if latest_score < baseline - 0.2:
+            regressed.append(f"{cid} ({latest_score:.2f}→{baseline:.2f})")
+
+    brief = f"Last eval: {passed}/{total} cases passed."
+    if regressed:
+        brief += f" Regressed: {', '.join(regressed[:3])}."
+    return brief
+
+
 def main():
     try:
         payload = json.load(sys.stdin)
     except Exception:
         return
 
-    entry, age_days = latest_entry()
-    if not entry:
-        return
+    parts = []
 
-    summary = "\n".join(entry.split("\n")[:MAX_LINES])
-    emit(
-        f"improvements.md: latest self-correction (age {int(age_days)}d). "
-        f"Open items — act via /improve:\n{summary}"
-    )
+    entry, age_days = latest_entry()
+    if entry:
+        summary = "\n".join(entry.split("\n")[:MAX_LINES])
+        parts.append(
+            f"improvements.md: latest self-correction (age {int(age_days)}d). "
+            f"Open items — act via /improve:\n{summary}"
+        )
+
+    eval_brief = latest_eval_summary()
+    if eval_brief:
+        parts.append(f"eval: {eval_brief}")
+
+    if parts:
+        emit("\n\n".join(parts))
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ import re
 import subprocess
 import sys
 import worktree_scope
+from datetime import datetime, timezone
 from pathlib import Path
 
 CACHE_ROOT = os.path.expanduser(
@@ -70,12 +71,61 @@ def extract_query(prompt):
     return " ".join(keywords[:8])[:MAX_QUERY_LEN]
 
 
+def _recent_failed_eval_cases(max_age_seconds=7 * 86400):
+    """Return set of caseIds whose latest run failed within max_age_seconds.
+
+    Empty set if results.jsonl is missing or no recent failures.
+    """
+    path = Path.home() / ".ncode" / "eval" / "results.jsonl"
+    if not path.exists():
+        return set()
+    try:
+        with open(path, encoding="utf-8") as fp:
+            lines = [ln.strip() for ln in fp if ln.strip()]
+    except OSError:
+        return set()
+
+    runs_by_case = {}
+    now = datetime.now(timezone.utc).timestamp()
+    for line in lines:
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ft = r.get("finishedAtISO", "")
+        try:
+            ts = datetime.fromisoformat(ft.replace("Z", "+00:00")).timestamp()
+        except (ValueError, TypeError):
+            continue
+        if now - ts > max_age_seconds:
+            continue
+        cid = r.get("caseId", "")
+        if cid:
+            runs_by_case.setdefault(cid, []).append(r)
+
+    failed = set()
+    for cid, runs in runs_by_case.items():
+        runs.sort(key=lambda x: x.get("finishedAtISO", ""))
+        if runs[-1].get("errorMessage"):
+            continue  # didn't really run, don't boost
+        if not runs[-1].get("passed"):
+            failed.add(cid)
+    return failed
+
+
 def rank(records):
-    """Failure first, then success/high-confidence, then the rest (most recent)."""
+    """Failure first, then eval-adjacent boosts, then success/high-confidence, then rest."""
+    failed_eval_cases = _recent_failed_eval_cases()
+
     def key(rec):
         tags = rec.get("tags") or []
         conf = rec.get("confidence") or ""
         ts = rec.get("created_at") or rec.get("updated_at") or ""
+        body = rec.get("body") or ""
+
+        # Eval-adjacent: tags or body mention a recently-failed caseId
+        if any(cid in tags or cid in body for cid in failed_eval_cases):
+            return (-1, ts)
         if "failure" in tags:
             return (0, ts)
         if "success" in tags or conf == "high":

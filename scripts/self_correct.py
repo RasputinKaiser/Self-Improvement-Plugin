@@ -170,6 +170,60 @@ def find_never_recalled(mf, records):
             and (rec.get("created_at") or "")[:10] < "2026-06-27"][:5]
 
 
+def find_eval_regressions(results_path=None, baseline_runs=3, threshold=0.2):
+    """Detect eval regressions by comparing each case's latest score to its baseline.
+
+    Reads ~/.ncode/eval/results.jsonl. For each case_id:
+      - Skip runs with errorMessage (they didn't really complete).
+      - Need at least `baseline_runs + 1` runs to compute a baseline.
+      - Baseline = median score of all runs except the most recent.
+      - Regression = latest_score < (baseline - threshold).
+    Returns list of {caseId, baseline, latest, drop, latestRunAt} dicts.
+    """
+    path = results_path or (NCODE_DIR / "eval" / "results.jsonl")
+    if not path.exists():
+        return []
+
+    runs_by_case = {}
+    with open(path, encoding="utf-8") as fp:
+        for line in fp:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if r.get("errorMessage"):
+                continue
+            cid = r.get("caseId", "")
+            if not cid:
+                continue
+            runs_by_case.setdefault(cid, []).append(r)
+
+    regressions = []
+    for cid, runs in runs_by_case.items():
+        runs.sort(key=lambda x: x.get("finishedAtISO", ""))
+        if len(runs) < baseline_runs + 1:
+            continue
+        history = runs[:-1]
+        latest = runs[-1]
+        scores = [float(r.get("score") or 0.0) for r in history]
+        scores.sort()
+        mid = len(scores) // 2
+        baseline = scores[mid] if len(scores) % 2 == 1 else (scores[mid-1] + scores[mid]) / 2
+        latest_score = float(latest.get("score") or 0.0)
+        if latest_score < baseline - threshold:
+            regressions.append({
+                "caseId": cid,
+                "baseline": baseline,
+                "latest": latest_score,
+                "drop": baseline - latest_score,
+                "latestRunAt": latest.get("finishedAtISO", ""),
+            })
+    return regressions
+
+
 def build_report(records, since_str):
     """Assemble markdown report sections. Starts with H2 ## Self-correction."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -226,6 +280,18 @@ def build_report(records, since_str):
         sections.append(f"### Stale scripts (no edits in 60d) — {len(stale)}")
         for name in stale:
             sections.append(f"- {name}")
+        sections.append("")
+
+    eval_regs = find_eval_regressions()
+    if eval_regs:
+        sections.append(f"### Eval regressions — {len(eval_regs)}")
+        for r in eval_regs:
+            sections.append(
+                f"- **{r['caseId']}** — baseline {r['baseline']:.2f} → "
+                f"latest {r['latest']:.2f} (drop {r['drop']:.2f}) at {r['latestRunAt']}"
+            )
+        sections.append("**Action**: investigate the regressed case; check model config, "
+                        "recent changes, or tighten the grading rubric.")
         sections.append("")
 
     sections.append("### Recommended actions")
