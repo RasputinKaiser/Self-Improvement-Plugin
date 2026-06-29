@@ -1410,6 +1410,116 @@ def install_cron_plist_present_after_install():
     assert r.returncode == 0, "launchctl doesn't list the cron job — not loaded?"
 
 
+def fan_out_prepare_writes_handoff_per_slice():
+    """fan_out.py prepare writes one HANDOFF.md per slice + run.json state."""
+    import shutil
+    from pathlib import Path
+    run_dir_snapshot = list((Path.home() / ".ncode/fan_out").glob("*")) if (Path.home() / ".ncode/fan_out").exists() else []
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "fan_out.py"), "prepare",
+         "--parent", "Test parent objective",
+         "--slices", "Slice A", "Slice B"],
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"prepare failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert d["ok"] is True
+    assert d["sliceCount"] == 2
+    run_id = d["runId"]
+    run_dir = Path.home() / ".ncode/fan_out" / run_id
+    assert (run_dir / "run.json").exists(), "run.json missing"
+    state = json.loads((run_dir / "run.json").read_text())
+    assert state["parent"] == "Test parent objective"
+    assert len(state["slices"]) == 2
+    for s in state["slices"]:
+        slice_dir = Path(s["cwd"])
+        assert (slice_dir / "HANDOFF.md").exists(), f"HANDOFF.md missing for {s['id']}"
+    # Cleanup test run
+    shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def fan_out_parse_agent_response_handles_slice_diff_lesson():
+    """parse_agent_response extracts SLICE/DIFF/LESSON from agent text."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import fan_out as fo
+    sample = """Some preamble text.
+
+SLICE: I refactored the auth module's type system.
+DIFF:
+--- a/types.swift
++++ b/types.swift
+@@ -1,3 +1,4 @@
+ struct User { let id: UUID }
++extension User { var displayName: String { "" } }
+LESSON: Coherent type IDs prevent namespace collisions across modules.
+"""
+    result = fo.parse_agent_response(sample)
+    assert result["blocked"] is False
+    assert result["slice"] is not None
+    assert "refactored the auth" in result["slice"]
+    assert result["diff"] is not None
+    assert "types.swift" in result["diff"]
+    assert result["lesson"] is not None
+    assert "Coherent type IDs" in result["lesson"]
+
+
+def fan_out_parse_agent_response_handles_blocked():
+    """parse_agent_response flags BLOCKED responses correctly."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import fan_out as fo
+    sample = "BLOCKED: missing input file from slice_1\nDIFF:\n(no changes)"
+    result = fo.parse_agent_response(sample)
+    assert result["blocked"] is True
+    assert "missing input file" in result["blockedReason"]
+    assert result["slice"] is None  # BLOCKED short-circuits SLICE extraction
+
+
+def fan_out_ingest_updates_run_state():
+    """fan_out.py ingest parses responses and updates run.json."""
+    import shutil
+    from pathlib import Path
+    # Prepare a fresh run
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "fan_out.py"), "prepare",
+         "--parent", "Test ingest", "--slices", "S1", "S2"],
+        capture_output=True, text=True, timeout=10
+    )
+    run_id = json.loads(r.stdout)["runId"]
+    run_dir = Path.home() / ".ncode/fan_out" / run_id
+    try:
+        outputs = json.dumps([
+            {"sliceId": "slice_1", "response": "SLICE: delivered S1\nDIFF: patch\nLESSON: keep it simple"},
+            {"sliceId": "slice_2", "response": "BLOCKED: dependency not ready"},
+        ])
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "fan_out.py"), "ingest",
+             "--run-id", run_id, "--outputs", outputs],
+            capture_output=True, text=True, timeout=10
+        )
+        assert r.returncode == 0, f"ingest failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["updated"] == 2
+        assert "1 done" in d["summary"]
+        assert "1 blocked" in d["summary"]
+        # Verify state was persisted
+        state = json.loads((run_dir / "run.json").read_text())
+        assert state["slices"][0]["status"] == "done"
+        assert state["slices"][0]["lesson"] == "keep it simple"
+        assert state["slices"][1]["status"] == "blocked"
+        assert "dependency not ready" in state["slices"][1]["blockedReason"]
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def smoke_fan_out():
+    """fan_out.py --help exits 0 (script_smoke.py catches syntax errors at edit time)."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "fan_out.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"fan_out.py --help failed: {r.stderr}"
+
+
 def eval_llm_judge_mock_response_parses():
     """eval_llm_judge.py with --mock-response PASS / FAIL parses correctly."""
     import tempfile
@@ -1529,6 +1639,7 @@ SUITES = {
         case("weekly_sweep", smoke_weekly_sweep),
         case("eval_llm_judge", smoke_eval_llm_judge),
         case("monitor_daemon", smoke_monitor_daemon),
+        case("fan_out", smoke_fan_out),
     ],
     "monitor": [
         case("json_emits_issues", monitor_daemon_json_emits_issues_list),
@@ -1536,6 +1647,12 @@ SUITES = {
     "install_cron": [
         case("install_cron_flag_recognized", install_sh_install_cron_flag_recognized),
         case("install_cron_plist_present_after_install", install_cron_plist_present_after_install),
+    ],
+    "fan_out": [
+        case("prepare_writes_handoff_per_slice", fan_out_prepare_writes_handoff_per_slice),
+        case("parse_handles_slice_diff_lesson", fan_out_parse_agent_response_handles_slice_diff_lesson),
+        case("parse_handles_blocked", fan_out_parse_agent_response_handles_blocked),
+        case("ingest_updates_run_state", fan_out_ingest_updates_run_state),
     ],
     "tool_factory": [
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),
