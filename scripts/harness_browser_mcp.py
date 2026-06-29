@@ -67,6 +67,29 @@ TOOLS = [
             "required": ["selector"],
         },
     },
+    {
+        "name": "browser_click",
+        "description": "Click an element matching a CSS selector. Scrolls into view first, dispatches synthetic click. Returns {matched, clicked, rect}. A yellow highlight ring appears at the click location for ~1.5s.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string", "description": "CSS selector for the element to click"},
+            },
+            "required": ["selector"],
+        },
+    },
+    {
+        "name": "browser_screenshot",
+        "description": "Capture a screenshot of the embedded WKWebView. Returns {path, width, height, b64, b64_truncated}. The PNG is written to ~/Library/Caches/HarnessApp/screenshots/. If base64 < 200KB, it's included inline for vision-capable models. If larger, only the file path is returned and you should use browser_extract as a fallback.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string", "description": "Optional: CSS selector to scope the screenshot to a specific element (Phase 4 feature, currently full-page only)"},
+                "max_width": {"type": "number", "description": "Optional: maximum width in pixels. Image is scaled down if wider (default: no limit)"},
+            },
+            "required": [],
+        },
+    },
 ]
 
 # --------------- Socket client ---------------
@@ -159,11 +182,29 @@ def handle_tool_call(msg):
 
     if reply.get("ok"):
         result = reply.get("result", {})
-        # Extract the inner value for a clean text response
         if isinstance(result, dict):
-            if "url" in result and "title" in result and "status" in result:
-                # browser_navigate result
-                text = f"URL: {result['url']}\nTitle: {result['title']}\nStatus: {result['status']}"
+            if "path" in result and "width" in result and "height" in result:
+                # browser_screenshot result
+                path = result.get("path", "")
+                b64 = result.get("b64", "")
+                truncated = result.get("b64_truncated", False)
+                w = result.get("width", 0)
+                h = result.get("height", 0)
+                text = f"Screenshot saved: {path}\nSize: {w}x{h}px"
+                if truncated:
+                    text += f"\nBase64 omitted (>200KB) — use browser_extract for text fallback"
+                elif b64:
+                    text += f"\nBase64: {b64[:100]}... ({len(b64)} chars)"
+                # Include full b64 if present — vision-capable models can use it
+                if b64 and not truncated:
+                    text = f"Screenshot: {path} ({w}x{h})\n```image/png\n{b64}\n```"
+            elif "matched" in result and "clicked" in result:
+                # browser_click result
+                matched = result.get("matched", False)
+                rect = result.get("rect")
+                text = f"Clicked: {matched}"
+                if rect:
+                    text += f" at ({rect.get('x',0):.0f}, {rect.get('y',0):.0f}) {rect.get('w',0):.0f}x{rect.get('h',0):.0f}"
             elif "html" in result and "text" in result:
                 # browser_extract result
                 text = f"Count: {result.get('count', 0)}\n\nText:\n{result['text'][:2000]}"
@@ -172,6 +213,9 @@ def handle_tool_call(msg):
             elif "result" in result:
                 # browser_eval result
                 text = str(result["result"])
+            elif "url" in result and "title" in result and "status" in result:
+                # browser_navigate result
+                text = f"URL: {result['url']}\nTitle: {result['title']}\nStatus: {result['status']}"
             elif "url" in result:
                 text = result["url"]
             elif "title" in result:
