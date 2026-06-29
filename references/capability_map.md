@@ -51,7 +51,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
 - [ ] Evaluation harness (run benchmark cases against the current model config)
 - [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
-- [ ] Voice input (hold-to-talk dictation → bridge.send())
+- [x] Voice input (hold-to-talk via SFSpeechRecognizer + AVAudioEngine)
 - [ ]Scheduled task visualizer (cron jobs with next-fire timestamps)
 
 ## Capability areas for gap analysis
