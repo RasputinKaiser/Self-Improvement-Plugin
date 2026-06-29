@@ -49,10 +49,10 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Skill marketplace mirror (browse/installed skills from the app)
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
-- [ ] Evaluation harness (run benchmark cases against the current model config) — deferred per separate project
+- [~] Evaluation harness (run benchmark cases against the current model config) — Phase 1 shipped: EvalCase/EvalCaseStore/EvalGrader/EvalPane in Swift; Phase 2 (EvalRunner + results JSONL + pass/fail viz) pending
 - [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
 - [x] Voice input (hold-to-talk via SFSpeechRecognizer + AVAudioEngine)
-- [ ] Scheduled task visualizer (cron jobs with next-fire timestamps)
+- [x] Scheduled task visualizer (native 5-field cron parser with next-fire + human schedule)
 
 ## Capability areas for gap analysis
 
