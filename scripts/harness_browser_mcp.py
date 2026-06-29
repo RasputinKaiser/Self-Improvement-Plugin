@@ -90,6 +90,18 @@ TOOLS = [
             "required": [],
         },
     },
+    {
+        "name": "browser_see",
+        "description": "Screenshot the embedded WKWebView and describe it using a local VLM. Closes the vision loop for models without image input. Takes a screenshot, passes it to the local vision model, and returns the text description. Use this when you need to visually understand what's on the page (e.g. after navigating, to verify a UI change, to read text from an image). First call may take 15-20s to boot the VLM server; subsequent calls are ~5-10s.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "question": {"type": "string", "description": "Question about the screenshot (e.g. 'What buttons are visible?' or 'Describe the page layout'). Default: general description + text transcription."},
+                "selector": {"type": "string", "description": "Optional: CSS selector to scope the screenshot to a specific element"},
+            },
+            "required": [],
+        },
+    },
 ]
 
 # --------------- Socket client ---------------
@@ -168,11 +180,16 @@ def write_mcp_error(msg_id, code, message):
 
 
 def handle_tool_call(msg):
-    """Handle tools/call — dispatch to the app's socket."""
+    """Handle tools/call — dispatch to the app's socket or local VLM."""
     msg_id = msg.get("id")
     params = msg.get("params", {})
     tool_name = params.get("name")
     args = params.get("arguments", {})
+
+    if tool_name == "browser_see":
+        # Chain: screenshot via socket → VLM via see.py
+        _handle_browser_see(msg_id, args)
+        return
 
     if tool_name not in [t["name"] for t in TOOLS]:
         write_mcp_error(msg_id, -32601, f"Unknown tool: {tool_name}")
@@ -234,6 +251,58 @@ def handle_tool_call(msg):
             "content": [{"type": "text", "text": f"Browser error: {err}"}],
             "isError": True,
         })
+
+
+def _handle_browser_see(msg_id, args):
+    """Chain: take screenshot via socket, then describe via local VLM."""
+    # Step 1: Take screenshot
+    shot_reply = send_command("browser_screenshot", {
+        "selector": args.get("selector", ""),
+    })
+    if not shot_reply.get("ok"):
+        err = shot_reply.get("error", "screenshot failed")
+        write_mcp_response(msg_id, {
+            "content": [{"type": "text", "text": f"Screenshot failed: {err}"}],
+            "isError": True,
+        })
+        return
+
+    result = shot_reply.get("result", {})
+    screenshot_path = result.get("path", "")
+    if not screenshot_path:
+        write_mcp_response(msg_id, {
+            "content": [{"type": "text", "text": "Screenshot produced no file path"}],
+            "isError": True,
+        })
+        return
+
+    # Step 2: Run VLM on the screenshot
+    see_script = os.path.expanduser("~/.ncode/vision/see.py")
+    question = args.get("question", "")
+
+    cmd = ["python3", see_script, screenshot_path]
+    if question:
+        cmd += ["-q", question]
+
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        vlm_output = proc.stdout.strip()
+        if not vlm_output and proc.stderr:
+            vlm_output = f"(VLM stderr: {proc.stderr[:200]})"
+        if not vlm_output:
+            vlm_output = "(VLM returned no output)"
+    except subprocess.TimeoutExpired:
+        vlm_output = f"(VLM timed out after 60s. Screenshot saved at: {screenshot_path})"
+    except FileNotFoundError:
+        vlm_output = f"(see.py not found at {see_script}. Screenshot saved at: {screenshot_path})"
+    except Exception as e:
+        vlm_output = f"(VLM error: {e}. Screenshot saved at: {screenshot_path})"
+
+    text = f"Screenshot: {screenshot_path} ({result.get('width',0)}x{result.get('height',0)}px)\n\nVLM description:\n{vlm_output}"
+    write_mcp_response(msg_id, {
+        "content": [{"type": "text", "text": text}],
+        "isError": False,
+    })
 
 
 def main():
