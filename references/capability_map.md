@@ -45,7 +45,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 
 - [ ] Worktree-aware harness (hooks fire correctly inside `--worktree` sessions)
 - [x] Cost/budget tracking per session with real-time warnings
-- [ ] Prompt template library + hot-swap
+- [x] Prompt template library + hot-swap
 - [x] Skill marketplace mirror (browse/installed skills from the app)
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
