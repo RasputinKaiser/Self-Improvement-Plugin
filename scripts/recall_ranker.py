@@ -28,6 +28,7 @@ import os
 import re
 import subprocess
 import sys
+import worktree_scope
 from pathlib import Path
 
 CACHE_ROOT = os.path.expanduser(
@@ -103,7 +104,7 @@ def main():
     if not mf:
         return
 
-    cwd = payload.get("cwd") or os.getcwd()
+    cwd = worktree_scope.resolve_scope(payload.get("cwd") or os.getcwd())
     try:
         r = subprocess.run(
             ["python3", mf, "search",
@@ -152,7 +153,7 @@ if __name__ == "__main__":
             sys.exit(0)
         idx = sys.argv.index("--query")
         q = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else ""
-        cwd = os.getcwd()
+        cwd = worktree_scope.resolve_scope(os.getcwd())
         try:
             r = subprocess.run(
                 ["python3", mf, "search", "--query", q, "--scope", cwd,

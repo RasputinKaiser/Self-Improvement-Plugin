@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -52,7 +53,7 @@ def main():
     if not mf:
         return
 
-    cwd = payload.get("cwd") or os.getcwd()
+    cwd = worktree_scope.resolve_scope(payload.get("cwd") or os.getcwd())
 
     # 1. Doctor check
     doctor_issues = []

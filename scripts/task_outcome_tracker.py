@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import sys
+import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -210,7 +211,7 @@ def main():
             return
         transcript = payload.get("transcript_path", "")
         session_id = payload.get("session_id", "unknown")
-        cwd = payload.get("cwd") or os.getcwd()
+        cwd = worktree_scope.resolve_scope(payload.get("cwd") or os.getcwd())
         record_outcome(transcript, session_id, cwd)
 
 

@@ -886,6 +886,143 @@ def goal_state_set_status_complete_cycle():
     d = json.loads(r.stdout)
     assert d["ok"] is True
 
+
+# --- Worktree scope resolver ---
+
+
+class _FakeGitRunner:
+    """Deterministic git runner for unit tests — no subprocesses spawned."""
+
+    def __init__(self, common_dir_output="", returncode=0):
+        self.common_dir_output = common_dir_output
+        self.returncode = returncode
+        self.call_count = 0
+
+    def __call__(self, cwd, *args):
+        self.call_count += 1
+        return subprocess.CompletedProcess(
+            args=["git", *args],
+            returncode=self.returncode,
+            stdout=self.common_dir_output,
+            stderr="",
+        )
+
+
+def _import_worktree_scope():
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import worktree_scope
+    return worktree_scope
+
+
+def worktree_resolve_scope_identity_on_non_git():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(common_dir_output="", returncode=128)
+    result = wts.resolve_scope("/tmp/worktree-test-identity", runner=runner)
+    assert result == str(Path("/tmp/worktree-test-identity").resolve()), \
+        f"expected resolved cwd, got {result}"
+
+
+def worktree_is_worktree_false_outside_git():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(common_dir_output="", returncode=128)
+    assert wts.is_worktree("/tmp/some-non-git-path", runner=runner) is False
+
+
+def worktree_is_worktree_true_for_linked_worktree():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(common_dir_output="/repo/.git/worktrees/wt-1")
+    assert wts.is_worktree("/repo/wt-1", runner=runner) is True
+
+
+def worktree_main_root_returns_main_repo_root():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(
+        common_dir_output="/Users/me/Code/harness-app/.git/worktrees/wt-abc"
+    )
+    main = wts.worktree_main_root(
+        "/Users/me/Code/harness-app/checkouts/wt-abc", runner=runner
+    )
+    assert main is not None
+    assert main.name == "harness-app", f"expected main repo root, got {main}"
+
+
+def worktree_cache_hit_avoids_second_git_call():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(common_dir_output="", returncode=128)
+    cwd = "/tmp/worktree-test-cache"
+    wts.resolve_scope(cwd, runner=runner)
+    first = runner.call_count
+    wts.resolve_scope(cwd, runner=runner)
+    assert runner.call_count == first, \
+        f"expected no second git call, got {runner.call_count - first} extra"
+
+
+def worktree_env_override_forces_identity():
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    runner = _FakeGitRunner(common_dir_output="/repo/.git/worktrees/wt-1")
+    old = os.environ.get("HARNESS_NO_WORKTREE_REMAP")
+    os.environ["HARNESS_NO_WORKTREE_REMAP"] = "1"
+    try:
+        result = wts.resolve_scope("/repo/wt-1", runner=runner)
+    finally:
+        if old is None:
+            os.environ.pop("HARNESS_NO_WORKTREE_REMAP", None)
+        else:
+            os.environ["HARNESS_NO_WORKTREE_REMAP"] = old
+    assert result == str(Path("/repo/wt-1").resolve()), \
+        f"override should return resolved input, got {result}"
+
+
+def behavior_worktree_round_trip_real_worktree():
+    """End-to-end: spawn a real git worktree, verify resolve_scope maps it.
+
+    The only test that runs actual `git` — proves the detector works against
+    real git output. ~50ms in a tempfile.
+    """
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    with tempfile.TemporaryDirectory() as tmp:
+        main = Path(tmp) / "main"
+        main.mkdir()
+        subprocess.run(["git", "init", str(main)], capture_output=True, check=True)
+        (main / "README.md").write_text("hello\n")
+        subprocess.run(
+            ["git", "-C", str(main), "add", "."],
+            capture_output=True, check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(main), "-c", "user.email=test@local",
+             "-c", "user.name=Test", "commit", "-m", "init"],
+            capture_output=True, check=True,
+        )
+        wt = Path(tmp) / "wt"
+        subprocess.run(
+            ["git", "-C", str(main), "worktree", "add", str(wt)],
+            capture_output=True, check=True,
+        )
+        assert wts.is_worktree(str(wt)), "real worktree should be detected"
+        resolved = wts.resolve_scope(str(wt))
+        assert Path(resolved).resolve() == main.resolve(), \
+            f"worktree scope {resolved} should map to main {main}, didn't"
+
+
+def behavior_normal_session_scope_unchanged():
+    """Regression guard: a non-worktree session's scope equals its cwd resolved."""
+    wts = _import_worktree_scope()
+    wts.clear_cache()
+    # Mock common-dir returns `<repo>/.git` (NOT a worktree marker)
+    runner = _FakeGitRunner(common_dir_output="/repo/.git")
+    result = wts.resolve_scope("/repo", runner=runner)
+    assert result == str(Path("/repo").resolve()), \
+        f"normal repo scope should be itself, got {result}"
+
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -953,6 +1090,8 @@ SUITES = {
         case("compact_lifecycle", behavior_compact_lifecycle),
         case("memory_loop", behavior_memory_loop),
         case("prompt_search_surfaces_relevant", behavior_prompt_search_surfaces_relevant),
+        case("worktree_round_trip_real_worktree", behavior_worktree_round_trip_real_worktree),
+        case("normal_session_scope_unchanged", behavior_normal_session_scope_unchanged),
     ],
     "smoke_coverage": [
         case("snapshot_harness", smoke_snapshot_harness),

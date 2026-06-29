@@ -41,18 +41,18 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Multi-agent orchestration dashboard (Agents pane)
 - [x] Plan approval UI (structured plan dialog with accept/reject/modify)
 
-## Tier 4 — Advanced (FUTURE)
+## Tier 4 — Advanced (PARTIAL — LAST GAP)
 
-- [ ] Worktree-aware harness (hooks fire correctly inside `--worktree` sessions)
+- [x] Worktree-aware harness (scopes mapped via `git rev-parse --absolute-git-dir`; 8 hook scripts route through `worktree_scope.resolve_scope`)
 - [x] Cost/budget tracking per session with real-time warnings
 - [x] Prompt template library + hot-swap
 - [x] Skill marketplace mirror (browse/installed skills from the app)
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
-- [ ] Evaluation harness (run benchmark cases against the current model config)
+- [ ] Evaluation harness (run benchmark cases against the current model config) — deferred per separate project
 - [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
 - [x] Voice input (hold-to-talk via SFSpeechRecognizer + AVAudioEngine)
-- [ ]Scheduled task visualizer (cron jobs with next-fire timestamps)
+- [ ] Scheduled task visualizer (cron jobs with next-fire timestamps)
 
 ## Capability areas for gap analysis
 

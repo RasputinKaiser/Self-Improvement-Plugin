@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import worktree_scope
 from pathlib import Path
 
 CACHE_ROOT = os.path.expanduser(
@@ -87,7 +88,7 @@ def main():
     if not mf:
         return
 
-    cwd = payload.get("cwd") or os.getcwd()
+    cwd = worktree_scope.resolve_scope(payload.get("cwd") or os.getcwd())
 
     try:
         r = subprocess.run(
