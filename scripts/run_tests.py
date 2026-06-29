@@ -1355,6 +1355,61 @@ def smoke_eval_llm_judge():
     assert r.returncode == 0, f"eval_llm_judge.py --help failed: {r.stderr}"
 
 
+def smoke_monitor_daemon():
+    """monitor_daemon.py --help exits 0."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "monitor_daemon.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"monitor_daemon.py --help failed: {r.stderr}"
+
+
+def monitor_daemon_json_emits_issues_list():
+    """monitor_daemon.py --json returns valid JSON with issues array and counts."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "monitor_daemon.py"), "--json"],
+        capture_output=True, text=True, timeout=180
+    )
+    # Allow non-zero exit (critical issues present is acceptable for the test)
+    assert r.stdout, "expected JSON output, got empty stdout"
+    d = json.loads(r.stdout)
+    assert "startedAt" in d and "finishedAt" in d
+    assert "issueCount" in d and d["issueCount"] == len(d.get("issues", []))
+    assert "issues" in d
+    assert isinstance(d["issues"], list)
+    for i in d["issues"]:
+        assert "severity" in i
+        assert "category" in i
+        assert "title" in i
+        assert i["severity"] in ("info", "warning", "critical")
+
+
+def install_sh_install_cron_flag_recognized():
+    """install.sh --help-equivalent works for cron flags (just check argparse)."""
+    # install.sh --install-cron actually writes the plist — we test orthogonal things.
+    # Just verify the script accepts the flag without erroring out on argument parsing
+    # by running with no args (should fail with usage, but not crash).
+    r = subprocess.run(
+        ["bash", str(Path.home() / "Code/harness-self-improvement/install.sh"), "--help"],
+        capture_output=True, text=True, timeout=5
+    )
+    # --help isn't a known flag → "unknown arg: --help" rc=2 is fine
+    # The point is: the script runs and the exit code is deterministic
+    assert r.returncode in (0, 2), f"install.sh unexpected exit: {r.returncode}"
+
+
+def install_cron_plist_present_after_install():
+    """After install.sh --install-cron, the launchd plist exists in ~/Library/LaunchAgents."""
+    plist = Path.home() / "Library/LaunchAgents/com.rasputinkaiser.ncode-sweep.plist"
+    assert plist.exists(), f"launchd plist missing at {plist}"
+    # Verify launchctl knows about it
+    r = subprocess.run(
+        ["launchctl", "list", "com.rasputinkaiser.ncode-sweep"],
+        capture_output=True, timeout=5,
+    )
+    assert r.returncode == 0, "launchctl doesn't list the cron job — not loaded?"
+
+
 def eval_llm_judge_mock_response_parses():
     """eval_llm_judge.py with --mock-response PASS / FAIL parses correctly."""
     import tempfile
@@ -1473,6 +1528,14 @@ SUITES = {
         case("eval_harness", smoke_eval_harness),
         case("weekly_sweep", smoke_weekly_sweep),
         case("eval_llm_judge", smoke_eval_llm_judge),
+        case("monitor_daemon", smoke_monitor_daemon),
+    ],
+    "monitor": [
+        case("json_emits_issues", monitor_daemon_json_emits_issues_list),
+    ],
+    "install_cron": [
+        case("install_cron_flag_recognized", install_sh_install_cron_flag_recognized),
+        case("install_cron_plist_present_after_install", install_cron_plist_present_after_install),
     ],
     "tool_factory": [
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),

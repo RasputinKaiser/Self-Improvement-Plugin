@@ -49,7 +49,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [ ] Multi-agent fan-out coordination (Workflow tool orchestration with parallel subagents, merge outputs, surface disagreements)
 - [ ] Session branching (fork a session at any message, explore alternatives in parallel windows, diff outcomes)
 - [ ] LLM-as-judge eval grader / Tier C (rubric-based judging for cases deterministic checks can't decide; temp 0, fixed seed, majority-of-3)
-- [ ] Proactive monitoring daemon (long-running watcher for test failures, stale deps, security advisories; auto-fixes or alerts)
+- [x] Proactive monitoring daemon (scripts/monitor_daemon.py — checks validator/tests/cron/deps/drift/disk; writes monitor_status.md + monitor_results.jsonl; WARNING+ appends to improvements.md)
 - [x] Voice output / TTS (AVSpeechSynthesizer reads assistant responses aloud; companion to voice input)
 
 ## Tier 4 — Advanced (SHIPPED)

@@ -108,6 +108,16 @@ def main():
     )
     results["self_correct"] = ok
 
+    # 4b. Proactive monitoring daemon (Tier 5 #7) — runs the same checks
+    # unattended. Writing to improvements.md is intentional (appends WARNING+
+    # items), so subsequent steps see them.
+    ok, _ = run_step(
+        "monitor_daemon.py",
+        ["python3", str(SCRIPTS_DIR / "monitor_daemon.py"), "--quiet"],
+        timeout=180,
+    )
+    results["monitor"] = ok
+
     # 5. Post-sweep snapshot
     ok, _ = run_step(
         "snapshot (post-sweep)",
