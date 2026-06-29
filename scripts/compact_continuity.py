@@ -85,6 +85,8 @@ def write_continuity_packet(session_id, cwd, files_changed, recent_commands, obj
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     path = CONTINUITY_DIR / f"{session_id}.md"
 
+    goal_block = _goal_block()
+
     lines = [
         f"# Continuity — {session_id[:8]} ({ts})",
         "",
@@ -93,8 +95,18 @@ def write_continuity_packet(session_id, cwd, files_changed, recent_commands, obj
         "## Objective",
         objective or "(no objective captured — check session log)",
         "",
-        f"## Changed files ({len(files_changed)})",
     ]
+
+    if goal_block:
+        lines.extend([
+            "## RALPH Goal (active)",
+            goal_block,
+            "",
+        ])
+
+    lines.extend([
+        f"## Changed files ({len(files_changed)})",
+    ])
     for fp in sorted(files_changed)[-MAX_RECENT_FILES:]:
         lines.append(f"- `{fp}`")
     if len(files_changed) > MAX_RECENT_FILES:
@@ -114,12 +126,60 @@ def write_continuity_packet(session_id, cwd, files_changed, recent_commands, obj
         "",
         "## Next",
         "Continue the objective. Re-read changed files before edits. Verify before claiming done.",
-        "",
     ])
+    if goal_block:
+        lines.append("Continue the RALPH goal — call `goal_state.py next` for the current subtask.")
+
+    lines.append("")
 
     content = "\n".join(lines)
     path.write_text(content, encoding="utf-8")
     return path
+
+
+def _goal_block():
+    """Read goal_state.json and return a short markdown block if a goal is active.
+
+    Returns None if no goal, goal is complete, or file is missing.
+    """
+    goal_path = Path.home() / ".ncode" / "goal_state.json"
+    if not goal_path.exists():
+        return None
+    try:
+        state = json.loads(goal_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    if state.get("status") != "active":
+        return None
+    objective = state.get("objective", "?")
+    subtasks = state.get("subtasks", [])
+    if not subtasks:
+        return f"**objective**: {objective}\n(no subtasks — work toward the objective directly)"
+
+    done = sum(1 for s in subtasks if s.get("status") == "done")
+    failed = sum(1 for s in subtasks if s.get("status") == "failed")
+    pending = sum(1 for s in subtasks if s.get("status") == "pending")
+    total = len(subtasks)
+
+    current = None
+    for st in subtasks:
+        if st.get("status") == "pending":
+            current = st
+            break
+
+    lines = [
+        f"**objective**: {objective}",
+        f"**progress**: {done}/{total} done, {failed} failed, {pending} pending",
+    ]
+    if current:
+        lines.append(f"**current subtask**: `{current.get('id')}` {current.get('description', '')}")
+        lines.append("")
+        lines.append("Next subtask in queue:")
+        lines.append(f"- `{current.get('id')}` — {current.get('description', '')}")
+    else:
+        lines.append("")
+        lines.append("_All subtasks done — verify the objective is genuinely complete, then `goal_state.py complete`._")
+    return "\n".join(lines)
 
 
 def main():

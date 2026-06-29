@@ -13,6 +13,7 @@ Usage:
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -837,54 +838,189 @@ def brainstorm_py_returns_gaps():
 
 # --- goal_state (Phase 4) ---
 
+def _backup_goal_state():
+    """Snapshot ~/.ncode/goal_state.json so tests can restore it after destroying."""
+    src = Path.home() / ".ncode" / "goal_state.json"
+    if not src.exists():
+        return None
+    backup = Path(tempfile.gettempdir()) / f"goal_state_backup_{os.getpid()}.json"
+    try:
+        shutil.copy(src, backup)
+        return backup
+    except OSError:
+        return None
+
+
+def _restore_goal_state(backup):
+    """Restore goal_state.json from a backup (or delete if backup is None)."""
+    src = Path.home() / ".ncode" / "goal_state.json"
+    if backup is None:
+        if src.exists():
+            src.unlink()
+        return
+    try:
+        shutil.copy(backup, src)
+    except OSError:
+        pass
+    finally:
+        try:
+            backup.unlink()
+        except OSError:
+            pass
+
+
 def goal_state_set_status_complete_cycle():
     """goal_state: set → status → complete → clear cycle."""
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "set", "Test goal: write 3 files"],
-        capture_output=True, text=True, timeout=5
-    )
-    assert r.returncode == 0, f"set failed: {r.stderr}"
-    d = json.loads(r.stdout)
-    assert d["ok"] is True
-    assert d["objective"] == "Test goal: write 3 files"
-    assert d["status"] == "active"
+    backup = _backup_goal_state()
+    try:
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "set", "Test goal: write 3 files"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"set failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["ok"] is True
+        assert d["objective"] == "Test goal: write 3 files"
+        assert d["status"] == "active"
 
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "status"],
-        capture_output=True, text=True, timeout=5
-    )
-    assert r.returncode == 0, f"status failed: {r.stderr}"
-    d = json.loads(r.stdout)
-    assert d["objective"] == "Test goal: write 3 files"
-    assert d["status"] == "active"
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "status"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"status failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["objective"] == "Test goal: write 3 files"
+        assert d["status"] == "active"
 
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
-        capture_output=True, timeout=5
-    )
-    assert r.returncode == 0, f"is-active should be exit 0 when goal active"
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
+            capture_output=True, timeout=5
+        )
+        assert r.returncode == 0, f"is-active should be exit 0 when goal active"
 
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "complete"],
-        capture_output=True, text=True, timeout=5
-    )
-    assert r.returncode == 0, f"complete failed: {r.stderr}"
-    d = json.loads(r.stdout)
-    assert d["status"] == "complete"
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "complete"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"complete failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["status"] == "complete"
 
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
-        capture_output=True, timeout=5
-    )
-    assert r.returncode == 1, f"is-active should be exit 1 when goal complete"
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "is-active"],
+            capture_output=True, timeout=5
+        )
+        assert r.returncode == 1, f"is-active should be exit 1 when goal complete"
 
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "goal_state.py"), "clear"],
-        capture_output=True, text=True, timeout=5
-    )
-    assert r.returncode == 0, f"clear failed: {r.stderr}"
-    d = json.loads(r.stdout)
-    assert d["ok"] is True
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "clear"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"clear failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["ok"] is True
+    finally:
+        _restore_goal_state(backup)
+
+
+def goal_state_subtask_dag_cycle():
+    """goal_state: set → add-subtask × 2 → next → complete-subtask → next → all done."""
+    backup = _backup_goal_state()
+    try:
+        subprocess.run(["python3", str(SCRIPTS_DIR / "goal_state.py"), "set", "DAG test"],
+                        capture_output=True, timeout=5)
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "add-subtask", "First step"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0
+        st1 = json.loads(r.stdout)["subtask"]
+        assert st1["id"] == "st-1"
+        assert st1["status"] == "pending"
+
+        subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "add-subtask", "Second step"],
+            capture_output=True, timeout=5
+        )
+
+        # next should give us st-1 (first pending)
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "next"],
+            capture_output=True, text=True, timeout=5
+        )
+        d = json.loads(r.stdout)
+        assert d["ok"] is True
+        assert d["subtask"]["id"] == "st-1"
+
+        # complete st-1
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "complete-subtask", "st-1"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0
+        assert json.loads(r.stdout)["subtask"]["status"] == "done"
+
+        # next should now give st-2
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "next"],
+            capture_output=True, text=True, timeout=5
+        )
+        d = json.loads(r.stdout)
+        assert d["subtask"]["id"] == "st-2"
+
+        # complete st-2
+        subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "complete-subtask", "st-2"],
+            capture_output=True, timeout=5
+        )
+
+        # next should report all done
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "next"],
+            capture_output=True, text=True, timeout=5
+        )
+        d = json.loads(r.stdout)
+        assert d.get("allDone") is True, f"expected allDone, got: {d}"
+
+        # progress should show 2/2 done
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "progress"],
+            capture_output=True, text=True, timeout=5
+        )
+        d = json.loads(r.stdout)
+        assert "2/2 subtasks done" in d["summary"], f"expected progress summary, got: {d}"
+    finally:
+        _restore_goal_state(backup)
+
+
+def goal_state_fail_subtask_records_reason():
+    """goal_state: fail-subtask sets status=failed and persists failureReason."""
+    backup = _backup_goal_state()
+    try:
+        subprocess.run(["python3", str(SCRIPTS_DIR / "goal_state.py"), "set", "Fail test"],
+                        capture_output=True, timeout=5)
+        subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "add-subtask", "Will fail"],
+            capture_output=True, timeout=5
+        )
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "fail-subtask", "st-1", "blocked by deps"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"fail-subtask failed: {r.stderr}"
+        st = json.loads(r.stdout)["subtask"]
+        assert st["status"] == "failed"
+        assert st["failureReason"] == "blocked by deps"
+
+        # progress should report 1 failed
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"), "progress"],
+            capture_output=True, text=True, timeout=5
+        )
+        d = json.loads(r.stdout)
+        assert "1 failed" in d["summary"]
+    finally:
+        _restore_goal_state(backup)
 
 
 # --- Worktree scope resolver ---
@@ -1259,6 +1395,8 @@ SUITES = {
     ],
     "goal_state": [
         case("set_status_complete_cycle", goal_state_set_status_complete_cycle),
+        case("subtask_dag_cycle", goal_state_subtask_dag_cycle),
+        case("fail_subtask_records_reason", goal_state_fail_subtask_records_reason),
     ],
     "eval_loop": [
         case("regression_detected_when_latest_drops", eval_regression_detected_when_latest_drops),
