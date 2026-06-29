@@ -50,7 +50,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
 - [ ] Evaluation harness (run benchmark cases against the current model config)
-- [ ] Telemetry dashboard (os.Logger events visualized over time)
+- [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
 - [ ] Voice input (hold-to-talk dictation → bridge.send())
 - [ ]Scheduled task visualizer (cron jobs with next-fire timestamps)
 
