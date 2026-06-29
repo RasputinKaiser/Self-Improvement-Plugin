@@ -34,7 +34,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 
 - [x] Agent definitions (4 subagents with model:inherit)
 - [x] Slash command surface (7 commands + /brainstorm = 8)
-- [ ] In-app browser USE (the agent can navigate/click/extract from WKWebView)
+- [x] In-app browser USE (the agent can navigate/click/extract from WKWebView)
 - [ ] Vision (screenshot capture + VLM analysis of what's on screen)
 - [ ] Computer use (mac-cua click/type/scroll integration from the app)
 - [ ] Live session attach (bridge to an existing terminal-launched session)
