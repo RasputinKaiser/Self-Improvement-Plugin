@@ -1,6 +1,13 @@
 # Self-Improvement-Plugin
 
+![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+![Status: dev](https://img.shields.io/badge/status-dev-orange)
+![NCode plugin](https://img.shields.io/badge/NCode-plugin-purple)
+
 A self-improvement harness plugin for NCode, a Claude Code fork.
+
+**Suggested GitHub topics:** `agent-harness`, `ai-agents`, `ncode`, `claude-code`, `memory-fabric`, `self-improvement`, `automation`, `evals`, `python`, `developer-tools`
 
 Self-Improvement-Plugin gives an agent memory-aware startup, safer tool use, session closeout, verification hooks, and fresh-context delegation. It is built for long agent sessions where the agent needs to remember prior work, avoid repeated mistakes, recover from drift, and capture lessons before the context disappears.
 
@@ -14,6 +21,21 @@ It helps each session answer:
 - Is this task stuck enough to split out?
 - What should future sessions remember?
 - Which agent patterns have worked or failed before?
+
+## Public status
+
+This project is public-readable documentation for a local-first NCode harness workflow. It assumes a working local NCode setup and a `~/.ncode` harness directory.
+
+The repo is useful if you are exploring:
+
+- agent lifecycle hooks
+- memory-aware coding agents
+- local harness verification
+- agent eval loops
+- fresh-context delegation
+- long-running agent workflows
+
+Expect sharp edges. This is an active development harness, not a packaged end-user app.
 
 ## What it adds
 
@@ -49,6 +71,16 @@ model: inherit
 ```
 
 The default workflow model is GLM 5.2, but the plugin does not rely on model swaps. The main gain comes from context control, scoped recall, verification, and recorded outcomes.
+
+## Related project
+
+Swift Harness is the companion macOS GUI for this plugin:
+
+```text
+https://github.com/RasputinKaiser/Swift-Harness
+```
+
+Use this plugin for the harness logic. Use Swift Harness when you want a native desktop control surface for status, tests, memory, snapshots, hooks, browser control, evals, agents, telemetry, and plugin surfaces.
 
 ## Install
 
@@ -328,6 +360,16 @@ This plugin is built around a few rules:
 3. Escalation should be bounded, not a second uncontrolled agent session.
 4. Session closeout should produce useful future signal.
 5. The harness should be able to inspect and improve itself without hiding what changed.
+
+## Security
+
+This plugin runs local scripts and reads local harness state. Review scripts before using them in another environment.
+
+Do not paste secrets, access tokens, private transcripts, or private repo content into public issues. See `SECURITY.md` for vulnerability reporting notes.
+
+## Contributing
+
+Contributions are welcome through issues and pull requests. See `CONTRIBUTING.md` before opening larger changes.
 
 ## License
 
