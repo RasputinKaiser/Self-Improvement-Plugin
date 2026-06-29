@@ -94,7 +94,47 @@ def _apply_check(kind, args, sandbox, tool_sequence):
         return _check_grep(args, sandbox)
     if kind == "transcriptSequence":
         return _check_transcript_sequence(args, tool_sequence)
+    if kind == "llmJudge":
+        return _check_llm_judge(args, sandbox)
     return {"score": 0.0, "evidence": f"unknown check kind: {kind}", "passed": False}
+
+
+def _check_llm_judge(args, sandbox):
+    """Invoke eval_llm_judge.py with rubric. Returns confidence=low result.
+
+    Skips (returns score=0, confidence='low') if the judge script is missing
+    — Tier C is degraded gracefully rather than blocking the case.
+    """
+    from pathlib import Path
+    rubric = args.get("rubric", "")
+    if not rubric:
+        return {"score": 0.0, "evidence": "llmJudge missing 'rubric' argument", "passed": False}
+    judge_script = Path(__file__).parent / "eval_llm_judge.py"
+    if not judge_script.exists():
+        return {"score": 0.0, "evidence": "eval_llm_judge.py not found", "passed": False}
+    try:
+        r = subprocess.run(
+            ["python3", str(judge_script),
+             "--sandbox", str(sandbox),
+             "--rubric", rubric,
+             "--majority",
+             "--json"],
+            capture_output=True, text=True, timeout=400,  # 3 judge calls × ~120s each
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        return {"score": 0.0, "evidence": f"judge spawn failed: {e}", "passed": False}
+    if r.returncode != 0:
+        return {"score": 0.0, "evidence": f"judge exit {r.returncode}: {r.stderr[:200]}", "passed": False}
+    try:
+        result = json.loads(r.stdout)
+    except json.JSONDecodeError as e:
+        return {"score": 0.0, "evidence": f"judge output unparseable: {e}", "passed": False}
+    return {
+        "score": float(result.get("score", 0.0)),
+        "evidence": f"llmJudge — {result.get('evidence', '?')}",
+        "passed": bool(result.get("passed", False)),
+        "confidence": "low",
+    }
 
 
 def _check_file_exists(args, sandbox, expect_present):

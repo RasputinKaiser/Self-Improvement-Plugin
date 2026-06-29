@@ -1346,6 +1346,50 @@ def smoke_weekly_sweep():
     assert r.returncode == 0, f"weekly_sweep.py --help failed: {r.stderr}"
 
 
+def smoke_eval_llm_judge():
+    """eval_llm_judge.py --help exits 0."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "eval_llm_judge.py"), "--help"],
+        capture_output=True, timeout=5
+    )
+    assert r.returncode == 0, f"eval_llm_judge.py --help failed: {r.stderr}"
+
+
+def eval_llm_judge_mock_response_parses():
+    """eval_llm_judge.py with --mock-response PASS / FAIL parses correctly."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        sandbox = Path(tmp)
+        # PASS case
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "eval_llm_judge.py"),
+             "--sandbox", str(sandbox),
+             "--rubric", "test rubric",
+             "--mock-response", "PASS\nfile matches expected",
+             "--json"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"PASS judge failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["passed"] is True, f"expected passed=True, got {d}"
+        assert d["confidence"] == "low"
+        assert d["score"] == 1.0
+
+        # FAIL case
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "eval_llm_judge.py"),
+             "--sandbox", str(sandbox),
+             "--rubric", "test rubric",
+             "--mock-response", "FAIL\nfile missing",
+             "--json"],
+            capture_output=True, text=True, timeout=5
+        )
+        assert r.returncode == 0, f"FAIL judge failed: {r.stderr}"
+        d = json.loads(r.stdout)
+        assert d["passed"] is False
+        assert d["score"] == 0.0
+
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -1428,6 +1472,7 @@ SUITES = {
         case("session_close", smoke_session_close),
         case("eval_harness", smoke_eval_harness),
         case("weekly_sweep", smoke_weekly_sweep),
+        case("eval_llm_judge", smoke_eval_llm_judge),
     ],
     "tool_factory": [
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),
@@ -1463,6 +1508,7 @@ SUITES = {
         case("regression_skipped_with_insufficient_runs", eval_regression_skipped_with_insufficient_runs),
         case("regression_skips_error_runs", eval_regression_skips_error_runs),
         case("brief_emits_when_results_exist", eval_brief_emits_when_results_exist),
+        case("llm_judge_mock_pass_fail_parses", eval_llm_judge_mock_response_parses),
     ],
 }
 
