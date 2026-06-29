@@ -41,7 +41,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Multi-agent orchestration dashboard (Agents pane)
 - [x] Plan approval UI (structured plan dialog with accept/reject/modify)
 
-## Tier 4 — Advanced (PARTIAL — LAST GAP)
+## Tier 4 — Advanced (SHIPPED)
 
 - [x] Worktree-aware harness (scopes mapped via `git rev-parse --absolute-git-dir`; 8 hook scripts route through `worktree_scope.resolve_scope`)
 - [x] Cost/budget tracking per session with real-time warnings
@@ -49,7 +49,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Skill marketplace mirror (browse/installed skills from the app)
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
-- [~] Evaluation harness (run benchmark cases against the current model config) — Phase 1 shipped: EvalCase/EvalCaseStore/EvalGrader/EvalPane in Swift; Phase 2 (EvalRunner + results JSONL + pass/fail viz) pending
+- [x] Evaluation harness (Swift-native: EvalCase/EvalCaseStore/EvalGrader/EvalRunner/EvalPane; sandbox cwd per run, deterministic graders, results.jsonl persistence, last-score per case)
 - [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
 - [x] Voice input (hold-to-talk via SFSpeechRecognizer + AVAudioEngine)
 - [x] Scheduled task visualizer (native 5-field cron parser with next-fire + human schedule)
