@@ -1,0 +1,27 @@
+version: 1
+project: harness-self-improvement
+updated_at: "2026-06-29T21:47:03Z"
+status: github_ready_in_progress
+source:
+  path: "$HOME/Code/harness-self-improvement"
+  kind: "NCode/Codex plugin"
+  git_branch: "main"
+  git_tracking: "origin/main"
+  remote: "https://github.com/RasputinKaiser/harness-self-improvement.git"
+  license: "MIT"
+  public_author: "RasputinKaiser"
+installed_surface:
+  marketplace_path: "$HOME/.ncode/plugins/marketplaces/harness-local"
+  manifest_path: "$HOME/.ncode/.harness.installed.json"
+public_identity_audit:
+  disallowed_name_scan: "configured outside this public file"
+  current_pass:
+    - "local working tree scan found no disallowed public identity terms"
+    - "origin/main scan found no disallowed public identity terms"
+verification:
+  current_pass:
+    - "git fetch --prune origin"
+    - "git rev-list --left-right --count HEAD...origin/main == 0 0"
+    - "python3 scripts/validate_harness.py passed"
+    - "python3 scripts/validate_v2.py passed after updating expected 10-command/5-agent surface"
+    - "python3 scripts/run_tests.py passed with 90 pass, 0 fail"

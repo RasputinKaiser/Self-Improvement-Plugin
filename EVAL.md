@@ -4,24 +4,24 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 ## Summary
 
-- **checks passed**: 56/57 (98%)
-- **errors**: 1
+- **checks passed**: 61/61 (100%)
+- **errors**: 0
 - **warnings**: 0
-- **verdict**: INCOHERENT — see errors
+- **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
 
 ## Coverage
 
 | Layer | Surface | Count | Status |
 |---|---|---|---|
 | L0 live surface | hooks wired | 19 | ok |
-| L0 live surface | slash commands | 8 | gap |
-| L0 live surface | subagents (all model: inherit) | 4 | ok |
+| L0 live surface | slash commands | 10 | ok |
+| L0 live surface | subagents (all model: inherit) | 5 | ok |
 | L1 guardrails | autonomy_gate + script_smoke + snapshot | 3 | ok |
 | L2 observation | session_close + outcome_tracker | 2 | ok |
 | L3 recall | preflight + recall_ranker + continuity | 3 | ok |
 | L4 distillation | self_correct + agent_patterns | 2 | ok |
 | L5 promotion | tool_factory + test-author agent + /improve | 3 | ok |
-| delegation | escalate agent + escalation_advisor + /escalate | 3 | gap |
+| delegation | escalate agent + escalation_advisor + /escalate | 3 | ok |
 | model routing | (dropped — all agents inherit) | 0 | ok by design |
 
 ## Loop-closure chain
@@ -78,35 +78,35 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 35 | agent memory-curator model: inherit | PASS |
 | 36 | agent repo-scout has frontmatter + model: | PASS |
 | 37 | agent repo-scout model: inherit | PASS |
-| 38 | all 4 agents present | PASS |
-| 39 | command improve has description | PASS |
-| 40 | command escalate has description | PASS |
-| 41 | command verify has description | PASS |
-| 42 | command checkpoint has description | PASS |
-| 43 | command patterns has description | PASS |
-| 44 | command recall has description | PASS |
-| 45 | command teach has description | PASS |
-| 46 | command brainstorm has description | PASS |
-| 47 | all 7 commands present | FAIL |
-| 48 | new script improvement_injector.py exec | PASS |
-| 49 | new script escalation_advisor.py exec | PASS |
-| 50 | new script recall_ranker.py exec | PASS |
-| 51 | no runtime script imports model_router (v2 pivot) | PASS |
-| 52 | observe (Stop: task_outcome_tracker) | PASS |
-| 53 | distill (self_correct.py exists) | PASS |
-| 54 | inject (SessionStart: improvement_injector) | PASS |
-| 55 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 56 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 57 | delegate target (escalate agent exists, model: inherit) | PASS |
-
-## Errors
-
-- all 7 commands present: missing=set(), extra={'brainstorm'}
+| 38 | agent fan-out has frontmatter + model: | PASS |
+| 39 | agent fan-out model: inherit | PASS |
+| 40 | all 5 agents present | PASS |
+| 41 | command improve has description | PASS |
+| 42 | command escalate has description | PASS |
+| 43 | command goal has description | PASS |
+| 44 | command verify has description | PASS |
+| 45 | command checkpoint has description | PASS |
+| 46 | command patterns has description | PASS |
+| 47 | command recall has description | PASS |
+| 48 | command teach has description | PASS |
+| 49 | command fan-out has description | PASS |
+| 50 | command brainstorm has description | PASS |
+| 51 | all 10 commands present | PASS |
+| 52 | new script escalation_advisor.py exec | PASS |
+| 53 | new script recall_ranker.py exec | PASS |
+| 54 | new script improvement_injector.py exec | PASS |
+| 55 | no runtime script imports model_router (v2 pivot) | PASS |
+| 56 | observe (Stop: task_outcome_tracker) | PASS |
+| 57 | distill (self_correct.py exists) | PASS |
+| 58 | inject (SessionStart: improvement_injector) | PASS |
+| 59 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 60 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 61 | delegate target (escalate agent exists, model: inherit) | PASS |
 
 ## What v2 adds over v1
 
-- **live-service commands** (7): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach — v1 had zero.
-- **delegation agent surface** (4): escalate, repo-scout, memory-curator, test-author — all `model: inherit` — v1 had none.
+- **live-service commands** (10): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /brainstorm, /fan-out — v1 had zero.
+- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.
 - **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).
 - **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.
 - **scoped recall ranking**: recall_ranker ranks failure-then-success and scopes to cwd (replaces raw prompt_search).

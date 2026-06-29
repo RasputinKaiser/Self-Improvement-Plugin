@@ -5,8 +5,8 @@ Checks (all read-only; exit 0 if clean, 1 if any ERROR):
   1. marketplace.json + plugin.json are valid JSON and version == 0.2.0.
   2. plugin.json points at existing hooks/, agents/, commands/ surfaces (no lib/).
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
-  4. The four declared agents exist, have frontmatter, and declare `model: inherit`.
-  5. The seven declared commands exist with `---\ndescription:` frontmatter.
+  4. The declared agents exist, have frontmatter, and declare `model: inherit`.
+  5. The declared commands exist with `---\ndescription:` frontmatter.
   6. The three new v2 scripts are executable (no model_router import — dropped in v2).
   7. No lib/ directory exists and no script imports model_router (the pivot is real).
   8. Loop-closure chain is wired end-to-end (observe → distill → inject → recall → delegate).
@@ -28,9 +28,10 @@ AGENTS_DIR = ROOT / "agents"
 COMMANDS_DIR = ROOT / "commands"
 EVAL = ROOT / "EVAL.md"
 
-EXPECTED_AGENTS = {"escalate", "repo-scout", "memory-curator", "test-author"}
+EXPECTED_AGENTS = {"escalate", "repo-scout", "memory-curator", "test-author", "fan-out"}
 EXPECTED_COMMANDS = {
     "improve", "recall", "escalate", "checkpoint", "verify", "patterns", "teach",
+    "goal", "brainstorm", "fan-out",
 }
 NEW_SCRIPTS = {
     "escalation_advisor.py", "improvement_injector.py", "recall_ranker.py",
@@ -106,7 +107,7 @@ if AGENTS_DIR.is_dir():
         has_fm = body.startswith("---") and "model:" in fm
         check(f"agent {f.stem} has frontmatter + model:", has_fm, f.name)
         check(f"agent {f.stem} model: inherit", "model: inherit" in fm, fm.strip())
-check("all 4 agents present", EXPECTED_AGENTS == agent_names,
+check(f"all {len(EXPECTED_AGENTS)} agents present", EXPECTED_AGENTS == agent_names,
       f"missing={EXPECTED_AGENTS - agent_names}, extra={agent_names - EXPECTED_AGENTS}")
 
 # 5. commands
@@ -117,7 +118,7 @@ if COMMANDS_DIR.is_dir():
         body = f.read_text(encoding="utf-8", errors="replace")
         has_desc = body.startswith("---") and "description:" in body.split("---", 2)[1] if body.count("---") >= 2 else False
         check(f"command {f.stem} has description", has_desc, f.name)
-check("all 7 commands present", EXPECTED_COMMANDS == cmd_names,
+check(f"all {len(EXPECTED_COMMANDS)} commands present", EXPECTED_COMMANDS == cmd_names,
       f"missing={EXPECTED_COMMANDS - cmd_names}, extra={cmd_names - EXPECTED_COMMANDS}")
 
 # 6. new scripts executable
@@ -223,8 +224,8 @@ if errors:
     lines.append("")
 
 lines.append("## What v2 adds over v1\n")
-lines.append("- **live-service commands** (7): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach — v1 had zero.")
-lines.append("- **delegation agent surface** (4): escalate, repo-scout, memory-curator, test-author — all `model: inherit` — v1 had none.")
+lines.append("- **live-service commands** (10): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /brainstorm, /fan-out — v1 had zero.")
+lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.")
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")
 lines.append("- **scoped recall ranking**: recall_ranker ranks failure-then-success and scopes to cwd (replaces raw prompt_search).")
