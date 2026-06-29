@@ -37,7 +37,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] In-app browser USE (the agent can navigate/click/extract from WKWebView)
 - [x] Vision (screenshot capture + VLM analysis via browser_see)
 - [x] Computer use (mac-cua click/type/scroll integration from the app)
-- [ ] Live session attach (bridge to an existing terminal-launched session)
+- [x] Live session attach (fork-continue via --resume --include-partial-messages)
 - [x] Multi-agent orchestration dashboard (Agents pane)
 - [x] Plan approval UI (structured plan dialog with accept/reject/modify)
 
