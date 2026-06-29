@@ -817,6 +817,24 @@ def probe_hook_silent_on_log_write_error():
         assert not log_path.exists(), "log file should not exist when parent dir missing"
 
 
+# --- brainstorm (Phase 8) ---
+
+def brainstorm_py_returns_gaps():
+    """brainstorm.py --json returns valid JSON with gaps array."""
+    r = subprocess.run(
+        ["python3", str(SCRIPTS_DIR / "brainstorm.py"), "--json"],
+        capture_output=True, text=True, timeout=10
+    )
+    assert r.returncode == 0, f"brainstorm --json failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    assert "gaps" in d and isinstance(d["gaps"], list), f"missing gaps: {d}"
+    assert "installed" in d, f"missing installed: {d}"
+    assert d["installed"]["scripts"] > 0
+    # At least one gap should exist (Tier 3 isn't fully shipped)
+    assert len(d["gaps"]) > 0, "expected at least 1 gap, got 0"
+    # Top gap should have leverage >= 7
+    assert d["gaps"][0]["leverage"] >= 7, f"top gap leverage too low: {d['gaps'][0]}"
+
 SUITES = {
     "v2_recall_ranker": [
         case("silent_on_empty_prompt", recall_ranker_silent_on_empty_prompt),
@@ -911,6 +929,9 @@ SUITES = {
     "probe_hook": [
         case("writes_marker_to_log_and_emits_json", probe_hook_writes_marker_to_log_and_emits_json),
         case("silent_on_log_write_error", probe_hook_silent_on_log_write_error),
+    ],
+    "brainstorm": [
+        case("returns_gaps", brainstorm_py_returns_gaps),
     ],
 }
 

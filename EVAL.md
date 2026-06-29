@@ -87,9 +87,9 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 44 | command recall has description | PASS |
 | 45 | command teach has description | PASS |
 | 46 | all 7 commands present | PASS |
-| 47 | new script improvement_injector.py exec | PASS |
-| 48 | new script recall_ranker.py exec | PASS |
-| 49 | new script escalation_advisor.py exec | PASS |
+| 47 | new script recall_ranker.py exec | PASS |
+| 48 | new script escalation_advisor.py exec | PASS |
+| 49 | new script improvement_injector.py exec | PASS |
 | 50 | no runtime script imports model_router (v2 pivot) | PASS |
 | 51 | observe (Stop: task_outcome_tracker) | PASS |
 | 52 | distill (self_correct.py exists) | PASS |
