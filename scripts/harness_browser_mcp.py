@@ -29,13 +29,43 @@ SOCKET_PATH = os.path.expanduser(
 TOOLS = [
     {
         "name": "browser_get_url",
-        "description": "Get the current URL of the harness-app's embedded browser (WKWebView). Returns the full URL string.",
+        "description": "Get the current URL of the harness-app's embedded browser (WKWebView).",
         "inputSchema": {"type": "object", "properties": {}, "required": []},
     },
     {
         "name": "browser_get_title",
-        "description": "Get the current page title of the harness-app's embedded browser (WKWebView). Returns the HTML <title> text.",
+        "description": "Get the current page <title> of the harness-app's embedded browser.",
         "inputSchema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "browser_navigate",
+        "description": "Navigate the embedded WKWebView to a URL. Waits for page load (up to 8s). Returns {url, title, status}. Blocked schemes: file://, about:, data:, ftp:. Blocked: private IPs, localhost, .local.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"url": {"type": "string", "description": "Full http(s) URL to navigate to"}},
+            "required": ["url"],
+        },
+    },
+    {
+        "name": "browser_eval",
+        "description": "Execute JavaScript in the WKWebView's page context. Returns {result}. Blocked patterns: fetch(), XMLHttpRequest, document.cookie, localStorage writes, window.open().",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"js": {"type": "string", "description": "JavaScript to evaluate"}},
+            "required": ["js"],
+        },
+    },
+    {
+        "name": "browser_extract",
+        "description": "Extract DOM elements matching a CSS selector. Returns {html, text, count}. Optionally pass attr to get a specific attribute instead of outerHTML.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string", "description": "CSS selector (e.g. 'h1', '.content', '#main')"},
+                "attr": {"type": "string", "description": "Optional: attribute to extract instead of outerHTML (e.g. 'href', 'src')"},
+            },
+            "required": ["selector"],
+        },
     },
 ]
 
@@ -131,12 +161,23 @@ def handle_tool_call(msg):
         result = reply.get("result", {})
         # Extract the inner value for a clean text response
         if isinstance(result, dict):
-            if "url" in result:
+            if "url" in result and "title" in result and "status" in result:
+                # browser_navigate result
+                text = f"URL: {result['url']}\nTitle: {result['title']}\nStatus: {result['status']}"
+            elif "html" in result and "text" in result:
+                # browser_extract result
+                text = f"Count: {result.get('count', 0)}\n\nText:\n{result['text'][:2000]}"
+                if result.get('html'):
+                    text += f"\n\nHTML:\n{result['html'][:2000]}"
+            elif "result" in result:
+                # browser_eval result
+                text = str(result["result"])
+            elif "url" in result:
                 text = result["url"]
             elif "title" in result:
                 text = result["title"]
             else:
-                text = json.dumps(result)
+                text = json.dumps(result, indent=2)
         else:
             text = str(result)
         write_mcp_response(msg_id, {
