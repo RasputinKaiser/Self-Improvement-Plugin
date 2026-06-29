@@ -47,7 +47,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Cost/budget tracking per session with real-time warnings
 - [ ] Prompt template library + hot-swap
 - [ ] Skill marketplace mirror (browse/install skills from the app)
-- [ ] MCP server browser (list connected MCPs, toggle tools, view call log)
+- [x] MCP server browser (list from .config.json + settings.local.json)
 - [ ] Cross-machine sync (private git for the harness plugin — DONE, but not
       for session transcripts or Memory Fabric store)
 - [ ] Evaluation harness (run benchmark cases against the current model config)
