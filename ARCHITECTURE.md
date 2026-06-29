@@ -304,8 +304,8 @@ And the plugin manifest points NCode at all three surfaces:
 Install path is unchanged for the user:
 
 ```bash
-/plugin marketplace add RasputinKaiser/harness-self-improvement
-# then install harness-self-improvement@harness-local
+/plugin marketplace add RasputinKaiser/Self-Improvement-Plugin
+# then install Self-Improvement-Plugin@harness-local
 ```
 
 ---

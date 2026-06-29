@@ -1,4 +1,4 @@
-# harness-self-improvement
+# Self-Improvement-Plugin
 
 A self-improving agent harness plugin for NCode (Claude Code fork). Provides
 hooks across the full agent lifecycle so each task starts informed by prior
@@ -93,10 +93,10 @@ fresh-context delegation and forced lesson capture, not model swaps.
 ## Installation
 
 ```bash
-/plugin marketplace add RasputinKaiser/harness-self-improvement
+/plugin marketplace add RasputinKaiser/Self-Improvement-Plugin
 ```
 
-Then install `harness-self-improvement@harness-local` from the marketplace UI.
+Then install `Self-Improvement-Plugin@harness-local` from the marketplace UI.
 
 ## Requirements
 
