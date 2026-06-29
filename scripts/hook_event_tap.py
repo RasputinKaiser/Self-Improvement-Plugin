@@ -72,6 +72,20 @@ def main():
 
     stdin_data = sys.stdin.buffer.read() if not sys.stdin.isatty() else b""
 
+    # Parse stdin to extract tool_name and tool_input (for PreToolUse hooks,
+    # this tells us WHAT tool the agent is about to call — including MCP tools
+    # like mcp__mac-cua__click)
+    tool_name = None
+    tool_input_preview = None
+    try:
+        stdin_json = json.loads(stdin_data.decode("utf-8"))
+        tool_name = stdin_json.get("tool_name")
+        tool_input = stdin_json.get("tool_input", {})
+        if tool_input:
+            tool_input_preview = json.dumps(tool_input)[:MAX_PREVIEW]
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        pass
+
     start = time.time()
     try:
         r = subprocess.run(
@@ -87,6 +101,8 @@ def main():
             "ts": datetime.now(timezone.utc).isoformat(),
             "event": args.event,
             "script": args.script,
+            "toolName": tool_name,
+            "toolInputPreview": tool_input_preview,
             "exitCode": -1,
             "durationMs": int((time.time() - start) * 1000),
             "outcome": "timeout",
@@ -108,6 +124,8 @@ def main():
             "ts": datetime.now(timezone.utc).isoformat(),
             "event": args.event,
             "script": args.script,
+            "toolName": tool_name,
+            "toolInputPreview": tool_input_preview,
             "exitCode": -1,
             "durationMs": int((time.time() - start) * 1000),
             "outcome": "error",
@@ -135,6 +153,8 @@ def main():
         "ts": datetime.now(timezone.utc).isoformat(),
         "event": args.event,
         "script": args.script,
+        "toolName": tool_name,
+        "toolInputPreview": tool_input_preview,
         "exitCode": r.returncode,
         "durationMs": int((time.time() - start) * 1000),
         "outcome": outcome,

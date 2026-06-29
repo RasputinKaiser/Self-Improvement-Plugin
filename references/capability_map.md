@@ -36,7 +36,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Slash command surface (7 commands + /brainstorm = 8)
 - [x] In-app browser USE (the agent can navigate/click/extract from WKWebView)
 - [x] Vision (screenshot capture + VLM analysis via browser_see)
-- [ ] Computer use (mac-cua click/type/scroll integration from the app)
+- [x] Computer use (mac-cua click/type/scroll integration from the app)
 - [ ] Live session attach (bridge to an existing terminal-launched session)
 - [x] Multi-agent orchestration dashboard (Agents pane)
 - [ ] Plan approval UI (structured plan dialog with accept/reject/modify)
