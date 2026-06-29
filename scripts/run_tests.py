@@ -711,6 +711,48 @@ def hook_event_tap_classifies_block():
     assert d["outcome"] == "block", f"expected outcome=block, got {d['outcome']}"
 
 
+# --- install.sh (Phase 4) ---
+
+def install_sh_check_returns_clean_after_install():
+    """install.sh --check should return 0 (in-sync) after a fresh install."""
+    # First ensure manifest exists — if not, install
+    manifest_path = os.path.expanduser("~/.ncode/.harness.installed.json")
+    if not os.path.exists(manifest_path):
+        r = subprocess.run(
+            ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh")],
+            capture_output=True, text=True, timeout=30,
+            cwd=str(Path.home() / "Code/harness-self-improvement")
+        )
+        assert r.returncode == 0, f"first install failed: {r.stderr}"
+
+    r = subprocess.run(
+        ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh"), "--check"],
+        capture_output=True, text=True, timeout=10,
+        cwd=str(Path.home() / "Code/harness-self-improvement")
+    )
+    assert r.returncode == 0, f"--check failed (rc={r.returncode}): {r.stdout}\n{r.stderr}"
+    assert "OK" in r.stdout or "in sync" in r.stdout, f"unexpected output: {r.stdout}"
+
+
+def install_sh_manifest_has_expected_fields():
+    """Manifest written by install.sh must have commit + files array."""
+    manifest_path = os.path.expanduser("~/.ncode/.harness.installed.json")
+    if not os.path.exists(manifest_path):
+        # Run install to create one
+        subprocess.run(
+            ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh")],
+            capture_output=True, text=True, timeout=30,
+            cwd=str(Path.home() / "Code/harness-self-improvement")
+        )
+    d = json.load(open(manifest_path))
+    assert "commit" in d and len(d["commit"]) >= 7, f"no commit: {d}"
+    assert "files" in d and isinstance(d["files"], list) and len(d["files"]) > 0, f"no files: {d}"
+    assert "installedAt" in d, f"no installedAt: {d}"
+    assert "hooksSha256" in d, f"no hooksSha256: {d}"
+    first_file = d["files"][0]
+    assert "path" in first_file and "sha256" in first_file, f"bad entry: {first_file}"
+
+
 # --- probe_hook ---
 # Note: probe_hook.py does NOT read stdin — it always emits JSON to stdout and
 # appends a marker line to LOG. The riskiest branch is the try/except OSError
@@ -861,6 +903,10 @@ SUITES = {
     "hook_event_tap": [
         case("passes_through_and_records", hook_event_tap_passes_through_and_records),
         case("classifies_block", hook_event_tap_classifies_block),
+    ],
+    "install_sh": [
+        case("check_returns_clean_after_install", install_sh_check_returns_clean_after_install),
+        case("manifest_has_expected_fields", install_sh_manifest_has_expected_fields),
     ],
     "probe_hook": [
         case("writes_marker_to_log_and_emits_json", probe_hook_writes_marker_to_log_and_emits_json),
