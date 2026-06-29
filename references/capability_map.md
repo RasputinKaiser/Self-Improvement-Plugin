@@ -48,8 +48,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [ ] Prompt template library + hot-swap
 - [x] Skill marketplace mirror (browse/installed skills from the app)
 - [x] MCP server browser (list from .config.json + settings.local.json)
-- [ ] Cross-machine sync (private git for the harness plugin — DONE, but not
-      for session transcripts or Memory Fabric store)
+- [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
 - [ ] Evaluation harness (run benchmark cases against the current model config)
 - [ ] Telemetry dashboard (os.Logger events visualized over time)
 - [ ] Voice input (hold-to-talk dictation → bridge.send())
