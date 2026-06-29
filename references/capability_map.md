@@ -38,7 +38,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] Vision (screenshot capture + VLM analysis via browser_see)
 - [ ] Computer use (mac-cua click/type/scroll integration from the app)
 - [ ] Live session attach (bridge to an existing terminal-launched session)
-- [ ] Multi-agent orchestration dashboard (watch subagent work in real time)
+- [x] Multi-agent orchestration dashboard (Agents pane)
 - [ ] Plan approval UI (structured plan dialog with accept/reject/modify)
 
 ## Tier 4 — Advanced (FUTURE)
