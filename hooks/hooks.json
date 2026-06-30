@@ -53,9 +53,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hook_event_tap.py --event PostToolUse --script csi_presence_mirror.py -- python3 ${CLAUDE_PLUGIN_ROOT}/scripts/csi_presence_mirror.py || true",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hook_event_tap.py --event PostToolUse --script sips_presence_mirror.py -- python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sips_presence_mirror.py || true",
             "timeout": 7,
-            "statusMessage": "CSI mirror"
+            "statusMessage": "SIPS mirror"
           }
         ]
       }

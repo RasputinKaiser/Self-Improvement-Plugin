@@ -143,7 +143,7 @@ def check_untested_scripts():
 
 def check_install_drift():
     """Is the installed plugin out of sync with the source repo?"""
-    install_sh = Path.home() / "Code/harness-self-improvement/install.sh"
+    install_sh = Path(__file__).resolve().parents[1] / "install.sh"
     if not install_sh.exists():
         return []  # No source repo — can't check drift
     r = subprocess.run(

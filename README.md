@@ -50,7 +50,30 @@ Self-Improvement-Plugin adds four main surfaces:
 | Lifecycle hooks | Run checks and memory actions during startup, prompt submit, tool use, compaction, and session close. |
 | Slash commands | Give the user direct control over recall, improvement, verification, goals, escalation, and fan-out. |
 | Delegation agents | Send bounded subtasks into fresh context while keeping the parent session clean. |
+| SIPS Homebase MCP | Expose portable `homebase_*` tools for Codex, NCode, and future harnesses. |
 | Utility scripts | Validate, test, snapshot, restore, inspect, and improve the harness over time. |
+
+### SIPS Homebase MCP
+
+The repo is the SIPS harness home-base for Codex, NCode, and future harnesses.
+`.mcp.json` exposes `scripts/harness_homebase_mcp.py` as `sips-homebase`.
+
+| MCP tool | Purpose |
+|---|---|
+| `homebase_status` | Inspect manifest, commands, agents, hooks, MCP tools, and git state. |
+| `homebase_verify` | Run manifest validation and optional regression suites. |
+| `homebase_route` | Choose the right command, agent, script, or MCP path for a task. |
+| `homebase_repo_map` | Map repo files, git state, write scope, and likely test commands. |
+| `homebase_context_scan` | Find oversized context-drain files with bounded-read advice. |
+| `homebase_recall` | Search Memory Fabric for scoped prior lessons when available. |
+| `homebase_goal` | Inspect persistent harness goal state without mutating it. |
+| `homebase_routes` | List SIPS routes and fallback commands. |
+| `homebase_mcp_freshness` | Check source/cache/config MCP freshness. |
+| `homebase_host_audit` | Audit Codex host wiring for SIPS drift. |
+| `homebase_distill_context` | Distill large files into bounded excerpts. |
+| `homebase_execution_repro` | Build a focused repro and verification plan. |
+| `homebase_perception_plan` | Plan browser/app visual QA loops. |
+| `homebase_tool_factory` | Decide whether a local tool is warranted. |
 
 ## Current release
 
@@ -67,6 +90,7 @@ This release adds:
 - verification support for touched scripts
 - persistent goal loop support through `/goal`
 - fan-out support for parallel task slices
+- portable SIPS Homebase MCP tools for Codex and other harnesses
 
 All delegation agents use:
 
@@ -106,7 +130,7 @@ Self-Improvement-Plugin@harness-local
 |---|---|
 | Python 3.8+ | Required for the hook and utility scripts. |
 | Codex Memory Fabric plugin | Required for Memory Fabric recall, lesson capture, and memory health checks. |
-| CSI Host Surface Audit plugin | Optional. Used for deeper cleanup through `harness_gc.py --deep`. |
+| SIPS Homebase MCP | Used for deeper cleanup through `harness_gc.py --deep`. |
 
 ## Core workflow
 
@@ -160,7 +184,7 @@ Each agent gets a bounded job. It returns a focused result instead of taking ove
 | Event | Matchers | Scripts |
 |---|---|---|
 | `PreToolUse` | `Edit`, `Write`, `MultiEdit`, `Bash`, `apply_patch` | `autonomy_gate.py`, `memory_fabric_preflight.py` |
-| `PostToolUse` | `Edit`, `Write`, `MultiEdit`, `Bash`, `apply_patch`, `mcp__.*` | `script_smoke.py`, `escalation_advisor.py`, `csi_presence_mirror.py` |
+| `PostToolUse` | `Edit`, `Write`, `MultiEdit`, `Bash`, `apply_patch`, `mcp__.*` | `script_smoke.py`, `escalation_advisor.py`, `sips_presence_mirror.py` |
 | `SessionStart` | `startup`, `resume`, `clear`, `compact` | `validate_harness.py`, `memory_fabric_doctor.py`, `proactive_drift.py`, `agent_patterns.py --brief`, `improvement_injector.py` |
 | `UserPromptSubmit` | all prompts | `recall_ranker.py`, `probe_hook.py` |
 | `PreCompact` | `manual`, `auto` | `memory_fabric_compact_brief.py`, `compact_continuity.py` |
@@ -215,7 +239,7 @@ Relevant scripts:
 
 Post-tool hooks run after edits, writes, shell commands, patches, and MCP calls.
 
-They smoke-check changed scripts, advise escalation when the task appears stuck, and mirror CSI presence files into the NCode surface.
+They smoke-check changed scripts, advise escalation when the task appears stuck, and mirror SIPS presence files into the NCode surface.
 
 Relevant scripts:
 
@@ -223,7 +247,7 @@ Relevant scripts:
 |---|---|
 | `script_smoke.py` | Runs syntax and smoke checks for changed harness scripts. |
 | `escalation_advisor.py` | Flags cases where a bounded escalation may help. |
-| `csi_presence_mirror.py` | Mirrors CSI presence files into the NCode surface. |
+| `sips_presence_mirror.py` | Mirrors SIPS presence files into the NCode surface. |
 
 ### Compaction
 
@@ -260,6 +284,18 @@ Relevant scripts:
 | `validate_v2.py` | Validates plugin manifest coherence and regenerates `EVAL.md`. |
 | `run_tests.py` | Runs the regression harness. Current suite: 90 cases. |
 | `script_smoke.py` | Runs syntax and smoke checks for changed harness scripts. |
+| `snapshot_harness.py` | Snapshot live harness scripts for rollback. |
+| `restore_harness.py` | Restore a known-good harness snapshot. |
+| `harness_gc.py` | Garbage collect local harness state. |
+| `self_correct.py` | Analyze failures, stale scripts, and untested surfaces. |
+| `agent_patterns.py` | Aggregate approach/outcome patterns from task history. |
+| `proactive_drift.py` | Detect drift and untested scripts at session start. |
+| `tool_factory.py` | Scaffold or improve local harness tools. |
+| `repo_forensics.sh` | SIPS wrapper for repo mapping through `homebase_repo_map`. |
+| `fan_out.py` | Prepare, ingest, list, and inspect fan-out runs. |
+| `brainstorm.py` | Rank capability gaps for `/brainstorm`. |
+| `goal_state.py` | Manage persistent `/goal` loop state. |
+| `harness_browser_mcp.py` | Expose browser tools to NCode through MCP stdio. |
 | `eval_harness.py` | Python mirror of the Swift eval runner. |
 | `eval_llm_judge.py` | LLM-as-judge grader for eval cases. |
 | `eval_grader_parity.py` | Golden-vector parity checker between Python and Swift graders. |
@@ -297,6 +333,12 @@ Relevant scripts:
 | `harness_gc.py` | Garbage collects local harness state. |
 | `branch_session.py` | Session branching helper. |
 | `compact_continuity.py` | Continuity packet read/write helper. |
+| `sips_presence_mirror.py` | Mirror SIPS presence files into the NCode surface. |
+| `memory_fabric_preflight.py` | Surface prior lessons before edits. |
+| `memory_fabric_doctor.py` | Check Memory Fabric health and recent work. |
+| `memory_fabric_prompt_search.py` | Prompt-time Memory Fabric search helper. |
+| `memory_fabric_compact_brief.py` | Inject Memory Fabric brief before compaction. |
+| `memory_fabric_session_record.py` | Record post-compact session learnings. |
 
 ### Delegation and planning
 
@@ -311,12 +353,12 @@ Relevant scripts:
 
 | Utility | Purpose |
 |---|---|
-| `repo_forensics.sh` | Thin wrapper for CSI repo forensics. |
+| `repo_forensics.sh` | SIPS wrapper for repo mapping through `homebase_repo_map`. |
 | `harness_browser_mcp.py` | Exposes browser tools to NCode through MCP stdio. |
 | `patch_effort_message.py` | Patches local effort messaging for GLM 5.2 workflows. |
 | `hook_event_tap.py` | Wraps hook commands and appends hook-event JSONL. |
 | `probe_hook.py` | Emits unique markers for hook invocation tests. |
-| `csi_presence_mirror.py` | Mirrors CSI presence files into the NCode surface. |
+| `sips_presence_mirror.py` | Mirrors SIPS presence files into the NCode surface. |
 
 ## Verify
 
@@ -332,6 +374,7 @@ Run the regression harness:
 
 ```bash
 python3 scripts/run_tests.py
+python3 scripts/run_tests.py homebase_mcp
 ```
 
 Current expected suite size:

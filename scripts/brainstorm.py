@@ -18,8 +18,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-PLUGIN_ROOT = Path.home() / ".ncode/plugins/marketplaces/harness-local"
-CAPABILITY_MAP = Path.home() / "Code/harness-self-improvement/references/capability_map.md"
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+CAPABILITY_MAP = PLUGIN_ROOT / "references" / "capability_map.md"
 
 # Capability areas that are checked items (shipped) vs unchecked (gaps)
 # The brainstorm script reads the map and finds unchecked items in Tier 3+.
@@ -80,7 +80,6 @@ def survey_installed():
 
 def survey_app():
     """Check if harness-app exists and count its panes."""
-    app_dir = Path.home() / "Code/harness-self-improvement"
     app_src = Path.home() / "Code/harness-app/Sources/HarnessApp"
     if not app_src.exists():
         return None
