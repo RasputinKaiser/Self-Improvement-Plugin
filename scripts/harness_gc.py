@@ -6,17 +6,17 @@ Read-only drift report. Does NOT delete or mutate anything.
 Reports:
 - Stale backups older than 90 days (suggestion only)
 - Orphan presence/cache files not referenced anywhere
-- CSI trace artifacts accumulated under ~/.ncode/csi/
+- SIPS trace artifacts accumulated under ~/.ncode/sips/
 - Duplicate settings backups
 - Large files that may bloat context
-- (optional --deep) CSI host surface audit: plugin drift, broken refs, MCP errors
+- (optional --deep) SIPS host surface audit: plugin drift, broken refs, MCP errors
 
 Usage:
   harness_gc.py                # basic drift report
-  harness_gc.py --deep         # adds CSI host surface audit
+  harness_gc.py --deep         # adds SIPS host surface audit
 """
 import argparse
-import glob
+import json
 import os
 import subprocess
 import sys
@@ -24,12 +24,12 @@ import time
 from pathlib import Path
 
 NCODE_DIR = Path.home() / ".ncode"
-CSI_CACHE_ROOT = Path.home() / ".codex/plugins/cache/ralto-local/codex-self-improvement"
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 STALE_DAYS = 90
 LARGE_FILE_BYTES = 512 * 1024  # 512 KB
 
 ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-ap.add_argument("--deep", action="store_true", help="add CSI host surface audit")
+ap.add_argument("--deep", action="store_true", help="add SIPS host surface audit")
 args = ap.parse_args()
 
 
@@ -65,19 +65,19 @@ if backups.is_dir():
             age_days = int((now - mtime) / 86400)
             add("INFO", f"stale backup ({age_days}d): {f.relative_to(NCODE_DIR)}")
 
-# CSI trace artifacts
-csi_dir = NCODE_DIR / "csi"
-if csi_dir.is_dir():
+# SIPS trace artifacts
+sips_dir = NCODE_DIR / "sips"
+if sips_dir.is_dir():
     count = 0
     size = 0
-    for f in walk_files(csi_dir, max_depth=3):
+    for f in walk_files(sips_dir, max_depth=3):
         try:
             count += 1
             size += f.stat().st_size
         except OSError:
             continue
     if count > 50 or size > 5 * 1024 * 1024:
-        add("INFO", f"csi/ has {count} files, {size // 1024}KB — consider archiving")
+        add("INFO", f"sips/ has {count} files, {size // 1024}KB - consider archiving")
 
 # Duplicate settings backups
 settings_baks = list(NCODE_DIR.glob("settings.json.bak-*"))
@@ -98,8 +98,8 @@ for f in walk_files(NCODE_DIR, max_depth=3):
         add("INFO", f"large file ({sz // 1024}KB): {rel}")
 
 # Orphan presence mirror not matched by source
-src_presence = Path.home() / ".codex" / "csi"
-dst_presence = NCODE_DIR / "csi"
+src_presence = Path.home() / ".codex" / "sips"
+dst_presence = NCODE_DIR / "sips"
 if src_presence.is_dir() and dst_presence.is_dir():
     for fname in ("chat-presence.md", "rich-presence.md"):
         src = src_presence / fname
@@ -112,37 +112,35 @@ for level, msg in findings:
 
 print(f"\nsummary: {len(findings)} findings (all read-only)")
 
-# Optional deep audit — CSI host surface
+# Optional deep audit - SIPS host surface
 if args.deep:
-    candidates = sorted(glob.glob(str(CSI_CACHE_ROOT / "0.1.0*/scripts/host_surface_audit.py")))
-    # Prefer +codex-stamped (full build) over bare 0.1.0 (slim)
-    codex_candidates = [c for c in candidates if "+codex" in c]
-    candidates = codex_candidates or candidates
-    if not candidates:
-        print("\n--deep: host_surface_audit.py not found under CSI cache")
-        sys.exit(0)
-    script = candidates[-1]
-    plugin_root = str(Path(script).parents[1])  # scripts/../ = plugin root
-    print(f"\n=== CSI host surface audit ===")
+    script = PLUGIN_ROOT / "scripts" / "harness_homebase_mcp.py"
+    print("\n=== SIPS host surface audit ===")
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "homebase_host_audit",
+            "arguments": {"root": str(PLUGIN_ROOT)},
+        },
+    }
     try:
         r = subprocess.run(
-            ["python3", script,
-             "--plugin-root", plugin_root,
-             "--format", "markdown",
-             "--limit", "20"],
-            capture_output=True, text=True, timeout=30
+            ["python3", str(script)],
+            input=json.dumps(request) + "\n",
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(PLUGIN_ROOT),
         )
-        # host_surface_audit may exit nonzero but still emit markdown
-        out = r.stdout.strip()
-        if out:
-            lines = out.split("\n")
-            for line in lines[-30:]:
-                print(line)
-        elif r.stderr.strip():
-            print(f"audit failed: {r.stderr.strip()[:300]}")
-        else:
-            print("audit returned no output")
+        payload = json.loads(r.stdout) if r.stdout.strip() else {}
+        content = payload.get("result", {}).get("content", [])
+        text = "\n".join(item.get("text", "") for item in content if item.get("type") == "text").strip()
+        print(text or r.stderr.strip() or "audit returned no output")
     except subprocess.TimeoutExpired:
         print("audit timed out after 30s")
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"audit failed: {exc}")
 
 sys.exit(0)

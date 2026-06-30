@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — surface harness-self-improvement into the live NCode tree.
+# install.sh - surface SIPS into the live NCode tree.
 #
 # Copies the latest source tree from this repo into:
 #   ~/.ncode/plugins/marketplaces/harness-local/

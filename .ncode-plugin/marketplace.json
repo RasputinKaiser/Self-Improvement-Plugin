@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "harness-self-improvement",
-      "description": "Self-improving agent harness: Memory Fabric recall, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction loop, and a delegation agent surface. All agents inherit the session model (GLM 5.2 by default) — versatility comes from bounded fresh-context delegation and forced lesson capture, not model swaps.",
+      "description": "SIPS (Self Improvement Plugin System) home-base: Memory Fabric recall, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction loop, delegation agents, commands, and a portable MCP control plane. All agents inherit the session model; versatility comes from bounded fresh-context delegation and forced lesson capture, not model swaps.",
       "version": "0.2.0",
       "source": "./",
       "author": {
@@ -15,11 +15,15 @@
       },
       "category": "engineering",
       "keywords": [
+        "sips",
         "self-improvement",
         "memory-fabric",
         "delegation",
         "escalation",
         "inherit",
+        "mcp",
+        "codex",
+        "homebase",
         "autonomy-gate",
         "continuity",
         "hooks"

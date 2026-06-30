@@ -1,11 +1,32 @@
 {
   "name": "harness-self-improvement",
   "version": "0.2.0",
-  "description": "Self-improving agent harness with delegation agent surface.",
-  "author": { "name": "RasputinKaiser" },
+  "description": "SIPS: Self Improvement Plugin System home-base with delegation, lifecycle hooks, commands, and MCP control plane.",
+  "author": {
+    "name": "RasputinKaiser",
+    "url": "https://github.com/RasputinKaiser"
+  },
+  "homepage": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
+  "repository": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
   "license": "MIT",
-  "hooks": "./hooks/hooks.json",
-  "agents": "./agents/",
-  "commands": "./commands/",
-  "keywords": ["self-improvement", "memory-fabric", "delegation", "harness"]
+  "mcpServers": "./.mcp.json",
+  "keywords": ["sips", "self-improvement", "memory-fabric", "delegation", "harness", "mcp", "codex", "homebase"],
+  "interface": {
+    "displayName": "SIPS Homebase",
+    "shortDescription": "Shared self-improvement control plane for Codex and other harnesses.",
+    "longDescription": "SIPS, the Self Improvement Plugin System, provides a portable home-base MCP for Codex, NCode, and future harnesses. It surfaces status, verification, task routing, repo mapping, context scanning, recall, and goal inspection while keeping host-specific hook, command, and agent surfaces as adapters.",
+    "developerName": "RasputinKaiser",
+    "category": "Productivity",
+    "capabilities": ["Read", "Interactive"],
+    "websiteURL": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
+    "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+    "defaultPrompt": [
+      "Show SIPS homebase status.",
+      "Route this task through SIPS.",
+      "Scan this repo with SIPS."
+    ],
+    "brandColor": "#0B6E4F",
+    "screenshots": []
+  }
 }

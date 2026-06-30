@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mirror CSI presence files from <cwd>/.codex/csi/ to <cwd>/.ncode/csi/.
+"""Mirror SIPS presence files from <cwd>/.codex/sips/ to <cwd>/.ncode/sips/.
 
 Replaces the inline python3 -c hook in settings.local.json. Silent on
 any failure — never blocks.
@@ -16,8 +16,8 @@ def main():
     except Exception:
         payload = {}
     cwd = (payload.get("cwd") if isinstance(payload, dict) else None) or os.getcwd()
-    src = os.path.join(cwd, ".codex", "csi")
-    dst = os.path.join(cwd, ".ncode", "csi")
+    src = os.path.join(cwd, ".codex", "sips")
+    dst = os.path.join(cwd, ".ncode", "sips")
     if not os.path.isdir(src):
         return
     os.makedirs(dst, exist_ok=True)

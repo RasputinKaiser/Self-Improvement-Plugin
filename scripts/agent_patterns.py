@@ -49,7 +49,7 @@ def parse_since(since_str):
 def fetch_records(mf, scope=None, limit=DEFAULT_LIMIT):
     """Fetch recent learning records (outcomes + learnings).
 
-    Filter to source_backed_agent_run provenance to exclude CSI's seeded
+    Filter to source_backed_agent_run provenance to exclude seeded
     learning records — those would otherwise drown out my actual patterns.
     """
     cmd = ["python3", mf, "search",

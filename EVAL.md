@@ -1,10 +1,10 @@
-# EVAL — harness-self-improvement v2 architecture (inherit-only)
+# EVAL - SIPS v2 architecture (inherit-only)
 
 Self-validation of the v2 plugin manifest coherence. Run command: `python3 scripts/validate_v2.py`. Exit 0 if clean, 1 on any ERROR.
 
 ## Summary
 
-- **checks passed**: 61/61 (100%)
+- **checks passed**: 72/72 (100%)
 - **errors**: 0
 - **warnings**: 0
 - **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
@@ -44,64 +44,75 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 1 | marketplace.json valid + version 0.2.0 | PASS |
 | 2 | marketplace declares delegation/inherit keywords | PASS |
 | 3 | plugin.json version 0.2.0 | PASS |
-| 4 | plugin.json surfaces hooks | PASS |
-| 5 | plugin.json surfaces agents | PASS |
-| 6 | plugin.json surfaces commands | PASS |
-| 7 | plugin.json has NO lib field (dropped in v2) | PASS |
-| 8 | agents/ exists | PASS |
-| 9 | commands/ exists | PASS |
-| 10 | no lib/ directory (model_router dropped) | PASS |
-| 11 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 12 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 13 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 14 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 15 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 16 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 17 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 18 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 19 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 20 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 21 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 22 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
-| 23 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
-| 24 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
-| 25 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
-| 26 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
-| 27 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
-| 28 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 29 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 30 | agent escalate has frontmatter + model: | PASS |
-| 31 | agent escalate model: inherit | PASS |
-| 32 | agent fan-out has frontmatter + model: | PASS |
-| 33 | agent fan-out model: inherit | PASS |
-| 34 | agent memory-curator has frontmatter + model: | PASS |
-| 35 | agent memory-curator model: inherit | PASS |
-| 36 | agent repo-scout has frontmatter + model: | PASS |
-| 37 | agent repo-scout model: inherit | PASS |
-| 38 | agent test-author has frontmatter + model: | PASS |
-| 39 | agent test-author model: inherit | PASS |
-| 40 | all 5 agents present | PASS |
-| 41 | command brainstorm has description | PASS |
-| 42 | command checkpoint has description | PASS |
-| 43 | command escalate has description | PASS |
-| 44 | command fan-out has description | PASS |
-| 45 | command goal has description | PASS |
-| 46 | command improve has description | PASS |
-| 47 | command patterns has description | PASS |
-| 48 | command recall has description | PASS |
-| 49 | command teach has description | PASS |
-| 50 | command verify has description | PASS |
-| 51 | all 10 commands present | PASS |
-| 52 | new script escalation_advisor.py exec | PASS |
-| 53 | new script improvement_injector.py exec | PASS |
-| 54 | new script recall_ranker.py exec | PASS |
-| 55 | no runtime script imports model_router (v2 pivot) | PASS |
-| 56 | observe (Stop: task_outcome_tracker) | PASS |
-| 57 | distill (self_correct.py exists) | PASS |
-| 58 | inject (SessionStart: improvement_injector) | PASS |
-| 59 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 60 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 61 | delegate target (escalate agent exists, model: inherit) | PASS |
+| 4 | plugin.json surfaces mcpServers | PASS |
+| 5 | plugin.json omits host hooks field | PASS |
+| 6 | plugin.json omits host agents field | PASS |
+| 7 | plugin.json omits host commands field | PASS |
+| 8 | plugin.json has interface object | PASS |
+| 9 | plugin.json interface.displayName | PASS |
+| 10 | plugin.json interface.shortDescription | PASS |
+| 11 | plugin.json interface.longDescription | PASS |
+| 12 | plugin.json interface.developerName | PASS |
+| 13 | plugin.json interface.category | PASS |
+| 14 | plugin.json has NO lib field (dropped in v2) | PASS |
+| 15 | MCP manifest declares sips-homebase | PASS |
+| 16 | MCP server uses stdio | PASS |
+| 17 | MCP server points at harness_homebase_mcp.py | PASS |
+| 18 | home-base MCP script exists+exec | PASS |
+| 19 | agents/ exists | PASS |
+| 20 | commands/ exists | PASS |
+| 21 | no lib/ directory (model_router dropped) | PASS |
+| 22 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 23 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 24 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 25 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 26 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 27 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 28 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 29 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 30 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 31 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 32 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 33 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 34 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 35 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 36 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 37 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 38 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 39 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
+| 40 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
+| 41 | agent escalate has frontmatter + model: | PASS |
+| 42 | agent escalate model: inherit | PASS |
+| 43 | agent fan-out has frontmatter + model: | PASS |
+| 44 | agent fan-out model: inherit | PASS |
+| 45 | agent memory-curator has frontmatter + model: | PASS |
+| 46 | agent memory-curator model: inherit | PASS |
+| 47 | agent repo-scout has frontmatter + model: | PASS |
+| 48 | agent repo-scout model: inherit | PASS |
+| 49 | agent test-author has frontmatter + model: | PASS |
+| 50 | agent test-author model: inherit | PASS |
+| 51 | all 5 agents present | PASS |
+| 52 | command brainstorm has description | PASS |
+| 53 | command checkpoint has description | PASS |
+| 54 | command escalate has description | PASS |
+| 55 | command fan-out has description | PASS |
+| 56 | command goal has description | PASS |
+| 57 | command improve has description | PASS |
+| 58 | command patterns has description | PASS |
+| 59 | command recall has description | PASS |
+| 60 | command teach has description | PASS |
+| 61 | command verify has description | PASS |
+| 62 | all 10 commands present | PASS |
+| 63 | new script escalation_advisor.py exec | PASS |
+| 64 | new script improvement_injector.py exec | PASS |
+| 65 | new script recall_ranker.py exec | PASS |
+| 66 | no runtime script imports model_router (v2 pivot) | PASS |
+| 67 | observe (Stop: task_outcome_tracker) | PASS |
+| 68 | distill (self_correct.py exists) | PASS |
+| 69 | inject (SessionStart: improvement_injector) | PASS |
+| 70 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 71 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 72 | delegate target (escalate agent exists, model: inherit) | PASS |
 
 ## What v2 adds over v1
 

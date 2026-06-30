@@ -22,6 +22,8 @@ from pathlib import Path
 
 SCRIPTS_DIR = Path.home() / ".ncode" / "scripts"
 TESTS_DIR = Path.home() / ".ncode" / "tests"
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+HOMEBASE_MCP = PLUGIN_ROOT / "scripts" / "harness_homebase_mcp.py"
 
 
 def run_script_with_input(script, payload):
@@ -451,6 +453,57 @@ def smoke_tool_factory():
     assert "dry-run" in r.stdout.lower(), f"missing dry-run plan: {r.stdout}"
 
 
+def homebase_mcp_lists_tools_jsonl():
+    """home-base MCP lists the portable harness control-plane tools."""
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {},
+    }
+    r = subprocess.run(
+        ["python3", str(HOMEBASE_MCP)],
+        input=json.dumps(request) + "\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert r.returncode == 0, f"MCP list failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    names = {tool["name"] for tool in d["result"]["tools"]}
+    assert "homebase_status" in names, names
+    assert "homebase_verify" in names, names
+    assert "homebase_route" in names, names
+    assert "homebase_context_scan" in names, names
+
+
+def homebase_mcp_status_call_returns_manifest():
+    """homebase_status returns the public harness manifest and MCP tool list."""
+    request = {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+            "name": "homebase_status",
+            "arguments": {"root": str(PLUGIN_ROOT)},
+        },
+    }
+    r = subprocess.run(
+        ["python3", str(HOMEBASE_MCP)],
+        input=json.dumps(request) + "\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert r.returncode == 0, f"MCP status failed: {r.stderr}"
+    d = json.loads(r.stdout)
+    result = d["result"]
+    structured = result["structuredContent"]
+    assert structured["manifest"]["name"] == "harness-self-improvement", structured
+    assert structured["manifest"]["has_mcp_servers"] is True, structured["manifest"]
+    assert "homebase_status" in structured["surfaces"]["mcp_tools"]
+
+
 def tool_factory_subcommand_scaffold_works():
     """tool_factory.py scaffold <name> --summary ... --dry-run reports plan."""
     r = subprocess.run(
@@ -643,33 +696,33 @@ def improvement_injector_surfaces_fresh_entry(tmp_path=None):
 # tree, so it is exercised by the run command itself (cwd = repo root), not here.
 # The cases above cover the three new lifecycle scripts as staged regressions.
 
-# --- csi_presence_mirror ---
+# --- sips_presence_mirror ---
 
-def csi_presence_mirror_silent_when_no_source_dir():
-    """No .codex/csi/ under cwd -> silent exit 0, no stdout, no stderr."""
+def sips_presence_mirror_silent_when_no_source_dir():
+    """No .codex/sips/ under cwd -> silent exit 0, no stdout, no stderr."""
     rc, out, err = run_script_with_input(
-        SCRIPTS_DIR / "csi_presence_mirror.py",
+        PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
         {"cwd": "/tmp"}
     )
     assert rc == 0, f"expected exit 0, got {rc}"
     assert out == "", f"expected no stdout, got {out!r}"
     assert err == "", f"expected no stderr, got {err!r}"
 
-def csi_presence_mirror_copies_files_when_source_exists():
-    """Source .codex/csi/ exists -> both presence files mirrored to <cwd>/.ncode/csi/."""
+def sips_presence_mirror_copies_files_when_source_exists():
+    """Source .codex/sips/ exists -> both presence files mirrored to <cwd>/.ncode/sips/."""
     import shutil
     td = tempfile.mkdtemp()
     try:
-        src = Path(td) / ".codex" / "csi"
+        src = Path(td) / ".codex" / "sips"
         src.mkdir(parents=True)
         (src / "chat-presence.md").write_text("chat presence body\n")
         (src / "rich-presence.md").write_text("rich presence body\n")
         rc, out, err = run_script_with_input(
-            SCRIPTS_DIR / "csi_presence_mirror.py",
+            PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
             {"cwd": td}
         )
         assert rc == 0, f"expected exit 0, got {rc}"
-        dst = Path(td) / ".ncode" / "csi"
+        dst = Path(td) / ".ncode" / "sips"
         chat = (dst / "chat-presence.md").read_text()
         rich = (dst / "rich-presence.md").read_text()
         assert chat == "chat presence body\n", f"chat-presence.md mismatch: {chat!r}"
@@ -677,11 +730,11 @@ def csi_presence_mirror_copies_files_when_source_exists():
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
-def csi_presence_mirror_silent_on_malformed_stdin():
+def sips_presence_mirror_silent_on_malformed_stdin():
     """Malformed JSON stdin -> silent exit 0 (falls back to getcwd, isolated below)."""
     with tempfile.TemporaryDirectory() as td:
         r = subprocess.run(
-            ["python3", str(SCRIPTS_DIR / "csi_presence_mirror.py")],
+            ["python3", str(PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py")],
             input="not json",
             capture_output=True, text=True, timeout=10,
             cwd=td
@@ -781,16 +834,16 @@ def install_sh_check_returns_clean_after_install():
     manifest_path = os.path.expanduser("~/.ncode/.harness.installed.json")
     if not os.path.exists(manifest_path):
         r = subprocess.run(
-            ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh")],
+            ["/bin/bash", str(PLUGIN_ROOT / "install.sh")],
             capture_output=True, text=True, timeout=30,
-            cwd=str(Path.home() / "Code/harness-self-improvement")
+            cwd=str(PLUGIN_ROOT)
         )
         assert r.returncode == 0, f"first install failed: {r.stderr}"
 
     r = subprocess.run(
-        ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh"), "--check"],
+        ["/bin/bash", str(PLUGIN_ROOT / "install.sh"), "--check"],
         capture_output=True, text=True, timeout=10,
-        cwd=str(Path.home() / "Code/harness-self-improvement")
+        cwd=str(PLUGIN_ROOT)
     )
     assert r.returncode == 0, f"--check failed (rc={r.returncode}): {r.stdout}\n{r.stderr}"
     assert "OK" in r.stdout or "in sync" in r.stdout, f"unexpected output: {r.stdout}"
@@ -802,9 +855,9 @@ def install_sh_manifest_has_expected_fields():
     if not os.path.exists(manifest_path):
         # Run install to create one
         subprocess.run(
-            ["/bin/bash", str(Path.home() / "Code/harness-self-improvement/install.sh")],
+            ["/bin/bash", str(PLUGIN_ROOT / "install.sh")],
             capture_output=True, text=True, timeout=30,
-            cwd=str(Path.home() / "Code/harness-self-improvement")
+            cwd=str(PLUGIN_ROOT)
         )
     d = json.load(open(manifest_path))
     assert "commit" in d and len(d["commit"]) >= 7, f"no commit: {d}"
@@ -1396,7 +1449,7 @@ def install_sh_install_cron_flag_recognized():
     # Just verify the script accepts the flag without erroring out on argument parsing
     # by running with no args (should fail with usage, but not crash).
     r = subprocess.run(
-        ["bash", str(Path.home() / "Code/harness-self-improvement/install.sh"), "--help"],
+        ["bash", str(PLUGIN_ROOT / "install.sh"), "--help"],
         capture_output=True, text=True, timeout=5
     )
     # --help isn't a known flag → "unknown arg: --help" rc=2 is fine
@@ -1834,10 +1887,14 @@ SUITES = {
         case("validate_detects_tests", tool_factory_validate_detects_tests_on_known_script),
         case("validate_warns_when_no_tests", tool_factory_validate_warns_when_no_tests),
     ],
-    "csi_presence_mirror": [
-        case("silent_when_no_source_dir", csi_presence_mirror_silent_when_no_source_dir),
-        case("copies_files_when_source_exists", csi_presence_mirror_copies_files_when_source_exists),
-        case("silent_on_malformed_stdin", csi_presence_mirror_silent_on_malformed_stdin),
+    "homebase_mcp": [
+        case("lists_tools_jsonl", homebase_mcp_lists_tools_jsonl),
+        case("status_call_returns_manifest", homebase_mcp_status_call_returns_manifest),
+    ],
+    "sips_presence_mirror": [
+        case("silent_when_no_source_dir", sips_presence_mirror_silent_when_no_source_dir),
+        case("copies_files_when_source_exists", sips_presence_mirror_copies_files_when_source_exists),
+        case("silent_on_malformed_stdin", sips_presence_mirror_silent_on_malformed_stdin),
     ],
     "hook_event_tap": [
         case("passes_through_and_records", hook_event_tap_passes_through_and_records),
