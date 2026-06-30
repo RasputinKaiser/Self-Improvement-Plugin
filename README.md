@@ -13,7 +13,7 @@ A self-improvement harness plugin for NCode, a Claude Code fork, pulled from my 
 
 *+Very Experimental Swift/MacOS Sibling-App | Not Quite Working, but free | Native macOS control surface for the [Swift-Harness](https://github.com/RasputinKaiser/Swift-Harness).*
 
-Self-Improvement-Plugin gives an agent memory-aware startup, safer tool use, session closeout, verification hooks, and fresh-context delegation. It is built for long agent sessions where the agent needs to remember prior work, avoid repeated mistakes, recover from drift, and capture lessons before the context disappears.
+Self-Improvement-Plugin gives an agent memory-aware startup, safer tool use, session closeout, verification hooks, and fresh-context delegation. It is built for long agent sessions where the agent needs to remember prior work, avoid repeated mistakes, recover from drift, and capture lessons before the context disappears. Memory Fabric is being absorbed as the SIPS-owned memory subsystem rather than treated as a separate product lane.
 
 The plugin does not try to make an agent smarter by changing models. It improves the work loop around the model.
 
@@ -65,7 +65,7 @@ The repo is the SIPS harness home-base for Codex, NCode, and future harnesses.
 | `homebase_route` | Choose the right command, agent, script, or MCP path for a task. |
 | `homebase_repo_map` | Map repo files, git state, write scope, and likely test commands. |
 | `homebase_context_scan` | Find oversized context-drain files with bounded-read advice. |
-| `homebase_recall` | Search Memory Fabric for scoped prior lessons when available. |
+| `homebase_recall` | Search the SIPS Memory Fabric subsystem for scoped prior lessons when available. |
 | `homebase_goal` | Inspect persistent harness goal state without mutating it. |
 | `homebase_routes` | List SIPS routes and fallback commands. |
 | `homebase_mcp_freshness` | Check source/cache/config MCP freshness. |
@@ -86,7 +86,7 @@ This release adds:
 - live-service command surface
 - loop closure through session learning capture
 - bounded fresh-context delegation
-- Memory Fabric recall before edits and prompts
+- SIPS-owned Memory Fabric recall before edits and prompts
 - verification support for touched scripts
 - persistent goal loop support through `/goal`
 - fan-out support for parallel task slices
@@ -129,7 +129,7 @@ Self-Improvement-Plugin@harness-local
 | Requirement | Notes |
 |---|---|
 | Python 3.8+ | Required for the hook and utility scripts. |
-| Codex Memory Fabric plugin | Required for Memory Fabric recall, lesson capture, and memory health checks. |
+| SIPS Memory Fabric subsystem | Owned by SIPS for recall, lesson capture, and memory health checks. |
 | SIPS Homebase MCP | Used for deeper cleanup through `harness_gc.py --deep`. |
 
 ## Core workflow
@@ -301,7 +301,7 @@ Relevant scripts:
 | `eval_grader_parity.py` | Golden-vector parity checker between Python and Swift graders. |
 | `fix_drafter.py` | Drafts candidate fixes for eval regressions. |
 
-### Memory Fabric
+### SIPS Memory Fabric
 
 | Utility | Purpose |
 |---|---|

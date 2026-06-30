@@ -136,7 +136,7 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "homebase_recall",
         "title": "SIPS Homebase Recall",
-        "description": "Search Memory Fabric, when installed, for scoped prior lessons relevant to a query.",
+        "description": "Search the SIPS Memory Fabric subsystem for scoped prior lessons relevant to a query.",
         "inputSchema": object_schema(
             {
                 "root": ROOT_PROPERTY,
