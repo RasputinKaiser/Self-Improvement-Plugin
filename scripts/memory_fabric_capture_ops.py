@@ -32,7 +32,7 @@ def record_work(store_path: Path) -> dict[str, Any]:
         tier="work",
         title="Representative capture runner",
         body="Build operational traces for record, search, project, and policy paths.",
-        scope="~/Downloads/CodexSupreme",
+        scope=str(Path.home() / "Downloads/CodexSupreme"),
         tags="capture work",
         provenance_type="source_backed_agent_run",
         evidence_path=str(store_path),
@@ -43,7 +43,7 @@ def record_work(store_path: Path) -> dict[str, Any]:
 
 def project_work(store_path: Path, projection_path: Path) -> dict[str, Any]:
     return project(
-        scope="~/Downloads/CodexSupreme",
+        scope=str(Path.home() / "Downloads/CodexSupreme"),
         output=str(projection_path),
         path=store_path,
     )
@@ -62,6 +62,6 @@ def source_backed_policy() -> dict[str, Any]:
         tier="knowledge",
         text="Plugin source exports the capture command.",
         provenance_type="source_file",
-        evidence_path="~/plugins/codex-memory-fabric/scripts/memory_fabric_capture.py",
+        evidence_path=str(Path.home() / "plugins/codex-memory-fabric/scripts/memory_fabric_capture.py"),
         confidence="high",
     )
