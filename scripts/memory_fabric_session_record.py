@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Memory Fabric session recorder for PostCompact.
 
 After NCode compacts the conversation, record a work-tier memory capturing the
@@ -9,7 +10,6 @@ Advisory-only, non-blocking, silent on any failure.
 Hook input: {"cwd": "...", "transcript_path": "...", "trigger": "manual|auto"}
 Writes a JSON record to the Memory Fabric store. Idempotent per session_id.
 """
-import glob
 import hashlib
 import json
 import os
@@ -19,14 +19,8 @@ import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
 
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 
-
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def main():

@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import sys
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from memory_fabric_cli import main
+from memory_fabric_answer_eval import answer_eval
+from memory_fabric_answer_eval_suite import answer_eval_suite
+from memory_fabric_behavior_probe import probe_behavior_receipt
+from memory_fabric_behavior_receipts import behavior_receipts
+from memory_fabric_live_behavior_cases import behavior_case
+from memory_fabric_budget_plan import budget_plan
+from memory_fabric_capture import capture_representative_usage
+from memory_fabric_causal_audit import causal_audit
+from memory_fabric_causal_hypotheses import causal_hypotheses
+from memory_fabric_claim_support import claim_support_audit
+from memory_fabric_contradiction_audit import contradiction_report
+from memory_fabric_evidence_audit import evidence_audit
+from memory_fabric_evidence_repair import evidence_repair
+from memory_fabric_frontier_audit import frontier_audit
+from memory_fabric_graph import memory_graph
+from memory_fabric_graph_audit import graph_audit
+from memory_fabric_hook_health import hook_health
+from memory_fabric_install import doctor
+from memory_fabric_install_sync import cache_sync
+from memory_fabric_live import REQUIRED_LIVE_TOOLS, live_exposure
+from memory_fabric_live_contract import EXPECTED_TOOL_PARAMS
+from memory_fabric_measurement import measurement_plan
+from memory_fabric_classify import classify_note
+from memory_fabric_promotion import assess_promotion
+from memory_fabric_projection import project, snapshot
+from memory_fabric_projection_audit import audit_projection
+from memory_fabric_runtime_fingerprint import runtime_fingerprint
+from memory_fabric_schema import normalize_confidence, normalize_provenance_type, normalize_tier, schema
+from memory_fabric_schema_behavior import schema_behavior_receipt
+from memory_fabric_search import search_records
+from memory_fabric_release_report import release_report
+from memory_fabric_events import record_from_hook_event
+from memory_fabric_jsonl import append_record, load_records, store_path
+from memory_fabric_records import make_record
+from memory_fabric_readiness_summary import readiness_summary
+from memory_fabric_reasoning_brief import reasoning_brief
+from memory_fabric_reasoning_eval import reasoning_eval
+from memory_fabric_reasoning_eval_suite import reasoning_eval_suite
+from memory_fabric_store_audit import store_audit
+from memory_fabric_telemetry_contract import telemetry_contract
+from memory_fabric_telemetry_audit import telemetry_audit
+from memory_fabric_telemetry_status import telemetry_status
+from memory_fabric_thread_brief import thread_brief
+from memory_fabric_token_coverage import token_coverage
+from memory_fabric_usage import usage_report
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

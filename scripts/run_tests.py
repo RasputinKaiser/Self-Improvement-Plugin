@@ -205,6 +205,20 @@ def prompt_search_finds_records():
         assert "additionalContext" in d, f"bad output: {d}"
         assert "memory_fabric" in d["additionalContext"], "missing header"
 
+
+def memory_fabric_resolver_prefers_sips_local_cli():
+    """SIPS-owned Memory Fabric must resolve from this plugin before legacy cache."""
+    import importlib.util
+
+    resolver_path = PLUGIN_ROOT / "scripts" / "sips_memory_fabric.py"
+    spec = importlib.util.spec_from_file_location("sips_memory_fabric_under_test", resolver_path)
+    assert spec and spec.loader, "resolver spec failed"
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    resolved = Path(module.find_memory_fabric_cli()).resolve()
+    expected = (PLUGIN_ROOT / "scripts" / "memory_fabric.py").resolve()
+    assert resolved == expected, f"expected local SIPS Memory Fabric CLI {expected}, got {resolved}"
+
 # --- Script smoke test ---
 
 def smoke_test_clean_script():
@@ -1812,6 +1826,7 @@ SUITES = {
         case("check_idempotent", patch_effort_check_no_mutation),
     ],
     "memory_fabric": [
+        case("resolver_prefers_sips_local_cli", memory_fabric_resolver_prefers_sips_local_cli),
         case("preflight_silent_on_missing_path", preflight_silent_on_missing_path),
         case("prompt_search_silent_on_empty_prompt", prompt_search_silent_on_empty_prompt),
         case("prompt_search_finds_records", prompt_search_finds_records),

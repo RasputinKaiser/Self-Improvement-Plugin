@@ -636,13 +636,17 @@ def host_audit_payload(root: Path) -> dict[str, Any]:
     legacy_name = "codex-" + "self-improvement"
     legacy_plugin_header = f"[plugins.\"{legacy_name}@ralto-local\"]"
     legacy_mcp_header = f"[mcp_servers.{legacy_name}]"
+    legacy_memory_header = "[plugins.\"codex-memory-fabric@ralto-local\"]"
     old_active = legacy_plugin_header in text and "enabled = true" in text.split(legacy_plugin_header, 1)[1].split("[plugins.", 1)[0]
     old_standalone_active = legacy_mcp_header in text and "enabled = true" in text.split(legacy_mcp_header, 1)[1].split("[mcp_servers.", 1)[0]
+    old_memory_active = legacy_memory_header in text and "enabled = true" in text.split(legacy_memory_header, 1)[1].split("[plugins.", 1)[0]
     findings = []
     if old_active:
         findings.append({"severity": "warning", "detail": "Legacy self-improvement plugin block is still enabled."})
     if old_standalone_active:
         findings.append({"severity": "warning", "detail": "Legacy standalone self-improvement MCP block is still enabled."})
+    if old_memory_active:
+        findings.append({"severity": "warning", "detail": "Standalone Memory Fabric plugin block is still enabled; SIPS should own Memory Fabric locally."})
     if "sips-homebase" not in text:
         findings.append({"severity": "error", "detail": "SIPS sips-homebase MCP block is missing from Codex config."})
     return {

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Memory Fabric thread-brief injector for PreCompact.
 
 Before NCode compacts the conversation, inject a thread-brief so the compacted
@@ -7,23 +8,16 @@ context retains durable memory pointers. Advisory-only, non-blocking.
 Hook input: {"cwd": "...", "transcript_path": "...", "trigger": "manual|auto"}
 Hook output: {"additionalContext": "memory_fabric thread-brief:\n..."}
 """
-import glob
 import json
 import os
 import subprocess
 import sys
 import worktree_scope
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 MAX_TOTAL_CHARS = 2000
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def emit(context):

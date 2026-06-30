@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Memory Fabric prompt-time search.
 
 Fires on UserPromptSubmit. Extracts the user's prompt content and searches
@@ -13,7 +14,6 @@ Hook input:
 Hook output:
   {"additionalContext": "memory_fabric hits:\n..."}
 """
-import glob
 import json
 import os
 import re
@@ -21,10 +21,6 @@ import subprocess
 import sys
 import worktree_scope
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 LIMIT = 3
 MAX_CHARS = 1500
 MIN_QUERY_LEN = 4
@@ -38,9 +34,7 @@ STOPWORDS = {
 }
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def extract_query(prompt):
