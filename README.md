@@ -9,7 +9,8 @@ A self-improvement harness plugin for NCode, a Claude Code fork, pulled from my 
 
 **Suggested GitHub topics:** `agent-harness`, `ai-agents`, `ncode`, `claude-code`, `memory-fabric`, `self-improvement`, `automation`, `evals`, `python`, `developer-tools`
 
-**Very Experimental Swift/MacOS Sibling-App | Not Quite Working, but free | Native macOS control surface for the [Swift-Harness](https://github.com/RasputinKaiser/Swift-Harness).
+*+Very Experimental Swift/MacOS Sibling-App | Not Quite Working, but free | Native macOS control surface for the [Swift-Harness](https://github.com/RasputinKaiser/Swift-Harness).*
+
 Self-Improvement-Plugin gives an agent memory-aware startup, safer tool use, session closeout, verification hooks, and fresh-context delegation. It is built for long agent sessions where the agent needs to remember prior work, avoid repeated mistakes, recover from drift, and capture lessons before the context disappears.
 
 The plugin does not try to make an agent smarter by changing models. It improves the work loop around the model.
