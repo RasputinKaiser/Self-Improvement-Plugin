@@ -15,7 +15,6 @@ Advisory-only, non-blocking, silent on failure.
 Hook input:
   {"hook_event_name": "Stop", "cwd": "...", "session_id": "...", "transcript_path": "..."}
 """
-import glob
 import json
 import os
 import subprocess
@@ -23,18 +22,12 @@ import sys
 import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 MAX_FILES = 10
 MAX_COMMANDS = 5
 MAX_TRANSCRIPT_SIZE = 5 * 1024 * 1024  # 5MB
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def extract_session_activity(transcript_path):

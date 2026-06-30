@@ -13,7 +13,6 @@ Usage:
 
 Advisory-only, silent on failure.
 """
-import glob
 import json
 import os
 import re
@@ -22,16 +21,10 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 DEFAULT_LIMIT = 50
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def parse_since(since_str):
