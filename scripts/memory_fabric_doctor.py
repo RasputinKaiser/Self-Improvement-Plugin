@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Memory Fabric doctor + recent-work surfacing — SessionStart hook.
 
 Does two things:
@@ -15,7 +16,6 @@ Hook output:
   {} on clean + no recent work
   {"additionalContext": "..."} on issues or recent work
 """
-import glob
 import json
 import os
 import subprocess
@@ -23,19 +23,13 @@ import sys
 import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
 MAX_WORK_RECORDS = 3
 MAX_CHARS = 1800
 IMPROVEMENTS_MAX_AGE_DAYS = 14
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def emit(context):

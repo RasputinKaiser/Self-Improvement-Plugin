@@ -46,11 +46,7 @@ FAN_OUT_DIR = Path.home() / ".ncode" / "fan_out"
 SLICE_STATES = ("pending", "running", "done", "blocked", "failed")
 
 
-def find_memory_fabric_cli():
-    """Same discovery logic as memory_fabric_session_record.py — DRY-ish duplication."""
-    cache_root = Path.home() / ".codex/plugins/cache/ralto-local/codex-memory-fabric"
-    candidates = sorted(cache_root.glob("0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli
 
 
 def cmd_prepare(parent, slices, dependencies=None):

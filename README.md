@@ -303,6 +303,10 @@ Relevant scripts:
 
 ### SIPS Memory Fabric
 
+SIPS vendors the Memory Fabric CLI/runtime under `scripts/memory_fabric*.py`.
+Runtime helpers resolve the local `scripts/memory_fabric.py` first; any legacy
+external plugin cache is only a temporary migration fallback.
+
 | Utility | Purpose |
 |---|---|
 | `memory_fabric_preflight.py` | Surfaces prior lessons before edits. |

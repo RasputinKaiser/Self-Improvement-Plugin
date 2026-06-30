@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Memory Fabric preflight hook.
 
 Reads PreToolUse hook input from stdin (Edit/Write/MultiEdit), extracts the
@@ -19,26 +20,17 @@ Hook input (from NCode):
 Hook output (to NCode):
   {"additionalContext": "memory_fabric hits:\n..."}
 """
-import glob
 import json
 import os
 import subprocess
 import sys
 import worktree_scope
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 LIMIT = 3
 MAX_CHARS = 1500
 
 
-def find_memory_fabric_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    if not candidates:
-        return None
-    return candidates[-1]
+from sips_memory_fabric import find_memory_fabric_cli
 
 
 def emit(context):

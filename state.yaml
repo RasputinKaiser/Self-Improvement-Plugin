@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
 updated_at: "2026-06-30T00:00:00Z"
-status: sips_homebase_mcp_owns_codex_self_improvement_surface
+status: sips_homebase_mcp_owns_codex_self_improvement_and_memory_fabric_surface
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   kind: "NCode/Codex plugin"
@@ -37,6 +37,13 @@ verification:
     - "cache-side homebase_host_audit returned status passed"
     - "cache-side homebase_mcp_freshness returned status fresh with 14 homebase_* tools"
     - "README requirements now present Memory Fabric as a SIPS-owned subsystem instead of an external prerequisite"
+    - "SIPS vendors Memory Fabric runtime under scripts/memory_fabric*.py"
+    - "SIPS memory_fabric resolver prefers local scripts/memory_fabric.py over legacy cache fallback"
+    - "python3 scripts/run_tests.py memory_fabric --verbose passed with resolver_prefers_sips_local_cli"
+    - "/usr/bin/python3 scripts/memory_fabric.py --help passed after postponed-annotation compatibility patch"
+    - "cache-side SIPS Memory Fabric CLI and memory_fabric test suite passed"
+    - "~/.codex/config.toml sets codex-memory-fabric@ralto-local enabled = false"
+    - "cache-side homebase_host_audit returned status passed after standalone Memory Fabric disable"
 sips_homebase_mcp:
   manifest: ".mcp.json"
   server: "scripts/harness_homebase_mcp.py"
@@ -56,3 +63,9 @@ sips_homebase_mcp:
     - homebase_perception_plan
     - homebase_tool_factory
   codex_boundary: "source/cache/config can be wired here; already-open Codex sessions still need host refresh before live tool exposure is proven"
+sips_memory_fabric:
+  owner: "SIPS"
+  cli: "scripts/memory_fabric.py"
+  resolver: "scripts/sips_memory_fabric.py"
+  legacy_cache_fallback: "temporary migration fallback only"
+  standalone_codex_plugin_enabled: false

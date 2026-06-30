@@ -22,7 +22,6 @@ Hook input:
 Hook output:
   {"additionalContext": "scoped recall:\n..."}  or {} on no hits
 """
-import glob
 import json
 import os
 import re
@@ -31,10 +30,6 @@ import sys
 import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 LIMIT = 4
 MAX_CHARS = 1800
 MIN_QUERY_LEN = 4
@@ -48,9 +43,7 @@ STOPWORDS = {
 }
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def extract_query(prompt):

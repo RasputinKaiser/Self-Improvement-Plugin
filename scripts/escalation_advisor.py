@@ -23,25 +23,18 @@ Hook input:
 Hook output:
   {"decisionFeedback": {"classification": "stuck", "tips": [...]}}  or {}
 """
-import glob
 import json
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-
-CACHE_ROOT = os.path.expanduser(
-    "~/.codex/plugins/cache/ralto-local/codex-memory-fabric"
-)
 IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
 
 FAILURE_WINDOW_HOURS = 24
 
 
-def find_cli():
-    candidates = sorted(glob.glob(f"{CACHE_ROOT}/0.1.0*/scripts/memory_fabric.py"))
-    return candidates[-1] if candidates else None
+from sips_memory_fabric import find_memory_fabric_cli as find_cli
 
 
 def emit_feedback(classification, tips):
