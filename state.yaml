@@ -36,6 +36,7 @@ verification:
     - "cache-side plugin-creator validation passed for ~/.codex/plugins/cache/harness-local/harness-self-improvement/0.2.0"
     - "cache-side homebase_host_audit returned status passed"
     - "cache-side homebase_mcp_freshness returned status fresh with 14 homebase_* tools"
+    - "README requirements now present Memory Fabric as a SIPS-owned subsystem instead of an external prerequisite"
 sips_homebase_mcp:
   manifest: ".mcp.json"
   server: "scripts/harness_homebase_mcp.py"
