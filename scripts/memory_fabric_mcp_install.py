@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 from typing import Any, Callable
 
 from memory_fabric_install import doctor
@@ -36,18 +37,18 @@ def register_install_tools(mcp: Any, dumps: Callable[[object], str]) -> None:
 
     @mcp.tool()
     def memory_fabric_cache_sync(
-        plugin_root: str = "/Users/ianzvirbulis/plugins/codex-memory-fabric",
-        marketplace_path: str = "/Users/ianzvirbulis/.agents/plugins/marketplace.json",
-        cache_root: str = "/Users/ianzvirbulis/.codex/plugins/cache",
+        plugin_root: str = "",
+        marketplace_path: str = "",
+        cache_root: str = "",
         marketplace_name: str = "",
         execute: bool = False,
     ) -> str:
         """Dry-run or execute guarded source-to-cache sync; live exposure remains separate."""
         return dumps(
             cache_sync(
-                plugin_root=plugin_root,
-                marketplace_path=marketplace_path,
-                cache_root=cache_root,
+                plugin_root=plugin_root or str(Path.home() / "plugins/codex-memory-fabric"),
+                marketplace_path=marketplace_path or str(Path.home() / ".agents/plugins/marketplace.json"),
+                cache_root=cache_root or str(Path.home() / ".codex/plugins/cache"),
                 marketplace_name=marketplace_name,
                 execute=execute,
             )
