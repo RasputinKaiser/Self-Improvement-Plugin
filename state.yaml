@@ -1,9 +1,9 @@
 version: 1
 project: Self-Improvement-Plugin
-updated_at: "2026-06-29T22:40:59Z"
-status: github_ready_renamed
+updated_at: "2026-06-30T00:00:00Z"
+status: sips_homebase_mcp_owns_codex_self_improvement_surface
 source:
-  path: "$HOME/Code/harness-self-improvement"
+  path: "$HOME/Code/Self-Improvement-Plugin"
   kind: "NCode/Codex plugin"
   git_branch: "main"
   git_tracking: "origin/main"
@@ -25,5 +25,33 @@ verification:
     - "python3 scripts/validate_harness.py passed"
     - "python3 scripts/validate_v2.py passed on 2026-06-29T22:36Z"
     - "python3 scripts/run_tests.py passed with 90 pass, 0 fail on 2026-06-29T22:40Z"
+    - "python3 scripts/run_tests.py homebase_mcp --verbose passed with 2 pass, 0 fail"
+    - "python3 scripts/validate_v2.py passed after MCP contract wiring"
+    - "python3 /Users/ianzvirbulis/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py /Users/ianzvirbulis/Code/Self-Improvement-Plugin passed"
+    - "python3 scripts/harness_homebase_mcp.py tools/list JSONL smoke exposed homebase_* tools"
     - "README lists all 10 slash commands, 5 delegation agents, and utility scripts"
     - "README install command uses RasputinKaiser/Self-Improvement-Plugin"
+    - "old active legacy self-improvement plugin and standalone MCP blocks removed from /Users/ianzvirbulis/.codex/config.toml"
+    - "SIPS source/cache scans found no legacy self-improvement references in the plugin bundle"
+    - "cache-side plugin-creator validation passed for /Users/ianzvirbulis/.codex/plugins/cache/harness-local/harness-self-improvement/0.2.0"
+    - "cache-side homebase_host_audit returned status passed"
+    - "cache-side homebase_mcp_freshness returned status fresh with 14 homebase_* tools"
+sips_homebase_mcp:
+  manifest: ".mcp.json"
+  server: "scripts/harness_homebase_mcp.py"
+  tools:
+    - homebase_status
+    - homebase_verify
+    - homebase_route
+    - homebase_repo_map
+    - homebase_context_scan
+    - homebase_recall
+    - homebase_goal
+    - homebase_routes
+    - homebase_mcp_freshness
+    - homebase_host_audit
+    - homebase_distill_context
+    - homebase_execution_repro
+    - homebase_perception_plan
+    - homebase_tool_factory
+  codex_boundary: "source/cache/config can be wired here; already-open Codex sessions still need host refresh before live tool exposure is proven"

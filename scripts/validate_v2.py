@@ -3,7 +3,8 @@
 
 Checks (all read-only; exit 0 if clean, 1 if any ERROR):
   1. marketplace.json + plugin.json are valid JSON and version == 0.2.0.
-  2. plugin.json points at existing hooks/, agents/, commands/ surfaces (no lib/).
+  2. plugin.json points at the MCP surface and omits host-specific hook/agent/command fields.
+  2b. plugin.json points at a SIPS MCP server manifest and home-base MCP script.
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
   4. The declared agents exist, have frontmatter, and declare `model: inherit`.
   5. The declared commands exist with `---\ndescription:` frontmatter.
@@ -24,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".ncode-plugin" / "marketplace.json"
 PLUGIN_JSON = ROOT / ".codex-plugin" / "plugin.json"
 HOOKS = ROOT / "hooks" / "hooks.json"
+MCP_JSON = ROOT / ".mcp.json"
 AGENTS_DIR = ROOT / "agents"
 COMMANDS_DIR = ROOT / "commands"
 EVAL = ROOT / "EVAL.md"
@@ -62,6 +64,7 @@ def check(name, ok, detail=""):
 mp = load_json(MARKETPLACE)
 pj = load_json(PLUGIN_JSON)
 hk = load_json(HOOKS)
+mcp = load_json(MCP_JSON)
 
 if mp:
     plug = (mp.get("plugins") or [{}])[0]
@@ -74,10 +77,28 @@ if mp:
 
 if pj:
     check("plugin.json version 0.2.0", pj.get("version") == "0.2.0", pj.get("version"))
-    for surf, rel in [("hooks", "./hooks/hooks.json"), ("agents", "./agents/"),
-                      ("commands", "./commands/")]:
-        check(f"plugin.json surfaces {surf}", pj.get(surf) == rel, pj.get(surf))
+    check("plugin.json surfaces mcpServers", pj.get("mcpServers") == "./.mcp.json", pj.get("mcpServers"))
+    check("plugin.json omits host hooks field", "hooks" not in pj, pj.get("hooks"))
+    check("plugin.json omits host agents field", "agents" not in pj, pj.get("agents"))
+    check("plugin.json omits host commands field", "commands" not in pj, pj.get("commands"))
+    interface = pj.get("interface") or {}
+    check("plugin.json has interface object", isinstance(interface, dict) and bool(interface), str(type(interface)))
+    for field in ("displayName", "shortDescription", "longDescription", "developerName", "category"):
+        check(f"plugin.json interface.{field}", bool(interface.get(field)), str(interface.get(field)))
     check("plugin.json has NO lib field (dropped in v2)", "lib" not in pj, pj.get("lib"))
+
+if mcp:
+    server = (mcp.get("mcpServers") or {}).get("sips-homebase") or {}
+    args = server.get("args") or []
+    check("MCP manifest declares sips-homebase", bool(server), str(mcp.get("mcpServers")))
+    check("MCP server uses stdio", server.get("type") == "stdio", server.get("type"))
+    check("MCP server points at harness_homebase_mcp.py",
+          any("harness_homebase_mcp.py" in str(arg) for arg in args),
+          str(args))
+    mcp_script = ROOT / "scripts" / "harness_homebase_mcp.py"
+    check("home-base MCP script exists+exec",
+          mcp_script.exists() and os.access(mcp_script, os.X_OK),
+          str(mcp_script))
 
 # 2. surfaces exist; lib/ must NOT
 for d in (AGENTS_DIR, COMMANDS_DIR):
@@ -174,7 +195,7 @@ total = len(checks)
 rate = (passed / total * 100) if total else 0
 
 lines = []
-lines.append("# EVAL — harness-self-improvement v2 architecture (inherit-only)\n")
+lines.append("# EVAL - SIPS v2 architecture (inherit-only)\n")
 lines.append("Self-validation of the v2 plugin manifest coherence. Run command: "
              "`python3 scripts/validate_v2.py`. Exit 0 if clean, 1 on any ERROR.\n")
 lines.append("## Summary\n")

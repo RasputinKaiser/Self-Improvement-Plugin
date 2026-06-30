@@ -2,7 +2,7 @@
 """Self-correction layer — proactive analyzer, not a hook.
 
 Reads recent Memory Fabric records (filtered to source_backed_agent_run to
-exclude CSI's seeded noise), identifies failure patterns, lists untested
+exclude seeded noise), identifies failure patterns, lists untested
 scripts, surfaces repeated mistakes, and proposes concrete fixes. Writes a
 markdown report to ~/.ncode/improvements.md.
 

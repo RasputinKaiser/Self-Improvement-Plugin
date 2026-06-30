@@ -8,7 +8,7 @@ Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/brainstorm.py --json` to survey curre
 Read the result. Then **dispatch the `escalate` agent** to draft a full build plan for the highest-leverage gap (the top entry). Give the escalate agent:
 
 - The gap name and description
-- The current capability map (from `~/Code/harness-self-improvement/references/capability_map.md`)
+- The current capability map (from `references/capability_map.md` in this plugin)
 - Instruction to produce: a phased plan with concrete file paths, new types/modules, UX patterns to borrow from Codex App / Claude Code, test strategy, and risk/rollback notes
 - Constraint: do NOT write any code — produce the plan only. The user will review and decide whether to implement.
 
@@ -19,4 +19,4 @@ Present the user with:
 
 Append a one-line summary to `~/.ncode/improvements.md` under `## /brainstorm sweep — <ts>` noting what the top gap was and whether the escalate agent produced a plan.
 
-Do not edit `~/.ncode/scripts/*` or `~/Code/harness-self-improvement/` beyond the journal append. If the escalate agent suggests code changes, surface them as proposals only — the user explicitly reviews before any implementation.
+Do not edit `~/.ncode/scripts/*` or the SIPS plugin source beyond the journal append. If the escalate agent suggests code changes, surface them as proposals only - the user explicitly reviews before any implementation.

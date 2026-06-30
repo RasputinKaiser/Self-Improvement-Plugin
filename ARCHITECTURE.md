@@ -1,4 +1,4 @@
-# Self-Improvement Harness v2 — Architecture & Report
+# SIPS v2 — Self Improvement Plugin System Architecture & Report
 
 A design for the most capable practical "self-improvement" plugin for an NCode
 (Claude Code fork) agent that **normally runs GLM 5.2** and **occasionally runs a
@@ -13,7 +13,7 @@ Distributed as a `marketplace.json` plugin (`/plugin marketplace add ...`).
 
 ## 1. Verdict up front
 
-The repo today (`harness-self-improvement@0.1.0`) is a strong **lifecycle-hook
+The repo today (SIPS v2) is a strong **lifecycle-hook
 layer**: 22 scripts wired across PreToolUse → PostToolUse → SessionStart →
 UserPromptSubmit → PreCompact → PostCompact → Stop, plus a Memory Fabric
 integration and a 38-case regression harness. It already does the hard,
@@ -33,8 +33,9 @@ It has **three gaps** that block "extremely versatile":
    never consumed → no compounding.
 
 v2 keeps the entire existing hook layer and adds the **command surface**, the
-**agent surface**, and **loop closure**. Net new artifacts: 4 agents, 7 commands,
-3 hook scripts. Everything else is reused.
+**agent surface**, **loop closure**, and a portable **SIPS Homebase MCP**. The public
+repo should be the SIPS control-plane home for Codex, NCode, and future harnesses;
+host-specific surfaces are adapters, not separate sources of truth.
 
 ---
 
@@ -100,10 +101,11 @@ swaps.
 ## 4. Full architecture (component map)
 
 ```
-harness-self-improvement/  (marketplace plugin root)
+Self-Improvement-Plugin/  (marketplace plugin root)
 ├── .ncode-plugin/marketplace.json      # marketplace manifest (the distributable)
 ├── .codex-plugin/plugin.json           # plugin manifest → hooks + agents + commands
 ├── hooks/hooks.json                    # lifecycle wiring (existing + 3 new)
+├── .mcp.json                           # home-base MCP server declaration
 ├── agents/                        [NEW] # subagent surface (all model: inherit)
 │   ├── escalate.md                      #   bounded subtask in a fresh context
 │   ├── memory-curator.md                #   dedupe/promote/expire Memory Fabric
@@ -119,6 +121,7 @@ harness-self-improvement/  (marketplace plugin root)
 │   └── teach.md                         #   record a hand-written lesson into Memory Fabric
 └── scripts/                             # 22 existing + 3 new lifecycle scripts
     ├── (existing 22 …)
+    ├── harness_homebase_mcp.py   [NEW] # portable MCP tools for Codex/NCode/future harnesses
     ├── escalation_advisor.py      [NEW] # PostToolUse: detect "stuck", suggest /escalate
     ├── improvement_injector.py    [NEW] # SessionStart: read improvements.md → context (loop closure)
     └── recall_ranker.py           [NEW] # UserPromptSubmit: scoped recall depth
@@ -136,7 +139,7 @@ session model.
 | **PreToolUse** | `Edit\|Write\|MultiEdit` | autonomy_gate → memory_fabric_preflight |
 | | `Bash\|apply_patch` | autonomy_gate |
 | **PostToolUse** | `Edit\|Write\|MultiEdit` | script_smoke → **escalation_advisor** |
-| | `Bash\|apply_patch\|Edit\|Write\|mcp__.*` | csi_presence_mirror |
+| | `Bash\|apply_patch\|Edit\|Write\|mcp__.*` | sips_presence_mirror |
 | **SessionStart** | `startup\|resume\|clear\|compact` | validate_harness → memory_fabric_doctor → proactive_drift → agent_patterns --brief → **improvement_injector** |
 | **UserPromptSubmit** | — | **recall_ranker** (replaces raw prompt_search) → probe_hook |
 | **PreCompact** | `manual\|auto` | memory_fabric_compact_brief → compact_continuity |
