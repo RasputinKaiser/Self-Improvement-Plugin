@@ -5,7 +5,7 @@
 ![Status: dev](https://img.shields.io/badge/status-dev-orange)
 ![NCode plugin](https://img.shields.io/badge/NCode-plugin-purple)
 
-A self-improvement harness plugin for NCode, a Claude Code fork, pulled from my personal Codex plugins and combined.
+A self-improvement harness plugin for NCode, a Claude Code fork, pulled from my personal Codex plugins and combined. This is extremely experimental and WIP, testing ended and I'm out of usage, so here's some bones!
 
 **Suggested GitHub topics:** `agent-harness`, `ai-agents`, `ncode`, `claude-code`, `memory-fabric`, `self-improvement`, `automation`, `evals`, `python`, `developer-tools`
 
