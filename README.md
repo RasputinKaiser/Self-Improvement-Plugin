@@ -53,7 +53,7 @@ Expect sharp edges. This is an active development harness, not a packaged end-us
 | CI | Works for the core | GitHub Actions compiles scripts, checks Python floor, validates manifests, and runs targeted suites on Ubuntu/macOS. |
 | Packaging | Partial | `pyproject.toml` declares metadata and Python floor; no package entry points yet. |
 | Full pytest suite | Partial | Pytest covers path resolution, Homebase MCP smoke, EVAL drift, and hook-contract execution. Full case migration remains planned. |
-| Memory schema versioning | Not done | Planned before broader H2/H3 adoption. |
+| Memory schema versioning | Partial | New records and the published schema carry `schema_version: 1.0`; migration tooling is still planned. |
 | Windows support | Untested | Current support target is macOS/Linux POSIX hosts. |
 
 ## What it adds
@@ -412,7 +412,7 @@ Current expected suite size:
 
 ```text
 run_tests.py: 91 cases
-pytest: 8 tests
+pytest: 13 tests
 ```
 
 ## When to use each command

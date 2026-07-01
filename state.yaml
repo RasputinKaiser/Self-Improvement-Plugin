@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
-status: h1_pytest_bridge
-updated_at: "2026-07-01T23:10:24Z"
+status: h1_memory_schema_store_fuzz
+updated_at: "2026-07-01T23:15:47Z"
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   branch: main
@@ -34,4 +34,6 @@ notes:
   - "hook_contract suite executes every hooks.json command and enforces exit-zero plus JSON-or-empty stdout"
   - "validate_v2.py supports --check-eval and --write-eval so CI can block EVAL.md drift"
   - "tests/ adds pytest bridge coverage for path resolution, Homebase MCP, EVAL drift, and hook-contract execution"
+  - "Memory Fabric records and schema data now carry schema_version 1.0"
+  - "pytest covers schema-version writes, legacy read backfill, invalid JSONL sentinels, and raw store-audit failures"
   - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, targeted SIPS suites, and pytest"
