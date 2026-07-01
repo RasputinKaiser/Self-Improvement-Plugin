@@ -1,0 +1,25 @@
+version: 1
+project: Self-Improvement-Plugin
+status: h1_foundation_ci_bootstrap
+updated_at: "2026-07-01T00:00:00Z"
+source:
+  path: "$HOME/Code/Self-Improvement-Plugin"
+  branch: main
+  remote: "https://github.com/RasputinKaiser/Self-Improvement-Plugin.git"
+  public_author: RasputinKaiser
+sips:
+  mcp_server: sips-homebase
+  memory_fabric_owner: SIPS
+  memory_fabric_cli: scripts/memory_fabric.py
+  memory_fabric_resolver: scripts/sips_memory_fabric.py
+verification:
+  current_pass:
+    - "python -m compileall scripts"
+    - "python scripts/validate_v2.py"
+    - "python scripts/run_tests.py memory_fabric --verbose"
+    - "python scripts/run_tests.py homebase_mcp --verbose"
+    - "python scripts/run_tests.py sips_presence_mirror --verbose"
+notes:
+  - "run_tests.py defaults to repo-local scripts so targeted suites can run from a fresh clone"
+  - "pyproject.toml declares the current Python floor"
+  - "GitHub Actions CI verifies compile, manifest coherence, and targeted SIPS suites"
