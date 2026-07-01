@@ -17,7 +17,9 @@ import re
 import sys
 from pathlib import Path
 
-NCODE_DIR = Path.home() / ".ncode"
+from sips_paths import harness_home
+
+NCODE_DIR = harness_home()
 NCODE_MD = Path.home() / "NCODE.md"
 SETTINGS_LOCAL = NCODE_DIR / "settings.local.json"
 SETTINGS_GLOBAL = NCODE_DIR / "settings.json"
@@ -62,7 +64,7 @@ for m in matches:
     if p.startswith("~"):
         p = str(Path(p).expanduser())
     elif p.startswith(".ncode/"):
-        p = str(Path.home() / p)
+        p = str(harness_home() / p.removeprefix(".ncode/"))
     elif p.startswith("references/"):
         p = str(NCODE_DIR / p)
     elif p.startswith("/Users/"):

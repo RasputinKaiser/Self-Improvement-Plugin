@@ -21,7 +21,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-CONTINUITY_DIR = Path.home() / ".ncode" / "continuity"
+from sips_paths import continuity_dir, goal_state_path
+
+CONTINUITY_DIR = continuity_dir()
 CONTINUITY_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_RECENT_FILES = 15
@@ -142,7 +144,7 @@ def _goal_block():
 
     Returns None if no goal, goal is complete, or file is missing.
     """
-    goal_path = Path.home() / ".ncode" / "goal_state.json"
+    goal_path = goal_state_path()
     if not goal_path.exists():
         return None
     try:

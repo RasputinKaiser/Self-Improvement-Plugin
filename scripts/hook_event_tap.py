@@ -24,11 +24,40 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
-LOG_PATH = os.path.expanduser("~/.ncode/hook_events.jsonl")
+try:
+    from sips_paths import hook_errors_path, hook_events_path
+except Exception:  # pragma: no cover - fallback for partially installed copies
+    def hook_events_path():
+        return Path(os.path.expanduser("~/.ncode/hook_events.jsonl"))
+
+    def hook_errors_path():
+        return Path(os.path.expanduser("~/.ncode/logs/hook_errors.jsonl"))
+
 MAX_PREVIEW = 400
+
+
+def debug_enabled():
+    return os.environ.get("SIPS_DEBUG") in {"1", "true", "TRUE", "yes", "YES"}
+
+
+def append_jsonl(path, record):
+    try:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
+
+
+def append_debug_error(record):
+    if debug_enabled():
+        append_jsonl(hook_errors_path(), record)
 
 
 def classify_outcome(exit_code, stdout_bytes, stderr_bytes):
@@ -96,6 +125,7 @@ def main():
             env=env,
         )
     except subprocess.TimeoutExpired:
+        duration_ms = int((time.time() - start) * 1000)
         event = {
             "id": f"{int(time.time() * 1000)}-{os.getpid()}-{uuid.uuid4().hex[:6]}",
             "ts": datetime.now(timezone.utc).isoformat(),
@@ -104,21 +134,23 @@ def main():
             "toolName": tool_name,
             "toolInputPreview": tool_input_preview,
             "exitCode": -1,
-            "durationMs": int((time.time() - start) * 1000),
+            "durationMs": duration_ms,
             "outcome": "timeout",
             "stdoutPreview": "",
             "stderrPreview": f"timeout after {args.timeout}s",
         }
-        try:
-            os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-            with open(LOG_PATH, "a") as f:
-                f.write(json.dumps(event) + "\n")
-        except OSError:
-            pass
+        append_jsonl(hook_events_path(), event)
+        append_debug_error({
+            **event,
+            "kind": "hook_timeout",
+            "command": cmd,
+            "stdinPreview": stdin_data.decode("utf-8", errors="replace")[:MAX_PREVIEW],
+        })
         # Pass through any output we did get
         sys.stdout.flush()
         sys.exit(124)
     except Exception as e:
+        duration_ms = int((time.time() - start) * 1000)
         event = {
             "id": f"{int(time.time() * 1000)}-{os.getpid()}",
             "ts": datetime.now(timezone.utc).isoformat(),
@@ -127,17 +159,19 @@ def main():
             "toolName": tool_name,
             "toolInputPreview": tool_input_preview,
             "exitCode": -1,
-            "durationMs": int((time.time() - start) * 1000),
+            "durationMs": duration_ms,
             "outcome": "error",
             "stdoutPreview": "",
             "stderrPreview": f"tap exception: {e}",
         }
-        try:
-            os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-            with open(LOG_PATH, "a") as f:
-                f.write(json.dumps(event) + "\n")
-        except OSError:
-            pass
+        append_jsonl(hook_events_path(), event)
+        append_debug_error({
+            **event,
+            "kind": "tap_exception",
+            "command": cmd,
+            "traceback": traceback.format_exc(),
+            "stdinPreview": stdin_data.decode("utf-8", errors="replace")[:MAX_PREVIEW],
+        })
         sys.exit(1)
 
     # Pass through stdout (the hook's JSON additionalContext, if any)
@@ -161,12 +195,16 @@ def main():
         "stdoutPreview": r.stdout.decode("utf-8", errors="replace")[:MAX_PREVIEW],
         "stderrPreview": r.stderr.decode("utf-8", errors="replace")[:MAX_PREVIEW],
     }
-    try:
-        os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-        with open(LOG_PATH, "a") as f:
-            f.write(json.dumps(event) + "\n")
-    except OSError:
-        pass  # never break the wrapped hook with a logging failure
+    append_jsonl(hook_events_path(), event)
+    if r.returncode != 0:
+        append_debug_error({
+            **event,
+            "kind": "wrapped_hook_nonzero",
+            "command": cmd,
+            "stdout": r.stdout.decode("utf-8", errors="replace"),
+            "stderr": r.stderr.decode("utf-8", errors="replace"),
+            "stdinPreview": stdin_data.decode("utf-8", errors="replace")[:MAX_PREVIEW],
+        })
 
     sys.exit(r.returncode)
 

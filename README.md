@@ -1,13 +1,13 @@
 # SIPS - Self-Improvement-Plugin System
 
-![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Status: dev](https://img.shields.io/badge/status-dev-orange)
 ![NCode plugin](https://img.shields.io/badge/NCode-plugin-purple)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W7C9TC7)
 
-A self-improvement harness plugin for NCode, a Claude Code fork, pulled from my personal Codex plugins and combined. This is extremely experimental and WIP, testing ended and I'm out of usage, so here's some bones!
+A self-improvement harness plugin for NCode, Codex, and future agent harnesses. It is experimental, but it now has a CI-backed core: SIPS Homebase MCP, SIPS-owned Memory Fabric recall, lifecycle hooks, slash-command surfaces, and focused regression suites.
 
 **Suggested GitHub topics:** `agent-harness`, `ai-agents`, `ncode`, `claude-code`, `memory-fabric`, `self-improvement`, `automation`, `evals`, `python`, `developer-tools`
 
@@ -28,7 +28,7 @@ It helps each session answer:
 
 ## Public status
 
-This project is public-readable documentation for a local-first NCode harness workflow. It assumes a working local NCode setup and a `~/.ncode` harness directory.
+This project is public-readable documentation and plugin source for a local-first harness workflow. It defaults to `~/.ncode`, but runtime scripts now resolve `$SIPS_HOME` first, then `$NCODE_HOME`, then `~/.ncode`.
 
 The repo is useful if you are exploring:
 
@@ -40,6 +40,21 @@ The repo is useful if you are exploring:
 - long-running agent workflows
 
 Expect sharp edges. This is an active development harness, not a packaged end-user app.
+
+### Status matrix
+
+| Surface | Status | Notes |
+|---|---|---|
+| Plugin manifests | Works | `validate_v2.py` checks the v0.2.0 manifest, hooks, commands, agents, and MCP declaration. |
+| SIPS Homebase MCP | Works | `homebase_status` and related read-only tools are exercised by regression tests. |
+| Memory Fabric | Works, SIPS-owned | The CLI/runtime is vendored under `scripts/memory_fabric.py`; SIPS resolves it before legacy cache fallbacks. |
+| Hook event tap | Works | Silent by default; set `SIPS_DEBUG=1` to write hook failure details to `logs/hook_errors.jsonl`. |
+| Regression runner | Works, pre-pytest | `scripts/run_tests.py` is still bespoke, but targeted suites run from a fresh clone without `~/.ncode/tests`. |
+| CI | Works for the core | GitHub Actions compiles scripts, checks Python floor, validates manifests, and runs targeted suites on Ubuntu/macOS. |
+| Packaging | Partial | `pyproject.toml` declares metadata and Python floor; no package entry points yet. |
+| Full pytest suite | Not done | Planned migration from the bespoke runner. |
+| Memory schema versioning | Not done | Planned before broader H2/H3 adoption. |
+| Windows support | Untested | Current support target is macOS/Linux POSIX hosts. |
 
 ## What it adds
 
@@ -128,7 +143,7 @@ Self-Improvement-Plugin@harness-local
 
 | Requirement | Notes |
 |---|---|
-| Python 3.9+ | Required for the hook and utility scripts. CI runs on 3.9 and 3.12. |
+| Python 3.10+ | Required for the hook and utility scripts. CI runs on 3.10 and 3.12. |
 | SIPS Memory Fabric subsystem | Owned by SIPS for recall, lesson capture, and memory health checks. |
 | SIPS Homebase MCP | Used for deeper cleanup through `harness_gc.py --deep`. |
 

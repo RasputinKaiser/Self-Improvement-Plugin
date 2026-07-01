@@ -41,7 +41,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-FAN_OUT_DIR = Path.home() / ".ncode" / "fan_out"
+from sips_paths import harness_home
+
+FAN_OUT_DIR = harness_home() / "fan_out"
 
 SLICE_STATES = ("pending", "running", "done", "blocked", "failed")
 
@@ -224,7 +226,7 @@ def record_lesson(state, slice_state, lesson_text):
              "--tier", "learning",
              "--title", title,
              "--body", body,
-             "--scope", str(Path.home() / ".ncode"),
+             "--scope", str(harness_home()),
              "--tags", f"fan_out,slice:{slice_state['id']},run:{state['id']}",
              "--provenance-type", "source_backed_agent_run",
              "--confidence", "medium",

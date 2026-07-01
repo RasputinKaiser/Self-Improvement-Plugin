@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
+from sips_paths import goal_state_path
 
 PLUGIN_VERSION = "0.2.0"
 STDIO_MODE = "framed"
@@ -542,7 +543,7 @@ def recall_payload(root: Path, query: str, limit: int) -> dict[str, Any]:
 
 def goal_payload(root: Path) -> dict[str, Any]:
     candidates = [
-        Path.home() / ".ncode" / "goal_state.json",
+        goal_state_path(),
         root / "state.yaml",
     ]
     states = []

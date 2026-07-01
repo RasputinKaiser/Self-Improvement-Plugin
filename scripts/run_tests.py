@@ -840,6 +840,93 @@ def hook_event_tap_classifies_block():
     assert d["outcome"] == "block", f"expected outcome=block, got {d['outcome']}"
 
 
+def sips_paths_env_precedence():
+    """SIPS_HOME wins over NCODE_HOME; NCODE_HOME wins over ~/.ncode."""
+    import importlib
+    import sips_paths
+
+    old_sips = os.environ.get("SIPS_HOME")
+    old_ncode = os.environ.get("NCODE_HOME")
+    try:
+        with tempfile.TemporaryDirectory() as sips_td, tempfile.TemporaryDirectory() as ncode_td:
+            os.environ["SIPS_HOME"] = sips_td
+            os.environ["NCODE_HOME"] = ncode_td
+            importlib.reload(sips_paths)
+            assert sips_paths.harness_home() == Path(sips_td).resolve()
+
+            del os.environ["SIPS_HOME"]
+            importlib.reload(sips_paths)
+            assert sips_paths.harness_home() == Path(ncode_td).resolve()
+    finally:
+        if old_sips is None:
+            os.environ.pop("SIPS_HOME", None)
+        else:
+            os.environ["SIPS_HOME"] = old_sips
+        if old_ncode is None:
+            os.environ.pop("NCODE_HOME", None)
+        else:
+            os.environ["NCODE_HOME"] = old_ncode
+        importlib.reload(sips_paths)
+
+
+def sips_paths_module_constants_respect_sips_home():
+    """Modules with import-time constants should resolve through SIPS_HOME."""
+    with tempfile.TemporaryDirectory() as td:
+        env = dict(os.environ)
+        env["SIPS_HOME"] = td
+        code = (
+            "import sys; "
+            f"sys.path.insert(0, {str(SCRIPTS_DIR)!r}); "
+            "import goal_state, improvement_injector; "
+            "print(goal_state.STATE_PATH); "
+            "print(improvement_injector.IMPROVEMENTS_PATH)"
+        )
+        r = subprocess.run(
+            ["python3", "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=env,
+        )
+        assert r.returncode == 0, f"import check failed: {r.stderr}"
+        lines = r.stdout.strip().splitlines()
+        assert lines[0] == str(Path(td).resolve() / "goal_state.json"), lines
+        assert lines[1] == str(Path(td).resolve() / "improvements.md"), lines
+
+
+def hook_event_tap_debug_logs_nonzero_to_sips_home():
+    """SIPS_DEBUG=1 writes wrapped-hook failures to <SIPS_HOME>/logs/hook_errors.jsonl."""
+    with tempfile.TemporaryDirectory() as td:
+        env = dict(os.environ)
+        env["SIPS_HOME"] = td
+        env["SIPS_DEBUG"] = "1"
+        r = subprocess.run(
+            [
+                "python3", str(SCRIPTS_DIR / "hook_event_tap.py"),
+                "--event", "PreToolUse",
+                "--script", "_debug_fail.py",
+                "--", "python3", "-c",
+                "import sys; print('boom from wrapped hook', file=sys.stderr); sys.exit(7)",
+            ],
+            input="{}",
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=env,
+        )
+        assert r.returncode == 7, f"wrapped return code not preserved: {r.returncode}"
+        event_log = Path(td) / "hook_events.jsonl"
+        error_log = Path(td) / "logs" / "hook_errors.jsonl"
+        assert event_log.exists(), f"missing event log: {event_log}"
+        assert error_log.exists(), f"missing debug error log: {error_log}"
+        event = json.loads(event_log.read_text().strip().splitlines()[-1])
+        error = json.loads(error_log.read_text().strip().splitlines()[-1])
+        assert event["script"] == "_debug_fail.py"
+        assert event["exitCode"] == 7
+        assert error["kind"] == "wrapped_hook_nonzero"
+        assert "boom from wrapped hook" in error["stderr"]
+
+
 # --- install.sh (Phase 4) ---
 
 def install_sh_check_returns_clean_after_install():
@@ -1914,6 +2001,11 @@ SUITES = {
     "hook_event_tap": [
         case("passes_through_and_records", hook_event_tap_passes_through_and_records),
         case("classifies_block", hook_event_tap_classifies_block),
+    ],
+    "phase0_foundation": [
+        case("sips_paths_env_precedence", sips_paths_env_precedence),
+        case("module_constants_respect_sips_home", sips_paths_module_constants_respect_sips_home),
+        case("hook_tap_debug_logs_nonzero", hook_event_tap_debug_logs_nonzero_to_sips_home),
     ],
     "install_sh": [
         case("check_returns_clean_after_install", install_sh_check_returns_clean_after_install),

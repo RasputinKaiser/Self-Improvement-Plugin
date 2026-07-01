@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
-status: h1_foundation_ci_bootstrap
-updated_at: "2026-07-01T00:00:00Z"
+status: h1_phase0_truth_path_debug
+updated_at: "2026-07-01T23:03:28Z"
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   branch: main
@@ -14,12 +14,17 @@ sips:
   memory_fabric_resolver: scripts/sips_memory_fabric.py
 verification:
   current_pass:
-    - "python -m compileall scripts"
-    - "python scripts/validate_v2.py"
-    - "python scripts/run_tests.py memory_fabric --verbose"
-    - "python scripts/run_tests.py homebase_mcp --verbose"
-    - "python scripts/run_tests.py sips_presence_mirror --verbose"
+    - "python3 -m compileall scripts"
+    - "python3 scripts/validate_v2.py"
+    - "python3 scripts/run_tests.py memory_fabric --verbose"
+    - "python3 scripts/run_tests.py phase0_foundation --verbose"
+    - "python3 scripts/run_tests.py homebase_mcp --verbose"
+    - "python3 scripts/run_tests.py sips_presence_mirror --verbose"
+    - "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/Code/Self-Improvement-Plugin"
+    - "vermin --target=3.10- --no-tips scripts (via temporary venv)"
 notes:
   - "run_tests.py defaults to repo-local scripts so targeted suites can run from a fresh clone"
-  - "pyproject.toml declares the current Python floor"
-  - "GitHub Actions CI verifies compile, manifest coherence, and targeted SIPS suites"
+  - "pyproject.toml declares Python 3.10+ as the current supported floor"
+  - "sips_paths.py centralizes SIPS_HOME -> NCODE_HOME -> ~/.ncode path resolution"
+  - "SIPS_DEBUG=1 writes hook failures to logs/hook_errors.jsonl without changing silent production defaults"
+  - "GitHub Actions CI verifies compile, Python floor, manifest coherence, and targeted SIPS suites"

@@ -16,8 +16,11 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-NCODE_DIR = Path.home() / ".ncode"
-SCRIPTS_DIR = NCODE_DIR / "scripts"
+
+from sips_paths import harness_home, harness_scripts_dir
+
+NCODE_DIR = harness_home()
+SCRIPTS_DIR = harness_scripts_dir()
 STALE_SCRIPT_DAYS = 60
 STALE_TEST_DAYS = 30
 MAX_FINDINGS = 5

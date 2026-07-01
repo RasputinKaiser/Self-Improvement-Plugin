@@ -23,7 +23,9 @@ import sys
 import time
 from pathlib import Path
 
-NCODE_DIR = Path.home() / ".ncode"
+from sips_paths import harness_home
+
+NCODE_DIR = harness_home()
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 STALE_DAYS = 90
 LARGE_FILE_BYTES = 512 * 1024  # 512 KB

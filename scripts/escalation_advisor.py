@@ -29,7 +29,10 @@ import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
+
+from sips_paths import improvements_path
+
+IMPROVEMENTS_PATH = improvements_path()
 
 FAILURE_WINDOW_HOURS = 24
 

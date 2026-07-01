@@ -24,9 +24,12 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-NCODE_DIR = Path.home() / ".ncode"
-SCRIPTS_DIR = NCODE_DIR / "scripts"
-IMPROVEMENTS_PATH = NCODE_DIR / "improvements.md"
+
+from sips_paths import harness_home, improvements_path, scripts_dir
+
+NCODE_DIR = harness_home()
+SCRIPTS_DIR = scripts_dir()
+IMPROVEMENTS_PATH = improvements_path()
 DEFAULT_LIMIT = 100
 
 

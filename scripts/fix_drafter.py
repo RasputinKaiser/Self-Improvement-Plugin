@@ -27,7 +27,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-NCODE_DIR = Path.home() / ".ncode"
+from sips_paths import harness_home
+
+NCODE_DIR = harness_home()
 CASES_DIR = NCODE_DIR / "eval" / "cases"
 RESULTS_PATH = NCODE_DIR / "eval" / "results.jsonl"
 PROPOSED_FIXES_DIR = NCODE_DIR / "eval" / "proposed_fixes"
