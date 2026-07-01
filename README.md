@@ -49,10 +49,10 @@ Expect sharp edges. This is an active development harness, not a packaged end-us
 | SIPS Homebase MCP | Works | `homebase_status` and related read-only tools are exercised by regression tests. |
 | Memory Fabric | Works, SIPS-owned | The CLI/runtime is vendored under `scripts/memory_fabric.py`; SIPS resolves it before legacy cache fallbacks. |
 | Hook event tap | Works | Silent by default; set `SIPS_DEBUG=1` to write hook failure details to `logs/hook_errors.jsonl`. |
-| Regression runner | Works, pre-pytest | `scripts/run_tests.py` is still bespoke, but targeted suites run from a fresh clone without `~/.ncode/tests`. |
+| Regression runner | Works, pytest bridge in progress | `scripts/run_tests.py` remains the compatibility runner; `tests/` now contains repo-local pytest smoke coverage for core surfaces. |
 | CI | Works for the core | GitHub Actions compiles scripts, checks Python floor, validates manifests, and runs targeted suites on Ubuntu/macOS. |
 | Packaging | Partial | `pyproject.toml` declares metadata and Python floor; no package entry points yet. |
-| Full pytest suite | Not done | Planned migration from the bespoke runner. |
+| Full pytest suite | Partial | Pytest covers path resolution, Homebase MCP smoke, EVAL drift, and hook-contract execution. Full case migration remains planned. |
 | Memory schema versioning | Not done | Planned before broader H2/H3 adoption. |
 | Windows support | Untested | Current support target is macOS/Linux POSIX hosts. |
 
@@ -384,10 +384,15 @@ external plugin cache is only a temporary migration fallback.
 Run the manifest coherence check:
 
 ```bash
-python3 scripts/validate_v2.py
+python3 scripts/validate_v2.py --check-eval
 ```
 
-This validates plugin manifest coherence and regenerates `EVAL.md`.
+This validates plugin manifest coherence and fails if `EVAL.md` has drifted.
+Regenerate `EVAL.md` explicitly with:
+
+```bash
+python3 scripts/validate_v2.py --write-eval
+```
 
 Run the regression harness:
 
@@ -396,10 +401,18 @@ python3 scripts/run_tests.py
 python3 scripts/run_tests.py homebase_mcp
 ```
 
+Run the pytest bridge suite:
+
+```bash
+python3 -m pip install ".[dev]"
+pytest
+```
+
 Current expected suite size:
 
 ```text
-90 cases
+run_tests.py: 91 cases
+pytest: 8 tests
 ```
 
 ## When to use each command

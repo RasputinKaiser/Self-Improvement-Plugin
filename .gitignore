@@ -2,5 +2,6 @@ __pycache__/
 .codex/
 *.pyc
 *.pyo
+*.egg-info/
 .DS_Store
 *.tmp

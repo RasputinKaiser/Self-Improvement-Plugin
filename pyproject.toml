@@ -1,10 +1,14 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sips-harness"
 version = "0.2.0"
 description = "SIPS: Self Improvement Plugin System home-base for agent harnesses."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
   { name = "RasputinKaiser" }
 ]
@@ -17,6 +21,11 @@ keywords = [
   "sips"
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+]
+
 [project.urls]
 Homepage = "https://github.com/RasputinKaiser/Self-Improvement-Plugin"
 Repository = "https://github.com/RasputinKaiser/Self-Improvement-Plugin"
@@ -25,5 +34,9 @@ Repository = "https://github.com/RasputinKaiser/Self-Improvement-Plugin"
 target-version = "py310"
 line-length = 100
 
+[tool.setuptools]
+packages = []
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-q"
