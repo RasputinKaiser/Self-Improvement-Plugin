@@ -29,7 +29,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-BACKUP_DIR = Path.home() / ".ncode" / "backups" / "scripts"
+from sips_paths import harness_scripts_dir, script_backups_dir, scripts_dir
+
+BACKUP_DIR = script_backups_dir()
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 CRITICAL_PATH_PATTERNS = [
@@ -149,7 +151,8 @@ def main():
         if level == "high":
             # Snapshot the script before edit so it can be restored if tests regress
             snapshot_path = None
-            if path.startswith(str(Path.home() / ".ncode" / "scripts")) and os.path.exists(path):
+            snapshot_roots = (str(harness_scripts_dir()), str(scripts_dir()))
+            if any(path.startswith(root) for root in snapshot_roots) and os.path.exists(path):
                 ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
                 snap_name = f"{Path(path).stem}.{ts}.py"
                 snapshot_path = BACKUP_DIR / snap_name
@@ -160,8 +163,8 @@ def main():
 
             tips = [
                 f"Editing {path} — harness internals",
-                "Run: python3 ~/.ncode/scripts/run_tests.py before AND after this edit",
-                "Verify rollback path exists (backups/ for ~/.ncode/)",
+                "Run: python3 scripts/run_tests.py before AND after this edit",
+                "Verify rollback path exists (backups/ under the resolved SIPS harness home)",
                 "If tests regress, restore from the snapshot below",
             ]
             if snapshot_path:

@@ -30,7 +30,9 @@ import sys
 import uuid as uuid_mod
 from pathlib import Path
 
-NCODE_DIR = Path.home() / ".ncode"
+from sips_paths import harness_home
+
+NCODE_DIR = harness_home()
 PROJECTS_DIR = NCODE_DIR / "projects"
 
 

@@ -31,8 +31,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-NCODE_DIR = Path.home() / ".ncode"
-SCRIPTS_DIR = NCODE_DIR / "scripts"
+from sips_paths import harness_home, harness_scripts_dir
+
+NCODE_DIR = harness_home()
+SCRIPTS_DIR = harness_scripts_dir()
 RESULTS_PATH = NCODE_DIR / "monitor_results.jsonl"
 STATUS_PATH = NCODE_DIR / "monitor_status.md"
 IMPROVEMENTS_PATH = NCODE_DIR / "improvements.md"

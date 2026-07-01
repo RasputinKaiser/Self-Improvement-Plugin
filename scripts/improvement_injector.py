@@ -20,8 +20,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
-EVAL_RESULTS_PATH = Path.home() / ".ncode" / "eval" / "results.jsonl"
+from sips_paths import eval_results_path, improvements_path
+
+IMPROVEMENTS_PATH = improvements_path()
+EVAL_RESULTS_PATH = eval_results_path()
 MAX_AGE_DAYS = 14
 MAX_LINES = 12
 EVAL_STALE_SECONDS = 7 * 86400

@@ -17,7 +17,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPTS_DIR = str(Path.home() / ".ncode" / "scripts")
+from sips_paths import harness_scripts_dir
+
+SCRIPTS_DIR = str(harness_scripts_dir())
 
 
 def emit_feedback(tips):
@@ -88,7 +90,7 @@ def main():
             pass
 
     # Coverage tip: does this script have any test cases in run_tests.py?
-    run_tests_path = Path.home() / ".ncode" / "scripts" / "run_tests.py"
+    run_tests_path = harness_scripts_dir() / "run_tests.py"
     if run_tests_path.exists() and path != str(run_tests_path):
         try:
             content = run_tests_path.read_text(errors="replace")

@@ -30,6 +30,9 @@ import sys
 import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
+
+from sips_paths import eval_results_path
+
 LIMIT = 4
 MAX_CHARS = 1800
 MIN_QUERY_LEN = 4
@@ -69,7 +72,7 @@ def _recent_failed_eval_cases(max_age_seconds=7 * 86400):
 
     Empty set if results.jsonl is missing or no recent failures.
     """
-    path = Path.home() / ".ncode" / "eval" / "results.jsonl"
+    path = eval_results_path()
     if not path.exists():
         return set()
     try:

@@ -21,6 +21,8 @@ import time
 import uuid
 from pathlib import Path
 
+from sips_paths import harness_home
+
 SOCKET_PATH = os.path.expanduser(
     "~/Library/Application Support/HarnessApp/browser.sock"
 )
@@ -277,7 +279,7 @@ def _handle_browser_see(msg_id, args):
         return
 
     # Step 2: Run VLM on the screenshot
-    see_script = os.path.expanduser("~/.ncode/vision/see.py")
+    see_script = str(harness_home() / "vision" / "see.py")
     question = args.get("question", "")
 
     cmd = ["python3", see_script, screenshot_path]

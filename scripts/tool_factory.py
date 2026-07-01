@@ -27,9 +27,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCRIPTS_DIR = Path.home() / ".ncode" / "scripts"
+from sips_paths import harness_home, harness_scripts_dir
+
+SCRIPTS_DIR = harness_scripts_dir()
 SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
-SKILLS_DIR = Path.home() / ".ncode" / "skills"
+SKILLS_DIR = harness_home() / "skills"
 RUN_TESTS_PATH = SCRIPTS_DIR / "run_tests.py"
 
 SUBCOMMANDS = {"scaffold", "validate", "promote"}

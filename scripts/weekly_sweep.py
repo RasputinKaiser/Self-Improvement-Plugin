@@ -22,7 +22,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCRIPTS_DIR = Path.home() / ".ncode" / "scripts"
+from sips_paths import harness_home, harness_scripts_dir, logs_dir
+
+SCRIPTS_DIR = harness_scripts_dir()
 
 
 def run_step(name, cmd, cwd=None, timeout=300):
@@ -31,7 +33,7 @@ def run_step(name, cmd, cwd=None, timeout=300):
     try:
         r = subprocess.run(
             cmd,
-            cwd=cwd or str(Path.home() / ".ncode"),
+            cwd=cwd or str(harness_home()),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -53,7 +55,7 @@ def run_step(name, cmd, cwd=None, timeout=300):
 
 def rotate_logs():
     """Keep only the last ~8KB of sweep.log + sweep.err.log (prevents unbounded growth)."""
-    log_dir = Path.home() / ".ncode" / "logs"
+    log_dir = logs_dir()
     for log_name in ("sweep.log", "sweep.err.log"):
         log_path = log_dir / log_name
         if not log_path.exists():
@@ -72,7 +74,7 @@ def rotate_logs():
 
 def prune_old_snapshots(keep_recent=5, max_age_days=30):
     """Prune snapshots older than max_age_days, keeping the most recent `keep_recent`."""
-    snap_dir = Path.home() / ".ncode" / "backups/snapshots"
+    snap_dir = harness_home() / "backups/snapshots"
     if not snap_dir.is_dir():
         return 0, 0
     import time as _time

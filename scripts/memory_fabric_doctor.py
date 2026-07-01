@@ -23,7 +23,10 @@ import sys
 import worktree_scope
 from datetime import datetime, timezone
 from pathlib import Path
-IMPROVEMENTS_PATH = Path.home() / ".ncode" / "improvements.md"
+
+from sips_paths import improvements_path
+
+IMPROVEMENTS_PATH = improvements_path()
 MAX_WORK_RECORDS = 3
 MAX_CHARS = 1800
 IMPROVEMENTS_MAX_AGE_DAYS = 14

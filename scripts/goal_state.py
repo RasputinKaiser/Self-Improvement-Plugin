@@ -43,7 +43,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-STATE_PATH = Path.home() / ".ncode" / "goal_state.json"
+from sips_paths import goal_state_path
+
+STATE_PATH = goal_state_path()
 
 
 def load() -> dict | None:
