@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -189,7 +190,12 @@ if hk:
     for name, ok in chain:
         check(name, ok, "")
 
-# --- write EVAL.md ---
+ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+ap.add_argument("--write-eval", action="store_true", help="write generated EVAL.md")
+ap.add_argument("--check-eval", action="store_true", help="fail if EVAL.md differs from generated output")
+args = ap.parse_args()
+
+# --- build EVAL.md ---
 passed = sum(1 for _, ok, _ in checks if ok)
 total = len(checks)
 rate = (passed / total * 100) if total else 0
@@ -255,6 +261,18 @@ lines.append("- **scoped recall ranking**: recall_ranker ranks failure-then-succ
 lines.append("- **no model routing**: dropped v1's tier-detection library entirely. Versatility comes from bounded fresh-context delegation + forced lesson capture, not model swaps. Same behavior on GLM 5.2 and Claude.")
 lines.append("- **all v1 hooks reused unchanged** — purely additive; existing 38-case run_tests.py still passes.\n")
 
-EVAL.write_text("\n".join(lines), encoding="utf-8")
-print("\n".join(lines))
+eval_text = "\n".join(lines)
+
+if args.check_eval:
+    try:
+        current = EVAL.read_text(encoding="utf-8")
+    except OSError:
+        current = ""
+    if current != eval_text:
+        errors.append("EVAL.md drift: run `python3 scripts/validate_v2.py --write-eval`")
+
+if args.write_eval:
+    EVAL.write_text(eval_text, encoding="utf-8")
+
+print(eval_text)
 sys.exit(1 if errors else 0)

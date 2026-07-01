@@ -927,6 +927,68 @@ def hook_event_tap_debug_logs_nonzero_to_sips_home():
         assert "boom from wrapped hook" in error["stderr"]
 
 
+def hook_contract_all_manifest_hooks_exit_zero_and_emit_json_or_empty():
+    """Every hook in hooks.json must exit 0 and emit either empty stdout or JSON."""
+    hooks_path = PLUGIN_ROOT / "hooks" / "hooks.json"
+    manifest = json.loads(hooks_path.read_text())
+    failures = []
+
+    def payload_for(event, matcher, tmp_home):
+        base = {
+            "hook_event_name": event,
+            "cwd": tmp_home,
+            "session_id": "hook-contract",
+            "transcript_path": "",
+        }
+        if event in ("PreToolUse", "PostToolUse"):
+            tool_name = "Bash" if "Bash" in matcher else "Edit"
+            tool_input = (
+                {"command": "pwd"}
+                if tool_name == "Bash"
+                else {"file_path": str(Path(tmp_home) / "sample.txt")}
+            )
+            base.update({"tool_name": tool_name, "tool_input": tool_input, "tool_response": {}})
+        elif event == "UserPromptSubmit":
+            base.update({"prompt": "how should SIPS recall prior lessons?"})
+        elif event in ("PreCompact", "PostCompact"):
+            base.update({"trigger": "manual"})
+        return base
+
+    with tempfile.TemporaryDirectory() as td:
+        env = dict(os.environ)
+        env["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
+        env["SIPS_HOME"] = td
+        env["SIPS_DEBUG"] = "1"
+        for event, matchers in manifest.get("hooks", {}).items():
+            for entry in matchers:
+                matcher = entry.get("matcher", "")
+                for hook in entry.get("hooks", []):
+                    command = hook.get("command", "")
+                    timeout = float(hook.get("timeout") or 10) + 3
+                    r = subprocess.run(
+                        command,
+                        shell=True,
+                        executable="/bin/bash",
+                        input=json.dumps(payload_for(event, matcher, td)),
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        env=env,
+                        cwd=str(PLUGIN_ROOT),
+                    )
+                    label = f"{event}/{hook.get('statusMessage') or hook.get('command')}"
+                    if r.returncode != 0:
+                        failures.append(f"{label}: exit {r.returncode}; stderr={r.stderr[:200]!r}")
+                        continue
+                    stdout = r.stdout.strip()
+                    if stdout:
+                        try:
+                            json.loads(stdout)
+                        except json.JSONDecodeError:
+                            failures.append(f"{label}: stdout is not JSON: {stdout[:200]!r}")
+        assert not failures, "\n".join(failures)
+
+
 # --- install.sh (Phase 4) ---
 
 def install_sh_check_returns_clean_after_install():
@@ -2006,6 +2068,9 @@ SUITES = {
         case("sips_paths_env_precedence", sips_paths_env_precedence),
         case("module_constants_respect_sips_home", sips_paths_module_constants_respect_sips_home),
         case("hook_tap_debug_logs_nonzero", hook_event_tap_debug_logs_nonzero_to_sips_home),
+    ],
+    "hook_contract": [
+        case("all_manifest_hooks_exit_zero_and_emit_json_or_empty", hook_contract_all_manifest_hooks_exit_zero_and_emit_json_or_empty),
     ],
     "install_sh": [
         case("check_returns_clean_after_install", install_sh_check_returns_clean_after_install),
