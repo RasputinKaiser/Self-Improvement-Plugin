@@ -31,11 +31,12 @@ jobs:
           vermin --target=3.10- --no-tips scripts
 
       - name: Validate plugin manifest
-        run: python scripts/validate_v2.py
+        run: python scripts/validate_v2.py --check-eval
 
       - name: Run SIPS targeted suites
         run: |
           python scripts/run_tests.py memory_fabric --verbose
           python scripts/run_tests.py phase0_foundation --verbose
+          python scripts/run_tests.py hook_contract --verbose
           python scripts/run_tests.py homebase_mcp --verbose
           python scripts/run_tests.py sips_presence_mirror --verbose

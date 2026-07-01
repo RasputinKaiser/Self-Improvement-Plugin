@@ -139,6 +139,16 @@ errs = [f for lvl, f in findings if lvl == "ERR"]
 warns = [f for lvl, f in findings if lvl == "WARN"]
 infos = [f for lvl, f in findings if lvl == "INFO"]
 
+if os.environ.get("HARNESS_APP_TAPPED") == "1":
+    if findings:
+        lines = ["Harness drift check:"]
+        lines.extend(f"- [{level}] {msg}" for level, msg in findings[:12])
+        if len(findings) > 12:
+            lines.append(f"- ... {len(findings) - 12} more")
+        sys.stdout.write(json.dumps({"additionalContext": "\n".join(lines)}))
+        sys.stdout.flush()
+    sys.exit(0)
+
 for level, msg in findings:
     print(f"[{level}] {msg}")
 
