@@ -1,0 +1,35 @@
+name: SIPS CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.9", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile scripts
+        run: python -m compileall scripts
+
+      - name: Validate plugin manifest
+        run: python scripts/validate_v2.py
+
+      - name: Run SIPS targeted suites
+        run: |
+          python scripts/run_tests.py memory_fabric --verbose
+          python scripts/run_tests.py homebase_mcp --verbose
+          python scripts/run_tests.py sips_presence_mirror --verbose
+

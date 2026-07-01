@@ -1,6 +1,6 @@
 # SIPS - Self-Improvement-Plugin System
 
-![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue)
+![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Status: dev](https://img.shields.io/badge/status-dev-orange)
 ![NCode plugin](https://img.shields.io/badge/NCode-plugin-purple)
@@ -128,7 +128,7 @@ Self-Improvement-Plugin@harness-local
 
 | Requirement | Notes |
 |---|---|
-| Python 3.8+ | Required for the hook and utility scripts. |
+| Python 3.9+ | Required for the hook and utility scripts. CI runs on 3.9 and 3.12. |
 | SIPS Memory Fabric subsystem | Owned by SIPS for recall, lesson capture, and memory health checks. |
 | SIPS Homebase MCP | Used for deeper cleanup through `harness_gc.py --deep`. |
 

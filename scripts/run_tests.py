@@ -20,9 +20,9 @@ import tempfile
 import time
 from pathlib import Path
 
-SCRIPTS_DIR = Path.home() / ".ncode" / "scripts"
-TESTS_DIR = Path.home() / ".ncode" / "tests"
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(os.environ.get("SIPS_SCRIPTS_DIR", str(PLUGIN_ROOT / "scripts")))
+TESTS_DIR = Path(os.environ.get("SIPS_TESTS_DIR", str(PLUGIN_ROOT / "tests")))
 HOMEBASE_MCP = PLUGIN_ROOT / "scripts" / "harness_homebase_mcp.py"
 
 
