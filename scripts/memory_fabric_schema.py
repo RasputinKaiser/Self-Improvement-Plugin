@@ -24,6 +24,11 @@ STRONG_PROVENANCE = {
 OBSERVATION_PROVENANCE = {"hook_event", "user_or_agent_observation"}
 PROVENANCE_TYPES = CONTEXT_ONLY_PROVENANCE | STRONG_PROVENANCE | OBSERVATION_PROVENANCE
 RUNTIME_CONTRACT_VERSION = "runtime_contract.v1"
+MEMORY_RECORD_SCHEMA_VERSION = "1.0"
+
+
+def record_schema_version() -> str:
+    return MEMORY_RECORD_SCHEMA_VERSION
 
 
 def normalize_tier(tier: str) -> str:

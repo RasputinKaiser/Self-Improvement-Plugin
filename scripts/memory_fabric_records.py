@@ -3,7 +3,13 @@ import re
 import uuid
 from typing import Any
 
-from memory_fabric_schema import normalize_confidence, normalize_provenance_type, normalize_status, normalize_tier
+from memory_fabric_schema import (
+    normalize_confidence,
+    normalize_provenance_type,
+    normalize_status,
+    normalize_tier,
+    record_schema_version,
+)
 from memory_fabric_time import utc_now
 
 
@@ -36,6 +42,7 @@ def make_record(
     if not body.strip():
         raise ValueError("body is required")
     return {
+        "schema_version": record_schema_version(),
         "id": f"mem_{uuid.uuid4().hex[:16]}",
         "tier": normalize_tier(tier),
         "title": title.strip(),

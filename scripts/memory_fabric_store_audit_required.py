@@ -3,6 +3,7 @@ from typing import Any
 
 
 CORE_FIELDS = [
+    "schema_version",
     "id",
     "tier",
     "title",

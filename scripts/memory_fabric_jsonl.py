@@ -4,10 +4,17 @@ import os
 from pathlib import Path
 from typing import Any
 
+from memory_fabric_schema import record_schema_version
 from memory_fabric_time import utc_now
 
 
 DEFAULT_STORE = Path.home() / ".codex" / "memory-fabric" / "memory.jsonl"
+
+
+def normalize_record(record: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(record)
+    normalized.setdefault("schema_version", record_schema_version())
+    return normalized
 
 
 def store_path(path: str | Path | None = None) -> Path:
@@ -17,14 +24,16 @@ def store_path(path: str | Path | None = None) -> Path:
 
 def append_record(record: dict[str, Any], path: str | Path | None = None) -> dict[str, Any]:
     target = store_path(path)
+    normalized = normalize_record(record)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
-    return {"ok": True, "store": str(target), "record": record}
+        handle.write(json.dumps(normalized, sort_keys=True) + "\n")
+    return {"ok": True, "store": str(target), "record": normalized}
 
 
 def invalid_record(target: Path, line_no: int, exc: json.JSONDecodeError) -> dict[str, Any]:
     return {
+        "schema_version": record_schema_version(),
         "id": f"invalid_line_{line_no}",
         "tier": "learning",
         "title": "Invalid memory record",
@@ -49,7 +58,8 @@ def load_records(path: str | Path | None = None) -> list[dict[str, Any]]:
             if not line.strip():
                 continue
             try:
-                records.append(json.loads(line))
+                record = json.loads(line)
+                records.append(normalize_record(record) if isinstance(record, dict) else record)
             except json.JSONDecodeError as exc:
                 records.append(invalid_record(target, line_no, exc))
     return records
