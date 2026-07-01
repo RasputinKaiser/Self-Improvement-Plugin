@@ -21,7 +21,7 @@ This project is a local-first NCode harness plugin for agent memory, verificatio
 3. Run the validation script:
 
 ```bash
-python3 scripts/validate_v2.py
+python3 scripts/validate_v2.py --check-eval
 ```
 
 4. Run the regression harness:
@@ -30,7 +30,14 @@ python3 scripts/validate_v2.py
 python3 scripts/run_tests.py
 ```
 
-5. Mention what changed, why it changed, and how you tested it.
+5. Run the repo-local pytest bridge suite:
+
+```bash
+python3 -m pip install ".[dev]"
+pytest
+```
+
+6. Mention what changed, why it changed, and how you tested it.
 
 ## Pull request style
 

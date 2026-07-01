@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
-status: h1_hook_contract_eval_drift_gate
-updated_at: "2026-07-01T23:07:16Z"
+status: h1_pytest_bridge
+updated_at: "2026-07-01T23:10:24Z"
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   branch: main
@@ -15,6 +15,7 @@ sips:
 verification:
   current_pass:
     - "python3 -m compileall scripts"
+    - "python3 -m compileall scripts tests"
     - "python3 scripts/validate_v2.py"
     - "python3 scripts/run_tests.py memory_fabric --verbose"
     - "python3 scripts/run_tests.py phase0_foundation --verbose"
@@ -22,6 +23,7 @@ verification:
     - "python3 scripts/run_tests.py homebase_mcp --verbose"
     - "python3 scripts/run_tests.py sips_presence_mirror --verbose"
     - "python3 scripts/validate_v2.py --check-eval"
+    - "python3 -m pytest"
     - "python3 /Users/ianzvirbulis/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py /Users/ianzvirbulis/Code/Self-Improvement-Plugin"
     - "vermin --target=3.10- --no-tips scripts (via temporary venv)"
 notes:
@@ -31,4 +33,5 @@ notes:
   - "SIPS_DEBUG=1 writes hook failures to logs/hook_errors.jsonl without changing silent production defaults"
   - "hook_contract suite executes every hooks.json command and enforces exit-zero plus JSON-or-empty stdout"
   - "validate_v2.py supports --check-eval and --write-eval so CI can block EVAL.md drift"
-  - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, and targeted SIPS suites"
+  - "tests/ adds pytest bridge coverage for path resolution, Homebase MCP, EVAL drift, and hook-contract execution"
+  - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, targeted SIPS suites, and pytest"
