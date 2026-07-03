@@ -2,7 +2,7 @@
 """V2 manifest validator — proves the architecture is coherent and writes EVAL.md.
 
 Checks (all read-only; exit 0 if clean, 1 if any ERROR):
-  1. marketplace.json + plugin.json are valid JSON and version == 0.2.1.
+  1. marketplace.json + plugin.json are valid JSON and version == 0.2.2.
   2. plugin.json points at the MCP surface and omits host-specific hook/agent/command fields.
   2b. plugin.json points at a SIPS MCP server manifest and home-base MCP script.
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
@@ -24,6 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".ncode-plugin" / "marketplace.json"
+CODEX_MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 PLUGIN_JSON = ROOT / ".codex-plugin" / "plugin.json"
 HOOKS = ROOT / "hooks" / "hooks.json"
 MCP_JSON = ROOT / ".mcp.json"
@@ -41,7 +42,7 @@ NEW_SCRIPTS = (
 )
 EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
 EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
-EXPECTED_VERSION = "0.2.1"
+EXPECTED_VERSION = "0.2.2"
 HOOK_ROOT_RE = re.compile(
     r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}/scripts/([\w_]+\.py)"
 )
@@ -67,6 +68,7 @@ def check(name, ok, detail=""):
 
 # 1. manifests
 mp = load_json(MARKETPLACE)
+codex_mp = load_json(CODEX_MARKETPLACE)
 pj = load_json(PLUGIN_JSON)
 hk = load_json(HOOKS)
 mcp = load_json(MCP_JSON)
@@ -79,6 +81,17 @@ if mp:
     check("marketplace declares delegation/inherit keywords",
           "delegation" in (plug.get("keywords") or []) and "inherit" in (plug.get("keywords") or []),
           str(plug.get("keywords")))
+
+if codex_mp:
+    codex_plugins = codex_mp.get("plugins") or []
+    codex_plugin = codex_plugins[0] if codex_plugins else {}
+    source = codex_plugin.get("source") or {}
+    policy = codex_plugin.get("policy") or {}
+    check("Codex marketplace name harness-local", codex_mp.get("name") == "harness-local", codex_mp.get("name"))
+    check("Codex marketplace declares harness-self-improvement", codex_plugin.get("name") == "harness-self-improvement", str(codex_plugin))
+    check("Codex marketplace source points at named plugin wrapper", source.get("source") == "local" and source.get("path") == "./plugins/harness-self-improvement", str(source))
+    check("Codex marketplace has install policy", policy.get("installation") == "AVAILABLE" and policy.get("authentication") == "ON_INSTALL", str(policy))
+    check("Codex marketplace category present", bool(codex_plugin.get("category")), str(codex_plugin.get("category")))
 
 if pj:
     check(f"plugin.json version {EXPECTED_VERSION}", pj.get("version") == EXPECTED_VERSION, pj.get("version"))

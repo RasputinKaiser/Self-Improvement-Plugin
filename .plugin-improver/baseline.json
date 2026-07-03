@@ -5,8 +5,12 @@
     "skill_body_words": 0,
     "skill_description_chars": 0
   },
-  "date": "2026-07-03T02:56:53.363540+00:00",
+  "date": "2026-07-03T06:53:12.093903+00:00",
   "file_inventory": [
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "words": 34
+    },
     {
       "path": ".codex/csi/chat-presence.md",
       "words": 23
@@ -57,11 +61,11 @@
     },
     {
       "path": "EVAL.md",
-      "words": 1401
+      "words": 1456
     },
     {
       "path": "LEDGER.md",
-      "words": 111
+      "words": 159
     },
     {
       "path": "LICENSE",
@@ -69,7 +73,7 @@
     },
     {
       "path": "README.md",
-      "words": 3035
+      "words": 3068
     },
     {
       "path": "SECURITY.md",
@@ -150,6 +154,10 @@
     {
       "path": "install.sh",
       "words": 786
+    },
+    {
+      "path": "plugins/harness-self-improvement",
+      "words": 3
     },
     {
       "path": "pyproject.toml",
@@ -977,7 +985,7 @@
     },
     {
       "path": "scripts/validate_v2.py",
-      "words": 1513
+      "words": 1600
     },
     {
       "path": "scripts/weekly_sweep.py",
@@ -989,7 +997,7 @@
     },
     {
       "path": "state.yaml",
-      "words": 237
+      "words": 247
     },
     {
       "path": "tests/conftest.py",
@@ -1019,22 +1027,24 @@
   "plugin": "harness-self-improvement",
   "scores": {
     "context_economy": 20,
-    "distribution_readiness": 8,
+    "distribution_readiness": 10,
     "hooks_health": 8,
     "manifest_integrity": 15,
     "skill_quality": 25,
     "trigger_precision": 20
   },
   "skill_descriptions": {},
-  "total": 96,
+  "total": 98,
   "verification": [
-    "python3 scripts/validate_v2.py --write-eval",
-    "python3 scripts/run_tests.py hook_contract --verbose",
-    "python3 -m compileall scripts/validate_v2.py scripts/hook_event_tap.py",
+    "codex plugin marketplace add ~/Code/Self-Improvement-Plugin --json",
+    "codex plugin add harness-self-improvement@harness-local --json",
+    "codex plugin add harness-self-improvement@ralto-local --json",
     "python3 scripts/validate_v2.py --check-eval",
     "python3 scripts/run_tests.py homebase_mcp --verbose",
-    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/Code/Self-Improvement-Plugin",
+    "python3 scripts/run_tests.py hook_contract --verbose",
+    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/.codex/plugins/cache/harness-local/harness-self-improvement/0.2.2",
+    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/.codex/plugins/cache/ralto-local/harness-self-improvement/0.2.2",
     "python3 -m pytest"
   ],
-  "version": "0.2.1"
+  "version": "0.2.2"
 }
