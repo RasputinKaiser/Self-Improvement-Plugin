@@ -2,7 +2,7 @@
 """V2 manifest validator — proves the architecture is coherent and writes EVAL.md.
 
 Checks (all read-only; exit 0 if clean, 1 if any ERROR):
-  1. marketplace.json + plugin.json are valid JSON and version == 0.2.0.
+  1. marketplace.json + plugin.json are valid JSON and version == 0.2.1.
   2. plugin.json points at the MCP surface and omits host-specific hook/agent/command fields.
   2b. plugin.json points at a SIPS MCP server manifest and home-base MCP script.
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
@@ -41,6 +41,10 @@ NEW_SCRIPTS = (
 )
 EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
 EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
+EXPECTED_VERSION = "0.2.1"
+HOOK_ROOT_RE = re.compile(
+    r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}/scripts/([\w_]+\.py)"
+)
 
 errors = []
 warnings = []
@@ -69,15 +73,15 @@ mcp = load_json(MCP_JSON)
 
 if mp:
     plug = (mp.get("plugins") or [{}])[0]
-    check("marketplace.json valid + version 0.2.0",
-          plug.get("version") == "0.2.0",
+    check(f"marketplace.json valid + version {EXPECTED_VERSION}",
+          plug.get("version") == EXPECTED_VERSION,
           f"version={plug.get('version')!r}")
     check("marketplace declares delegation/inherit keywords",
           "delegation" in (plug.get("keywords") or []) and "inherit" in (plug.get("keywords") or []),
           str(plug.get("keywords")))
 
 if pj:
-    check("plugin.json version 0.2.0", pj.get("version") == "0.2.0", pj.get("version"))
+    check(f"plugin.json version {EXPECTED_VERSION}", pj.get("version") == EXPECTED_VERSION, pj.get("version"))
     check("plugin.json surfaces mcpServers", pj.get("mcpServers") == "./.mcp.json", pj.get("mcpServers"))
     check("plugin.json omits host hooks field", "hooks" not in pj, pj.get("hooks"))
     check("plugin.json omits host agents field", "agents" not in pj, pj.get("agents"))
@@ -113,9 +117,14 @@ if hk:
         for entry in matchers:
             for h in entry.get("hooks", []):
                 cmd = h.get("command", "")
-                m = re.search(r"\$\{CLAUDE_PLUGIN_ROOT\}/scripts/([\w_]+\.py)", cmd)
+                m = HOOK_ROOT_RE.search(cmd)
                 if m:
                     referenced.append((event, m.group(1)))
+                check(
+                    f"hook command uses PLUGIN_ROOT-first root ({event})",
+                    "${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}" in cmd,
+                    cmd,
+                )
     for event, name in referenced:
         p = ROOT / "scripts" / name
         ok = p.exists() and os.access(p, os.X_OK)
@@ -259,7 +268,7 @@ lines.append("- **loop closure**: improvement_injector reads self_correct output
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")
 lines.append("- **scoped recall ranking**: recall_ranker ranks failure-then-success and scopes to cwd (replaces raw prompt_search).")
 lines.append("- **no model routing**: dropped v1's tier-detection library entirely. Versatility comes from bounded fresh-context delegation + forced lesson capture, not model swaps. Same behavior on GLM 5.2 and Claude.")
-lines.append("- **all v1 hooks reused unchanged** — purely additive; existing 38-case run_tests.py still passes.\n")
+lines.append("- **hook behavior preserved with portable roots** — commands now prefer `${PLUGIN_ROOT}` and fall back to `${CLAUDE_PLUGIN_ROOT}`; hook-contract tests still pass.\n")
 
 eval_text = "\n".join(lines)
 

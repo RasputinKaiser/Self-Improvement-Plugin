@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="SIPS Homebase icon">
+  <rect width="256" height="256" rx="56" fill="#0B1F1A"/>
+  <path d="M128 42 214 92v72l-86 50-86-50V92l86-50Z" fill="#0B6E4F"/>
+  <path d="M128 74 186 108v48l-58 34-58-34v-48l58-34Z" fill="#F7FFF9"/>
+  <path d="M128 92v76M92 114l72 42M164 114l-72 42" stroke="#0B6E4F" stroke-width="14" stroke-linecap="round"/>
+</svg>

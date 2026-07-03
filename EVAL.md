@@ -4,7 +4,7 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 ## Summary
 
-- **checks passed**: 72/72 (100%)
+- **checks passed**: 91/91 (100%)
 - **errors**: 0
 - **warnings**: 0
 - **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
@@ -41,9 +41,9 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 | # | Check | Result |
 |---|---|---|
-| 1 | marketplace.json valid + version 0.2.0 | PASS |
+| 1 | marketplace.json valid + version 0.2.1 | PASS |
 | 2 | marketplace declares delegation/inherit keywords | PASS |
-| 3 | plugin.json version 0.2.0 | PASS |
+| 3 | plugin.json version 0.2.1 | PASS |
 | 4 | plugin.json surfaces mcpServers | PASS |
 | 5 | plugin.json omits host hooks field | PASS |
 | 6 | plugin.json omits host agents field | PASS |
@@ -62,57 +62,76 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 19 | agents/ exists | PASS |
 | 20 | commands/ exists | PASS |
 | 21 | no lib/ directory (model_router dropped) | PASS |
-| 22 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 23 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 24 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 25 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 26 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 27 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 28 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 29 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 30 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 31 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 32 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 33 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
-| 34 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
-| 35 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
-| 36 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
-| 37 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
-| 38 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
-| 39 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 40 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 41 | agent escalate has frontmatter + model: | PASS |
-| 42 | agent escalate model: inherit | PASS |
-| 43 | agent fan-out has frontmatter + model: | PASS |
-| 44 | agent fan-out model: inherit | PASS |
-| 45 | agent memory-curator has frontmatter + model: | PASS |
-| 46 | agent memory-curator model: inherit | PASS |
-| 47 | agent repo-scout has frontmatter + model: | PASS |
-| 48 | agent repo-scout model: inherit | PASS |
-| 49 | agent test-author has frontmatter + model: | PASS |
-| 50 | agent test-author model: inherit | PASS |
-| 51 | all 5 agents present | PASS |
-| 52 | command brainstorm has description | PASS |
-| 53 | command checkpoint has description | PASS |
-| 54 | command escalate has description | PASS |
-| 55 | command fan-out has description | PASS |
-| 56 | command goal has description | PASS |
-| 57 | command improve has description | PASS |
-| 58 | command patterns has description | PASS |
-| 59 | command recall has description | PASS |
-| 60 | command teach has description | PASS |
-| 61 | command verify has description | PASS |
-| 62 | all 10 commands present | PASS |
-| 63 | new script escalation_advisor.py exec | PASS |
-| 64 | new script improvement_injector.py exec | PASS |
-| 65 | new script recall_ranker.py exec | PASS |
-| 66 | no runtime script imports model_router (v2 pivot) | PASS |
-| 67 | observe (Stop: task_outcome_tracker) | PASS |
-| 68 | distill (self_correct.py exists) | PASS |
-| 69 | inject (SessionStart: improvement_injector) | PASS |
-| 70 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 71 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 72 | delegate target (escalate agent exists, model: inherit) | PASS |
+| 22 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
+| 23 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
+| 24 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
+| 25 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
+| 26 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
+| 27 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
+| 28 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 29 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 30 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 31 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 32 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 33 | hook command uses PLUGIN_ROOT-first root (UserPromptSubmit) | PASS |
+| 34 | hook command uses PLUGIN_ROOT-first root (UserPromptSubmit) | PASS |
+| 35 | hook command uses PLUGIN_ROOT-first root (PreCompact) | PASS |
+| 36 | hook command uses PLUGIN_ROOT-first root (PreCompact) | PASS |
+| 37 | hook command uses PLUGIN_ROOT-first root (PostCompact) | PASS |
+| 38 | hook command uses PLUGIN_ROOT-first root (PostCompact) | PASS |
+| 39 | hook command uses PLUGIN_ROOT-first root (Stop) | PASS |
+| 40 | hook command uses PLUGIN_ROOT-first root (Stop) | PASS |
+| 41 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 42 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 43 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 44 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 45 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 46 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 47 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 48 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 49 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 50 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 51 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 52 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 53 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 54 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 55 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 56 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 57 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 58 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
+| 59 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
+| 60 | agent escalate has frontmatter + model: | PASS |
+| 61 | agent escalate model: inherit | PASS |
+| 62 | agent fan-out has frontmatter + model: | PASS |
+| 63 | agent fan-out model: inherit | PASS |
+| 64 | agent memory-curator has frontmatter + model: | PASS |
+| 65 | agent memory-curator model: inherit | PASS |
+| 66 | agent repo-scout has frontmatter + model: | PASS |
+| 67 | agent repo-scout model: inherit | PASS |
+| 68 | agent test-author has frontmatter + model: | PASS |
+| 69 | agent test-author model: inherit | PASS |
+| 70 | all 5 agents present | PASS |
+| 71 | command brainstorm has description | PASS |
+| 72 | command checkpoint has description | PASS |
+| 73 | command escalate has description | PASS |
+| 74 | command fan-out has description | PASS |
+| 75 | command goal has description | PASS |
+| 76 | command improve has description | PASS |
+| 77 | command patterns has description | PASS |
+| 78 | command recall has description | PASS |
+| 79 | command teach has description | PASS |
+| 80 | command verify has description | PASS |
+| 81 | all 10 commands present | PASS |
+| 82 | new script escalation_advisor.py exec | PASS |
+| 83 | new script improvement_injector.py exec | PASS |
+| 84 | new script recall_ranker.py exec | PASS |
+| 85 | no runtime script imports model_router (v2 pivot) | PASS |
+| 86 | observe (Stop: task_outcome_tracker) | PASS |
+| 87 | distill (self_correct.py exists) | PASS |
+| 88 | inject (SessionStart: improvement_injector) | PASS |
+| 89 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 90 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 91 | delegate target (escalate agent exists, model: inherit) | PASS |
 
 ## What v2 adds over v1
 
@@ -122,4 +141,4 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 - **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.
 - **scoped recall ranking**: recall_ranker ranks failure-then-success and scopes to cwd (replaces raw prompt_search).
 - **no model routing**: dropped v1's tier-detection library entirely. Versatility comes from bounded fresh-context delegation + forced lesson capture, not model swaps. Same behavior on GLM 5.2 and Claude.
-- **all v1 hooks reused unchanged** — purely additive; existing 38-case run_tests.py still passes.
+- **hook behavior preserved with portable roots** — commands now prefer `${PLUGIN_ROOT}` and fall back to `${CLAUDE_PLUGIN_ROOT}`; hook-contract tests still pass.

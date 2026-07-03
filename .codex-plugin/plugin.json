@@ -1,6 +1,6 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "SIPS: Self Improvement Plugin System home-base with delegation, lifecycle hooks, commands, and MCP control plane.",
   "author": {
     "name": "RasputinKaiser",
@@ -13,7 +13,7 @@
   "keywords": ["sips", "self-improvement", "memory-fabric", "delegation", "harness", "mcp", "codex", "homebase"],
   "interface": {
     "displayName": "SIPS Homebase",
-    "shortDescription": "Shared self-improvement control plane for Codex and other harnesses.",
+    "shortDescription": "Run SIPS homebase across harnesses.",
     "longDescription": "SIPS, the Self Improvement Plugin System, provides a portable home-base MCP for Codex, NCode, and future harnesses. It surfaces status, verification, task routing, repo mapping, context scanning, recall, and goal inspection while keeping host-specific hook, command, and agent surfaces as adapters.",
     "developerName": "RasputinKaiser",
     "category": "Productivity",
@@ -27,6 +27,8 @@
       "Scan this repo with SIPS."
     ],
     "brandColor": "#0B6E4F",
+    "composerIcon": "./assets/sips-homebase-icon.svg",
+    "logo": "./assets/sips-homebase-logo.svg",
     "screenshots": []
   }
 }
