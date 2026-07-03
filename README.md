@@ -92,6 +92,13 @@ The repo is the SIPS harness home-base for Codex, NCode, and future harnesses.
 
 ## Current release
 
+### v0.2.2
+
+This patch adds the Codex marketplace manifest:
+
+- `.agents/plugins/marketplace.json` registers SIPS as `harness-self-improvement@harness-local`.
+- Codex can now add the repo directly as a local marketplace and install the plugin from it.
+
 ### v0.2.1
 
 This patch tightens the Codex plugin surface:

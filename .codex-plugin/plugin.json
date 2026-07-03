@@ -1,6 +1,6 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "SIPS: Self Improvement Plugin System home-base with delegation, lifecycle hooks, commands, and MCP control plane.",
   "author": {
     "name": "RasputinKaiser",

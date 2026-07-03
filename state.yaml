@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
-status: plugin_improver_pass_0_2_1
-updated_at: "2026-07-03T02:56:00Z"
+status: codex_marketplace_manifest_0_2_2
+updated_at: "2026-07-03T03:08:00Z"
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   branch: main
@@ -38,3 +38,4 @@ notes:
   - "pytest covers schema-version writes, legacy read backfill, invalid JSONL sentinels, and raw store-audit failures"
   - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, targeted SIPS suites, and pytest"
   - "Plugin-improver pass 0.2.1 added Codex app assets and PLUGIN_ROOT-first hook commands while preserving CLAUDE_PLUGIN_ROOT fallback"
+  - "0.2.2 adds a supported Codex marketplace manifest at .agents/plugins/marketplace.json"
