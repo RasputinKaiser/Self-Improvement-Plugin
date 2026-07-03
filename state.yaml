@@ -1,7 +1,7 @@
 version: 1
 project: Self-Improvement-Plugin
-status: h1_memory_schema_store_fuzz
-updated_at: "2026-07-01T23:15:47Z"
+status: plugin_improver_pass_0_2_1
+updated_at: "2026-07-03T02:56:00Z"
 source:
   path: "$HOME/Code/Self-Improvement-Plugin"
   branch: main
@@ -37,3 +37,4 @@ notes:
   - "Memory Fabric records and schema data now carry schema_version 1.0"
   - "pytest covers schema-version writes, legacy read backfill, invalid JSONL sentinels, and raw store-audit failures"
   - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, targeted SIPS suites, and pytest"
+  - "Plugin-improver pass 0.2.1 added Codex app assets and PLUGIN_ROOT-first hook commands while preserving CLAUDE_PLUGIN_ROOT fallback"

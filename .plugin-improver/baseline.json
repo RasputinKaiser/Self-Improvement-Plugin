@@ -1,0 +1,1040 @@
+{
+  "context": {
+    "has_skills_dir": false,
+    "hook_portable_root_refs": 38,
+    "skill_body_words": 0,
+    "skill_description_chars": 0
+  },
+  "date": "2026-07-03T02:56:53.363540+00:00",
+  "file_inventory": [
+    {
+      "path": ".codex/csi/chat-presence.md",
+      "words": 23
+    },
+    {
+      "path": ".codex/csi/rich-presence.jsonl",
+      "words": 18
+    },
+    {
+      "path": ".codex/csi/rich-presence.md",
+      "words": 362
+    },
+    {
+      "path": ".codex-plugin/plugin.json",
+      "words": 138
+    },
+    {
+      "path": ".github/FUNDING.yml",
+      "words": 127
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "words": 128
+    },
+    {
+      "path": ".gitignore",
+      "words": 7
+    },
+    {
+      "path": ".mcp.json",
+      "words": 21
+    },
+    {
+      "path": ".ncode-plugin/marketplace.json",
+      "words": 100
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "words": 2542
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "words": 147
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "words": 229
+    },
+    {
+      "path": "EVAL.md",
+      "words": 1401
+    },
+    {
+      "path": "LEDGER.md",
+      "words": 111
+    },
+    {
+      "path": "LICENSE",
+      "words": 168
+    },
+    {
+      "path": "README.md",
+      "words": 3035
+    },
+    {
+      "path": "SECURITY.md",
+      "words": 227
+    },
+    {
+      "path": "agents/escalate.md",
+      "words": 177
+    },
+    {
+      "path": "agents/fan-out.md",
+      "words": 296
+    },
+    {
+      "path": "agents/memory-curator.md",
+      "words": 176
+    },
+    {
+      "path": "agents/repo-scout.md",
+      "words": 126
+    },
+    {
+      "path": "agents/test-author.md",
+      "words": 161
+    },
+    {
+      "path": "assets/sips-homebase-icon.svg",
+      "words": 40
+    },
+    {
+      "path": "assets/sips-homebase-logo.svg",
+      "words": 51
+    },
+    {
+      "path": "commands/brainstorm.md",
+      "words": 241
+    },
+    {
+      "path": "commands/checkpoint.md",
+      "words": 102
+    },
+    {
+      "path": "commands/escalate.md",
+      "words": 140
+    },
+    {
+      "path": "commands/fan-out.md",
+      "words": 358
+    },
+    {
+      "path": "commands/goal.md",
+      "words": 520
+    },
+    {
+      "path": "commands/improve.md",
+      "words": 135
+    },
+    {
+      "path": "commands/patterns.md",
+      "words": 108
+    },
+    {
+      "path": "commands/recall.md",
+      "words": 121
+    },
+    {
+      "path": "commands/teach.md",
+      "words": 122
+    },
+    {
+      "path": "commands/verify.md",
+      "words": 117
+    },
+    {
+      "path": "hooks/hooks.json",
+      "words": 466
+    },
+    {
+      "path": "install.sh",
+      "words": 786
+    },
+    {
+      "path": "pyproject.toml",
+      "words": 84
+    },
+    {
+      "path": "references/capability_map.md",
+      "words": 674
+    },
+    {
+      "path": "references/eval_grader_golden.json",
+      "words": 22
+    },
+    {
+      "path": "scripts/agent_patterns.py",
+      "words": 1026
+    },
+    {
+      "path": "scripts/autonomy_gate.py",
+      "words": 570
+    },
+    {
+      "path": "scripts/brainstorm.py",
+      "words": 824
+    },
+    {
+      "path": "scripts/branch_session.py",
+      "words": 819
+    },
+    {
+      "path": "scripts/compact_continuity.py",
+      "words": 640
+    },
+    {
+      "path": "scripts/escalation_advisor.py",
+      "words": 504
+    },
+    {
+      "path": "scripts/eval_grader_parity.py",
+      "words": 381
+    },
+    {
+      "path": "scripts/eval_harness.py",
+      "words": 1431
+    },
+    {
+      "path": "scripts/eval_llm_judge.py",
+      "words": 1032
+    },
+    {
+      "path": "scripts/fan_out.py",
+      "words": 1198
+    },
+    {
+      "path": "scripts/fix_drafter.py",
+      "words": 1217
+    },
+    {
+      "path": "scripts/goal_state.py",
+      "words": 992
+    },
+    {
+      "path": "scripts/harness_browser_mcp.py",
+      "words": 1372
+    },
+    {
+      "path": "scripts/harness_gc.py",
+      "words": 508
+    },
+    {
+      "path": "scripts/harness_homebase_mcp.py",
+      "words": 3523
+    },
+    {
+      "path": "scripts/hook_event_tap.py",
+      "words": 618
+    },
+    {
+      "path": "scripts/improvement_injector.py",
+      "words": 498
+    },
+    {
+      "path": "scripts/memory_fabric.py",
+      "words": 219
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract.py",
+      "words": 199
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_actions.py",
+      "words": 107
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_citations.py",
+      "words": 112
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_claims.py",
+      "words": 157
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_compliance.py",
+      "words": 184
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_task_gate.py",
+      "words": 109
+    },
+    {
+      "path": "scripts/memory_fabric_answer_contract_uncertainty.py",
+      "words": 48
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval.py",
+      "words": 239
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval_suite.py",
+      "words": 264
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval_suite_checks.py",
+      "words": 44
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval_suite_ids.py",
+      "words": 88
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval_suite_metrics.py",
+      "words": 43
+    },
+    {
+      "path": "scripts/memory_fabric_answer_eval_suite_parse.py",
+      "words": 93
+    },
+    {
+      "path": "scripts/memory_fabric_answer_grounding.py",
+      "words": 118
+    },
+    {
+      "path": "scripts/memory_fabric_answer_score.py",
+      "words": 145
+    },
+    {
+      "path": "scripts/memory_fabric_answer_terms.py",
+      "words": 113
+    },
+    {
+      "path": "scripts/memory_fabric_answer_use_policy.py",
+      "words": 164
+    },
+    {
+      "path": "scripts/memory_fabric_answer_use_policy_reasons.py",
+      "words": 113
+    },
+    {
+      "path": "scripts/memory_fabric_answer_use_policy_records.py",
+      "words": 168
+    },
+    {
+      "path": "scripts/memory_fabric_behavior_probe.py",
+      "words": 302
+    },
+    {
+      "path": "scripts/memory_fabric_behavior_receipts.py",
+      "words": 229
+    },
+    {
+      "path": "scripts/memory_fabric_benchmark.py",
+      "words": 81
+    },
+    {
+      "path": "scripts/memory_fabric_brief_readiness.py",
+      "words": 129
+    },
+    {
+      "path": "scripts/memory_fabric_budget_plan.py",
+      "words": 352
+    },
+    {
+      "path": "scripts/memory_fabric_capture.py",
+      "words": 304
+    },
+    {
+      "path": "scripts/memory_fabric_capture_ops.py",
+      "words": 177
+    },
+    {
+      "path": "scripts/memory_fabric_causal_answer_policy.py",
+      "words": 94
+    },
+    {
+      "path": "scripts/memory_fabric_causal_audit.py",
+      "words": 320
+    },
+    {
+      "path": "scripts/memory_fabric_causal_evidence.py",
+      "words": 151
+    },
+    {
+      "path": "scripts/memory_fabric_causal_hypotheses.py",
+      "words": 244
+    },
+    {
+      "path": "scripts/memory_fabric_causal_hypothesis_groups.py",
+      "words": 110
+    },
+    {
+      "path": "scripts/memory_fabric_causal_hypothesis_paths.py",
+      "words": 140
+    },
+    {
+      "path": "scripts/memory_fabric_claim_support.py",
+      "words": 238
+    },
+    {
+      "path": "scripts/memory_fabric_claim_support_item.py",
+      "words": 396
+    },
+    {
+      "path": "scripts/memory_fabric_claim_support_parse.py",
+      "words": 99
+    },
+    {
+      "path": "scripts/memory_fabric_claim_support_text.py",
+      "words": 172
+    },
+    {
+      "path": "scripts/memory_fabric_classify.py",
+      "words": 117
+    },
+    {
+      "path": "scripts/memory_fabric_cli.py",
+      "words": 961
+    },
+    {
+      "path": "scripts/memory_fabric_cli_args.py",
+      "words": 126
+    },
+    {
+      "path": "scripts/memory_fabric_cli_json.py",
+      "words": 98
+    },
+    {
+      "path": "scripts/memory_fabric_compact_brief.py",
+      "words": 186
+    },
+    {
+      "path": "scripts/memory_fabric_conflict_refs.py",
+      "words": 51
+    },
+    {
+      "path": "scripts/memory_fabric_conflict_resolution.py",
+      "words": 169
+    },
+    {
+      "path": "scripts/memory_fabric_conflict_strength.py",
+      "words": 110
+    },
+    {
+      "path": "scripts/memory_fabric_contradiction_audit.py",
+      "words": 373
+    },
+    {
+      "path": "scripts/memory_fabric_decision_context.py",
+      "words": 125
+    },
+    {
+      "path": "scripts/memory_fabric_doctor.py",
+      "words": 456
+    },
+    {
+      "path": "scripts/memory_fabric_events.py",
+      "words": 258
+    },
+    {
+      "path": "scripts/memory_fabric_evidence_audit.py",
+      "words": 390
+    },
+    {
+      "path": "scripts/memory_fabric_evidence_repair.py",
+      "words": 205
+    },
+    {
+      "path": "scripts/memory_fabric_evidence_repair_actions.py",
+      "words": 291
+    },
+    {
+      "path": "scripts/memory_fabric_evidence_supersession.py",
+      "words": 55
+    },
+    {
+      "path": "scripts/memory_fabric_frontier_audit.py",
+      "words": 258
+    },
+    {
+      "path": "scripts/memory_fabric_frontier_common.py",
+      "words": 53
+    },
+    {
+      "path": "scripts/memory_fabric_frontier_live.py",
+      "words": 175
+    },
+    {
+      "path": "scripts/memory_fabric_frontier_proof.py",
+      "words": 246
+    },
+    {
+      "path": "scripts/memory_fabric_frontier_release.py",
+      "words": 336
+    },
+    {
+      "path": "scripts/memory_fabric_graph.py",
+      "words": 434
+    },
+    {
+      "path": "scripts/memory_fabric_graph_audit.py",
+      "words": 385
+    },
+    {
+      "path": "scripts/memory_fabric_graph_audit_refs.py",
+      "words": 180
+    },
+    {
+      "path": "scripts/memory_fabric_graph_audit_report.py",
+      "words": 149
+    },
+    {
+      "path": "scripts/memory_fabric_graph_edges.py",
+      "words": 205
+    },
+    {
+      "path": "scripts/memory_fabric_graph_expand.py",
+      "words": 238
+    },
+    {
+      "path": "scripts/memory_fabric_graph_explicit.py",
+      "words": 237
+    },
+    {
+      "path": "scripts/memory_fabric_graph_pair.py",
+      "words": 172
+    },
+    {
+      "path": "scripts/memory_fabric_hook_health.py",
+      "words": 179
+    },
+    {
+      "path": "scripts/memory_fabric_install.py",
+      "words": 218
+    },
+    {
+      "path": "scripts/memory_fabric_install_cache.py",
+      "words": 130
+    },
+    {
+      "path": "scripts/memory_fabric_install_cli.py",
+      "words": 142
+    },
+    {
+      "path": "scripts/memory_fabric_install_copy.py",
+      "words": 89
+    },
+    {
+      "path": "scripts/memory_fabric_install_fingerprint.py",
+      "words": 98
+    },
+    {
+      "path": "scripts/memory_fabric_install_marketplace.py",
+      "words": 164
+    },
+    {
+      "path": "scripts/memory_fabric_install_mcp.py",
+      "words": 197
+    },
+    {
+      "path": "scripts/memory_fabric_install_paths.py",
+      "words": 120
+    },
+    {
+      "path": "scripts/memory_fabric_install_report.py",
+      "words": 199
+    },
+    {
+      "path": "scripts/memory_fabric_install_sync.py",
+      "words": 200
+    },
+    {
+      "path": "scripts/memory_fabric_install_sync_result.py",
+      "words": 216
+    },
+    {
+      "path": "scripts/memory_fabric_jsonl.py",
+      "words": 207
+    },
+    {
+      "path": "scripts/memory_fabric_live.py",
+      "words": 347
+    },
+    {
+      "path": "scripts/memory_fabric_live_behavior_cases.py",
+      "words": 360
+    },
+    {
+      "path": "scripts/memory_fabric_live_contract.py",
+      "words": 152
+    },
+    {
+      "path": "scripts/memory_fabric_live_contract_loader.py",
+      "words": 101
+    },
+    {
+      "path": "scripts/memory_fabric_live_freshness.py",
+      "words": 141
+    },
+    {
+      "path": "scripts/memory_fabric_live_names.py",
+      "words": 156
+    },
+    {
+      "path": "scripts/memory_fabric_live_params.py",
+      "words": 105
+    },
+    {
+      "path": "scripts/memory_fabric_mcp.py",
+      "words": 1273
+    },
+    {
+      "path": "scripts/memory_fabric_mcp_args.py",
+      "words": 67
+    },
+    {
+      "path": "scripts/memory_fabric_mcp_install.py",
+      "words": 165
+    },
+    {
+      "path": "scripts/memory_fabric_mcp_reload_order.py",
+      "words": 125
+    },
+    {
+      "path": "scripts/memory_fabric_mcp_runtime.py",
+      "words": 229
+    },
+    {
+      "path": "scripts/memory_fabric_mcp_telemetry.py",
+      "words": 224
+    },
+    {
+      "path": "scripts/memory_fabric_measurement.py",
+      "words": 244
+    },
+    {
+      "path": "scripts/memory_fabric_mixed_freshness_attention.py",
+      "words": 51
+    },
+    {
+      "path": "scripts/memory_fabric_path_explain.py",
+      "words": 367
+    },
+    {
+      "path": "scripts/memory_fabric_path_use.py",
+      "words": 193
+    },
+    {
+      "path": "scripts/memory_fabric_preflight.py",
+      "words": 350
+    },
+    {
+      "path": "scripts/memory_fabric_process_audit.py",
+      "words": 218
+    },
+    {
+      "path": "scripts/memory_fabric_process_lifecycle.py",
+      "words": 114
+    },
+    {
+      "path": "scripts/memory_fabric_projection.py",
+      "words": 311
+    },
+    {
+      "path": "scripts/memory_fabric_projection_audit.py",
+      "words": 202
+    },
+    {
+      "path": "scripts/memory_fabric_projection_audit_checks.py",
+      "words": 148
+    },
+    {
+      "path": "scripts/memory_fabric_projection_body_scan.py",
+      "words": 76
+    },
+    {
+      "path": "scripts/memory_fabric_promotion.py",
+      "words": 303
+    },
+    {
+      "path": "scripts/memory_fabric_prompt_search.py",
+      "words": 521
+    },
+    {
+      "path": "scripts/memory_fabric_proof_boundary.py",
+      "words": 289
+    },
+    {
+      "path": "scripts/memory_fabric_readiness_summary.py",
+      "words": 807
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_attribution.py",
+      "words": 221
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_brief.py",
+      "words": 387
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_brief_causal_checks.py",
+      "words": 75
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_brief_checks.py",
+      "words": 152
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_brief_selection.py",
+      "words": 64
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_brief_summaries.py",
+      "words": 382
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval.py",
+      "words": 260
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_checks.py",
+      "words": 151
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_evidence.py",
+      "words": 87
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite.py",
+      "words": 193
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite_case.py",
+      "words": 233
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite_categories.py",
+      "words": 44
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite_category_checks.py",
+      "words": 44
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite_ids.py",
+      "words": 124
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_suite_summary.py",
+      "words": 212
+    },
+    {
+      "path": "scripts/memory_fabric_reasoning_eval_summary.py",
+      "words": 138
+    },
+    {
+      "path": "scripts/memory_fabric_receipt_summary.py",
+      "words": 306
+    },
+    {
+      "path": "scripts/memory_fabric_records.py",
+      "words": 166
+    },
+    {
+      "path": "scripts/memory_fabric_release_attention.py",
+      "words": 273
+    },
+    {
+      "path": "scripts/memory_fabric_release_host_advertisement.py",
+      "words": 77
+    },
+    {
+      "path": "scripts/memory_fabric_release_process_attention.py",
+      "words": 113
+    },
+    {
+      "path": "scripts/memory_fabric_release_reconnect.py",
+      "words": 91
+    },
+    {
+      "path": "scripts/memory_fabric_release_report.py",
+      "words": 499
+    },
+    {
+      "path": "scripts/memory_fabric_retrieval_gate.py",
+      "words": 215
+    },
+    {
+      "path": "scripts/memory_fabric_runtime_fingerprint.py",
+      "words": 368
+    },
+    {
+      "path": "scripts/memory_fabric_schema.py",
+      "words": 463
+    },
+    {
+      "path": "scripts/memory_fabric_schema_behavior.py",
+      "words": 358
+    },
+    {
+      "path": "scripts/memory_fabric_schema_data.json",
+      "words": 17
+    },
+    {
+      "path": "scripts/memory_fabric_search.py",
+      "words": 279
+    },
+    {
+      "path": "scripts/memory_fabric_search_filters.py",
+      "words": 518
+    },
+    {
+      "path": "scripts/memory_fabric_semantic.py",
+      "words": 94
+    },
+    {
+      "path": "scripts/memory_fabric_semantic_aliases.py",
+      "words": 77
+    },
+    {
+      "path": "scripts/memory_fabric_semantic_match.py",
+      "words": 211
+    },
+    {
+      "path": "scripts/memory_fabric_session_record.py",
+      "words": 220
+    },
+    {
+      "path": "scripts/memory_fabric_stdio_probe.py",
+      "words": 379
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit.py",
+      "words": 232
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit_enums.py",
+      "words": 155
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit_io.py",
+      "words": 88
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit_policy.py",
+      "words": 132
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit_required.py",
+      "words": 64
+    },
+    {
+      "path": "scripts/memory_fabric_store_audit_rules.py",
+      "words": 75
+    },
+    {
+      "path": "scripts/memory_fabric_task_cue_ledger.py",
+      "words": 191
+    },
+    {
+      "path": "scripts/memory_fabric_task_cue_match.py",
+      "words": 50
+    },
+    {
+      "path": "scripts/memory_fabric_task_cue_pricing.py",
+      "words": 45
+    },
+    {
+      "path": "scripts/memory_fabric_task_profile.py",
+      "words": 380
+    },
+    {
+      "path": "scripts/memory_fabric_telemetry_audit.py",
+      "words": 232
+    },
+    {
+      "path": "scripts/memory_fabric_telemetry_contract.py",
+      "words": 234
+    },
+    {
+      "path": "scripts/memory_fabric_telemetry_status.py",
+      "words": 241
+    },
+    {
+      "path": "scripts/memory_fabric_thread_brief.py",
+      "words": 513
+    },
+    {
+      "path": "scripts/memory_fabric_thread_brief_format.py",
+      "words": 207
+    },
+    {
+      "path": "scripts/memory_fabric_time.py",
+      "words": 15
+    },
+    {
+      "path": "scripts/memory_fabric_token_coverage.py",
+      "words": 158
+    },
+    {
+      "path": "scripts/memory_fabric_token_coverage_report.py",
+      "words": 231
+    },
+    {
+      "path": "scripts/memory_fabric_token_isolation.py",
+      "words": 76
+    },
+    {
+      "path": "scripts/memory_fabric_token_scenarios.py",
+      "words": 125
+    },
+    {
+      "path": "scripts/memory_fabric_usage.py",
+      "words": 138
+    },
+    {
+      "path": "scripts/memory_fabric_usage_candidates.py",
+      "words": 149
+    },
+    {
+      "path": "scripts/memory_fabric_usage_export.py",
+      "words": 178
+    },
+    {
+      "path": "scripts/memory_fabric_usage_extract.py",
+      "words": 196
+    },
+    {
+      "path": "scripts/memory_fabric_usage_quality.py",
+      "words": 112
+    },
+    {
+      "path": "scripts/memory_fabric_usage_tokens.py",
+      "words": 168
+    },
+    {
+      "path": "scripts/monitor_daemon.py",
+      "words": 1095
+    },
+    {
+      "path": "scripts/patch_effort_message.py",
+      "words": 518
+    },
+    {
+      "path": "scripts/proactive_drift.py",
+      "words": 364
+    },
+    {
+      "path": "scripts/probe_hook.py",
+      "words": 109
+    },
+    {
+      "path": "scripts/recall_ranker.py",
+      "words": 744
+    },
+    {
+      "path": "scripts/repo_forensics.sh",
+      "words": 126
+    },
+    {
+      "path": "scripts/restore_harness.py",
+      "words": 338
+    },
+    {
+      "path": "scripts/run_tests.py",
+      "words": 7867
+    },
+    {
+      "path": "scripts/script_smoke.py",
+      "words": 340
+    },
+    {
+      "path": "scripts/self_correct.py",
+      "words": 1360
+    },
+    {
+      "path": "scripts/session_close.py",
+      "words": 431
+    },
+    {
+      "path": "scripts/sips_memory_fabric.py",
+      "words": 86
+    },
+    {
+      "path": "scripts/sips_paths.py",
+      "words": 182
+    },
+    {
+      "path": "scripts/sips_presence_mirror.py",
+      "words": 91
+    },
+    {
+      "path": "scripts/snapshot_harness.py",
+      "words": 356
+    },
+    {
+      "path": "scripts/task_outcome_tracker.py",
+      "words": 589
+    },
+    {
+      "path": "scripts/tool_factory.py",
+      "words": 847
+    },
+    {
+      "path": "scripts/validate_harness.py",
+      "words": 571
+    },
+    {
+      "path": "scripts/validate_v2.py",
+      "words": 1513
+    },
+    {
+      "path": "scripts/weekly_sweep.py",
+      "words": 766
+    },
+    {
+      "path": "scripts/worktree_scope.py",
+      "words": 552
+    },
+    {
+      "path": "state.yaml",
+      "words": 237
+    },
+    {
+      "path": "tests/conftest.py",
+      "words": 25
+    },
+    {
+      "path": "tests/test_homebase_mcp.py",
+      "words": 113
+    },
+    {
+      "path": "tests/test_memory_fabric_store.py",
+      "words": 182
+    },
+    {
+      "path": "tests/test_sips_paths.py",
+      "words": 107
+    },
+    {
+      "path": "tests/test_verification_commands.py",
+      "words": 67
+    }
+  ],
+  "findings_remaining": [
+    "PreCompact/PostCompact remain non-Codex hook events for NCode/Claude compatibility; plugin.json intentionally omits hooks for Codex ingestion.",
+    "No skills directory is present because SIPS currently exposes MCP, commands, agents, and hooks rather than Codex skills."
+  ],
+  "plugin": "harness-self-improvement",
+  "scores": {
+    "context_economy": 20,
+    "distribution_readiness": 8,
+    "hooks_health": 8,
+    "manifest_integrity": 15,
+    "skill_quality": 25,
+    "trigger_precision": 20
+  },
+  "skill_descriptions": {},
+  "total": 96,
+  "verification": [
+    "python3 scripts/validate_v2.py --write-eval",
+    "python3 scripts/run_tests.py hook_contract --verbose",
+    "python3 -m compileall scripts/validate_v2.py scripts/hook_event_tap.py",
+    "python3 scripts/validate_v2.py --check-eval",
+    "python3 scripts/run_tests.py homebase_mcp --verbose",
+    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/Code/Self-Improvement-Plugin",
+    "python3 -m pytest"
+  ],
+  "version": "0.2.1"
+}

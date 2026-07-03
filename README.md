@@ -92,6 +92,14 @@ The repo is the SIPS harness home-base for Codex, NCode, and future harnesses.
 
 ## Current release
 
+### v0.2.1
+
+This patch tightens the Codex plugin surface:
+
+- Codex app icon/logo metadata for SIPS Homebase.
+- `${PLUGIN_ROOT}`-first hook commands with `${CLAUDE_PLUGIN_ROOT}` fallback for legacy harnesses.
+- Version/validator bookkeeping for the public plugin package.
+
 ### v0.2.0
 
 This release adds:

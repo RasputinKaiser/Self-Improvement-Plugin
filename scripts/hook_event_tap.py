@@ -10,10 +10,10 @@ Usage:
   hook_event_tap.py --event <Event> --script <name> [--timeout <sec>] -- <command...>
 
 Example (wrap inside hooks.json):
-  python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hook_event_tap.py \\
+  python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py \\
     --event PreToolUse \\
     --script autonomy_gate.py \\
-    -- python3 ${CLAUDE_PLUGIN_ROOT}/scripts/autonomy_gate.py
+    -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/autonomy_gate.py
 
 Set HARNESS_APP_NO_TAP=1 to bypass the tap entirely (the wrapped command
 runs directly without the tap, and no JSONL line is written).
