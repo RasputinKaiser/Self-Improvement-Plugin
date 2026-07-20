@@ -177,7 +177,13 @@ rsync -a --delete \
 # Ensure all installed scripts are executable (prevents recurring +x drift
 # when new scripts are committed without the executable bit). Root cause of
 # the 4× recurring "N scripts not executable" validator warnings.
-chmod +x "${DEST}/scripts/"*.py "${DEST}/scripts/"*.sh 2>/dev/null || true
+# Recursive: a bare glob missed scripts in subdirectories. Also sweep the
+# NCode plugin mirror, which re-copies the marketplace tree without
+# preserving the executable bit.
+find "${DEST}/scripts" \( -name '*.py' -o -name '*.sh' \) -exec chmod +x {} + 2>/dev/null || true
+for mirror in "${NCODE_DIR}/plugins/harness-local/harness-self-improvement/"*/scripts; do
+  [ -d "$mirror" ] && find "$mirror" \( -name '*.py' -o -name '*.sh' \) -exec chmod +x {} + 2>/dev/null
+done || true
 
 # Write a manifest the harness-app reads for drift detection
 echo "=== writing manifest ==="
