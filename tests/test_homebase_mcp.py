@@ -30,6 +30,31 @@ def test_tools_list_exposes_homebase_status_and_verify():
     assert "homebase_status" in names
     assert "homebase_verify" in names
     assert "homebase_mcp_freshness" in names
+    assert "sips_runtime_read" in names
+    assert "sips_runtime_write" in names
+
+
+def test_initialize_reports_manifest_version():
+    response = run_mcp_jsonl({"jsonrpc": "2.0", "id": 4, "method": "initialize", "params": {}})
+
+    assert response["result"]["serverInfo"] == {"name": "sips-homebase", "version": "0.4.0"}
+
+
+def test_cache_root_reports_a_versioned_install_candidate():
+    response = run_mcp_jsonl(
+        {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {"name": "homebase_mcp_freshness", "arguments": {"root": str(ROOT)}},
+        }
+    )
+
+    structured = response["result"]["structuredContent"]
+
+    cache_root = Path(structured["cache_root"])
+    assert cache_root.parent.name == "harness-self-improvement"
+    assert cache_root.name
 
 
 def test_homebase_status_reports_manifest_and_mcp_surface():
@@ -47,3 +72,4 @@ def test_homebase_status_reports_manifest_and_mcp_surface():
     assert structured["manifest"]["name"] == "harness-self-improvement"
     assert structured["manifest"]["has_mcp_servers"] is True
     assert "homebase_status" in structured["surfaces"]["mcp_tools"]
+    assert "sips_runtime_read" in structured["surfaces"]["mcp_tools"]

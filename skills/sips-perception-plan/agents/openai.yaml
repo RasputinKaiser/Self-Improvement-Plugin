@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Perception Plan"
+  short_description: "Plan screenshot and runtime UI proof"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-perception-plan to plan visual proof for this UI."

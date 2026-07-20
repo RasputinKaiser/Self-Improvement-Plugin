@@ -1,31 +1,38 @@
 {
   "context": {
-    "has_skills_dir": false,
-    "hook_portable_root_refs": 38,
-    "skill_body_words": 0,
-    "skill_description_chars": 0
+    "skill_body_words": 1011,
+    "skill_count": 10,
+    "skill_description_chars": 1725,
+    "skills": [
+      "sips-context-distiller",
+      "sips-control-plane",
+      "sips-delegation-router",
+      "sips-execution-repro",
+      "sips-memory-fabric",
+      "sips-perception-plan",
+      "sips-proof-scanner",
+      "sips-repo-map",
+      "sips-selfloop",
+      "sips-tool-factory"
+    ]
   },
-  "date": "2026-07-03T06:53:12.093903+00:00",
+  "date": "2026-07-20T04:14:15.433281+00:00",
   "file_inventory": [
     {
       "path": ".agents/plugins/marketplace.json",
       "words": 34
     },
     {
-      "path": ".codex/csi/chat-presence.md",
-      "words": 23
+      "path": ".claude-plugin/marketplace.json",
+      "words": 59
     },
     {
-      "path": ".codex/csi/rich-presence.jsonl",
-      "words": 18
-    },
-    {
-      "path": ".codex/csi/rich-presence.md",
-      "words": 362
+      "path": ".claude-plugin/plugin.json",
+      "words": 48
     },
     {
       "path": ".codex-plugin/plugin.json",
-      "words": 138
+      "words": 171
     },
     {
       "path": ".github/FUNDING.yml",
@@ -37,7 +44,7 @@
     },
     {
       "path": ".gitignore",
-      "words": 7
+      "words": 9
     },
     {
       "path": ".mcp.json",
@@ -45,7 +52,11 @@
     },
     {
       "path": ".ncode-plugin/marketplace.json",
-      "words": 100
+      "words": 76
+    },
+    {
+      "path": ".plugin-improver/baseline.json",
+      "words": 1614
     },
     {
       "path": "ARCHITECTURE.md",
@@ -61,11 +72,51 @@
     },
     {
       "path": "EVAL.md",
-      "words": 1456
+      "words": 1943
+    },
+    {
+      "path": "Graph-Theory/README.md",
+      "words": 239
+    },
+    {
+      "path": "Graph-Theory/architecture.md",
+      "words": 484
+    },
+    {
+      "path": "Graph-Theory/contracts.md",
+      "words": 854
+    },
+    {
+      "path": "Graph-Theory/operations.md",
+      "words": 657
+    },
+    {
+      "path": "Graph-Theory/receipts/c0-freeze.md",
+      "words": 97
+    },
+    {
+      "path": "Graph-Theory/receipts/c1-claude-host-refreeze.md",
+      "words": 532
+    },
+    {
+      "path": "Graph-Theory/receipts/c2-claude-host-0-4-0.md",
+      "words": 405
+    },
+    {
+      "path": "Graph-Theory/receipts/source-verification.md",
+      "words": 418
+    },
+    {
+      "path": "Graph-Theory/recovery.md",
+      "words": 325
+    },
+    {
+      "path": "Graph-Theory/verification.md",
+      "words": 346
     },
     {
       "path": "LEDGER.md",
-      "words": 159
+      "words": 716
     },
     {
       "path": "LICENSE",
@@ -73,7 +124,7 @@
     },
     {
       "path": "README.md",
-      "words": 3068
+      "words": 3465
     },
     {
       "path": "SECURITY.md",
@@ -140,12 +191,20 @@
       "words": 121
     },
     {
+      "path": "commands/selfloop.md",
+      "words": 432
+    },
+    {
       "path": "commands/teach.md",
       "words": 122
     },
     {
       "path": "commands/verify.md",
       "words": 117
+    },
+    {
+      "path": "fixtures/benchmarks/policy_benchmark.py",
+      "words": 11811
     },
     {
       "path": "hooks/hooks.json",
@@ -157,7 +216,7 @@
     },
     {
       "path": "plugins/harness-self-improvement",
-      "words": 3
+      "words": 0
     },
     {
       "path": "pyproject.toml",
@@ -209,7 +268,7 @@
     },
     {
       "path": "scripts/fan_out.py",
-      "words": 1198
+      "words": 1940
     },
     {
       "path": "scripts/fix_drafter.py",
@@ -217,7 +276,7 @@
     },
     {
       "path": "scripts/goal_state.py",
-      "words": 992
+      "words": 2174
     },
     {
       "path": "scripts/harness_browser_mcp.py",
@@ -229,7 +288,7 @@
     },
     {
       "path": "scripts/harness_homebase_mcp.py",
-      "words": 3523
+      "words": 3888
     },
     {
       "path": "scripts/hook_event_tap.py",
@@ -393,7 +452,7 @@
     },
     {
       "path": "scripts/memory_fabric_cli.py",
-      "words": 961
+      "words": 1001
     },
     {
       "path": "scripts/memory_fabric_cli_args.py",
@@ -500,6 +559,10 @@
       "words": 237
     },
     {
+      "path": "scripts/memory_fabric_graph_index.py",
+      "words": 3391
+    },
+    {
       "path": "scripts/memory_fabric_graph_pair.py",
       "words": 172
     },
@@ -509,11 +572,11 @@
     },
     {
       "path": "scripts/memory_fabric_install.py",
-      "words": 218
+      "words": 222
     },
     {
       "path": "scripts/memory_fabric_install_cache.py",
-      "words": 130
+      "words": 140
     },
     {
       "path": "scripts/memory_fabric_install_cli.py",
@@ -521,7 +584,7 @@
     },
     {
       "path": "scripts/memory_fabric_install_copy.py",
-      "words": 89
+      "words": 96
     },
     {
       "path": "scripts/memory_fabric_install_fingerprint.py",
@@ -529,15 +592,15 @@
     },
     {
       "path": "scripts/memory_fabric_install_marketplace.py",
-      "words": 164
+      "words": 182
     },
     {
       "path": "scripts/memory_fabric_install_mcp.py",
-      "words": 197
+      "words": 240
     },
     {
       "path": "scripts/memory_fabric_install_paths.py",
-      "words": 120
+      "words": 151
     },
     {
       "path": "scripts/memory_fabric_install_report.py",
@@ -545,7 +608,7 @@
     },
     {
       "path": "scripts/memory_fabric_install_sync.py",
-      "words": 200
+      "words": 218
     },
     {
       "path": "scripts/memory_fabric_install_sync_result.py",
@@ -553,7 +616,7 @@
     },
     {
       "path": "scripts/memory_fabric_jsonl.py",
-      "words": 207
+      "words": 462
     },
     {
       "path": "scripts/memory_fabric_live.py",
@@ -585,7 +648,7 @@
     },
     {
       "path": "scripts/memory_fabric_mcp.py",
-      "words": 1273
+      "words": 1350
     },
     {
       "path": "scripts/memory_fabric_mcp_args.py",
@@ -817,7 +880,7 @@
     },
     {
       "path": "scripts/memory_fabric_store_audit_io.py",
-      "words": 88
+      "words": 110
     },
     {
       "path": "scripts/memory_fabric_store_audit_policy.py",
@@ -941,7 +1004,7 @@
     },
     {
       "path": "scripts/run_tests.py",
-      "words": 7867
+      "words": 7918
     },
     {
       "path": "scripts/script_smoke.py",
@@ -968,8 +1031,88 @@
       "words": 91
     },
     {
+      "path": "scripts/sips_runtime.py",
+      "words": 313
+    },
+    {
+      "path": "scripts/sips_runtime/__init__.py",
+      "words": 146
+    },
+    {
+      "path": "scripts/sips_runtime/adapters.py",
+      "words": 325
+    },
+    {
+      "path": "scripts/sips_runtime/api.py",
+      "words": 1831
+    },
+    {
+      "path": "scripts/sips_runtime/budget.py",
+      "words": 1146
+    },
+    {
+      "path": "scripts/sips_runtime/canonical.py",
+      "words": 440
+    },
+    {
+      "path": "scripts/sips_runtime/context.py",
+      "words": 2363
+    },
+    {
+      "path": "scripts/sips_runtime/contracts.py",
+      "words": 1701
+    },
+    {
+      "path": "scripts/sips_runtime/controller.py",
+      "words": 7907
+    },
+    {
+      "path": "scripts/sips_runtime/dag.py",
+      "words": 610
+    },
+    {
+      "path": "scripts/sips_runtime/events.py",
+      "words": 1316
+    },
+    {
+      "path": "scripts/sips_runtime/fanin.py",
+      "words": 1649
+    },
+    {
+      "path": "scripts/sips_runtime/leases.py",
+      "words": 599
+    },
+    {
+      "path": "scripts/sips_runtime/memory_frontier.py",
+      "words": 3933
+    },
+    {
+      "path": "scripts/sips_runtime/projection.py",
+      "words": 725
+    },
+    {
+      "path": "scripts/sips_runtime/promotion.py",
+      "words": 552
+    },
+    {
+      "path": "scripts/sips_runtime/quality.py",
+      "words": 855
+    },
+    {
+      "path": "scripts/sips_runtime/recovery.py",
+      "words": 2531
+    },
+    {
+      "path": "scripts/sips_runtime/scheduler.py",
+      "words": 431
+    },
+    {
+      "path": "scripts/sips_runtime/snapshots.py",
+      "words": 323
+    },
+    {
       "path": "scripts/snapshot_harness.py",
-      "words": 356
+      "words": 354
     },
     {
       "path": "scripts/task_outcome_tracker.py",
@@ -985,7 +1128,7 @@
     },
     {
       "path": "scripts/validate_v2.py",
-      "words": 1600
+      "words": 1988
     },
     {
       "path": "scripts/weekly_sweep.py",
@@ -996,8 +1139,168 @@
       "words": 552
     },
     {
+      "path": "skills/sips-context-distiller/SKILL.md",
+      "words": 93
+    },
+    {
+      "path": "skills/sips-context-distiller/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-context-distiller/assets/icon-large.svg",
+      "words": 30
+    },
+    {
+      "path": "skills/sips-context-distiller/assets/icon-small.svg",
+      "words": 30
+    },
+    {
+      "path": "skills/sips-control-plane/SKILL.md",
+      "words": 107
+    },
+    {
+      "path": "skills/sips-control-plane/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-control-plane/assets/icon-large.svg",
+      "words": 34
+    },
+    {
+      "path": "skills/sips-control-plane/assets/icon-small.svg",
+      "words": 34
+    },
+    {
+      "path": "skills/sips-delegation-router/SKILL.md",
+      "words": 124
+    },
+    {
+      "path": "skills/sips-delegation-router/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-delegation-router/assets/icon-large.svg",
+      "words": 44
+    },
+    {
+      "path": "skills/sips-delegation-router/assets/icon-small.svg",
+      "words": 44
+    },
+    {
+      "path": "skills/sips-execution-repro/SKILL.md",
+      "words": 98
+    },
+    {
+      "path": "skills/sips-execution-repro/agents/openai.yaml",
+      "words": 30
+    },
+    {
+      "path": "skills/sips-execution-repro/assets/icon-large.svg",
+      "words": 45
+    },
+    {
+      "path": "skills/sips-execution-repro/assets/icon-small.svg",
+      "words": 45
+    },
+    {
+      "path": "skills/sips-memory-fabric/SKILL.md",
+      "words": 175
+    },
+    {
+      "path": "skills/sips-memory-fabric/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-memory-fabric/assets/icon-large.svg",
+      "words": 38
+    },
+    {
+      "path": "skills/sips-memory-fabric/assets/icon-small.svg",
+      "words": 38
+    },
+    {
+      "path": "skills/sips-perception-plan/SKILL.md",
+      "words": 115
+    },
+    {
+      "path": "skills/sips-perception-plan/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-perception-plan/assets/icon-large.svg",
+      "words": 39
+    },
+    {
+      "path": "skills/sips-perception-plan/assets/icon-small.svg",
+      "words": 39
+    },
+    {
+      "path": "skills/sips-proof-scanner/SKILL.md",
+      "words": 111
+    },
+    {
+      "path": "skills/sips-proof-scanner/agents/openai.yaml",
+      "words": 29
+    },
+    {
+      "path": "skills/sips-proof-scanner/assets/icon-large.svg",
+      "words": 37
+    },
+    {
+      "path": "skills/sips-proof-scanner/assets/icon-small.svg",
+      "words": 37
+    },
+    {
+      "path": "skills/sips-repo-map/SKILL.md",
+      "words": 109
+    },
+    {
+      "path": "skills/sips-repo-map/agents/openai.yaml",
+      "words": 28
+    },
+    {
+      "path": "skills/sips-repo-map/assets/icon-large.svg",
+      "words": 35
+    },
+    {
+      "path": "skills/sips-repo-map/assets/icon-small.svg",
+      "words": 35
+    },
+    {
+      "path": "skills/sips-selfloop/SKILL.md",
+      "words": 295
+    },
+    {
+      "path": "skills/sips-selfloop/agents/openai.yaml",
+      "words": 26
+    },
+    {
+      "path": "skills/sips-selfloop/assets/icon-large.svg",
+      "words": 52
+    },
+    {
+      "path": "skills/sips-selfloop/assets/icon-small.svg",
+      "words": 52
+    },
+    {
+      "path": "skills/sips-tool-factory/SKILL.md",
+      "words": 104
+    },
+    {
+      "path": "skills/sips-tool-factory/agents/openai.yaml",
+      "words": 27
+    },
+    {
+      "path": "skills/sips-tool-factory/assets/icon-large.svg",
+      "words": 38
+    },
+    {
+      "path": "skills/sips-tool-factory/assets/icon-small.svg",
+      "words": 38
+    },
+    {
       "path": "state.yaml",
-      "words": 247
+      "words": 415
     },
     {
       "path": "tests/conftest.py",
@@ -1005,15 +1308,55 @@
     },
     {
       "path": "tests/test_homebase_mcp.py",
-      "words": 113
+      "words": 176
     },
     {
       "path": "tests/test_memory_fabric_store.py",
-      "words": 182
+      "words": 399
+    },
+    {
+      "path": "tests/test_sips_memory_frontier.py",
+      "words": 2002
+    },
+    {
+      "path": "tests/test_sips_memory_frontier_interfaces.py",
+      "words": 706
     },
     {
       "path": "tests/test_sips_paths.py",
       "words": 107
+    },
+    {
+      "path": "tests/test_sips_runtime_cli.py",
+      "words": 133
+    },
+    {
+      "path": "tests/test_sips_runtime_core.py",
+      "words": 1444
+    },
+    {
+      "path": "tests/test_sips_runtime_execution.py",
+      "words": 1798
+    },
+    {
+      "path": "tests/test_sips_runtime_integration.py",
+      "words": 5148
+    },
+    {
+      "path": "tests/test_sips_runtime_legacy_adapters.py",
+      "words": 111
+    },
+    {
+      "path": "tests/test_sips_runtime_modes.py",
+      "words": 225
+    },
+    {
+      "path": "tests/test_sips_runtime_races.py",
+      "words": 1225
+    },
+    {
+      "path": "tests/test_sips_runtime_recovery.py",
+      "words": 879
     },
     {
       "path": "tests/test_verification_commands.py",
@@ -1021,30 +1364,43 @@
     }
   ],
   "findings_remaining": [
-    "PreCompact/PostCompact remain non-Codex hook events for NCode/Claude compatibility; plugin.json intentionally omits hooks for Codex ingestion.",
-    "No skills directory is present because SIPS currently exposes MCP, commands, agents, and hooks rather than Codex skills."
+    "sips-proof-scanner trigger breadth (scan/verify/validate/audit/check) collides with /verify and generic audit asks.",
+    "PostCompact hook event never fires in Claude Code; session-record/continuity-restore skipped there (intentional for NCode).",
+    "Codex cache at 0.3.1 vs source 0.4.0; ralto-local at 0.3.0; resync pending.",
+    "interface.screenshots empty; marketplace category/keywords drift across .claude-plugin/.codex-plugin/.ncode-plugin.",
+    "manifest category metadata inconsistent (Developer Tools vs development)."
+  ],
+  "fixes_applied_this_pass": [
+    "Ported selfloop-set/selfloop-record into scripts/goal_state.py (dropped in 0.4.0 rewrite); smoke-tested with SIPS_HOME isolation.",
+    "sips-selfloop SKILL.md now script-first with MCP as conditional.",
+    "sips-memory-fabric SKILL.md record path now uses bundled memory_fabric_cli.py, external MCP as conditional."
   ],
   "plugin": "harness-self-improvement",
   "scores": {
     "context_economy": 20,
-    "distribution_readiness": 10,
-    "hooks_health": 8,
-    "manifest_integrity": 15,
+    "distribution_readiness": 8,
+    "hooks_health": 9,
+    "manifest_integrity": 14,
     "skill_quality": 25,
-    "trigger_precision": 20
+    "trigger_precision": 18
   },
-  "skill_descriptions": {},
-  "total": 98,
+  "skill_descriptions": {
+    "sips-context-distiller": "Extract bounded, source-linked context from large files or many inputs. Use when context is too large, files are oversized, or a task needs concise excerpts.",
+    "sips-control-plane": "Inspect SIPS Homebase status, manifest wiring, routes, host visibility, and MCP freshness. Use when asked for SIPS status, command center, host audit, plugin visibility, or whether Homebase is fresh.",
+    "sips-delegation-router": "Route a task through SIPS commands, agents, scripts, MCP tools, or bounded delegation. Use when asked to route, split, fan out, escalate, or choose the right SIPS path.",
+    "sips-execution-repro": "Turn failures, logs, symptoms, or flaky behavior into a compact repro and verification plan. Use when debugging needs a reproducible failure path.",
+    "sips-memory-fabric": "Search, inspect, and record SIPS-owned Memory Fabric lessons. Use when a task needs prior lessons, recurring-fix memory, recall health, scoped historical context, or when a just-fixed bump or error should be recorded.",
+    "sips-perception-plan": "Plan browser, app, screenshot, or UI checks before visual claims. Use when a task includes app shots, visual QA, generated assets, or runtime UI proof.",
+    "sips-proof-scanner": "Verify SIPS proof surfaces before reporting completion. Use when asked to scan, verify, validate, prove, audit, or check whether a repo or SIPS install is coherent.",
+    "sips-repo-map": "Map repository structure, likely tests, git state, and write scope before edits. Use when asked for repo mapping, blast radius, file inventory, or change planning.",
+    "sips-selfloop": "Start, inspect, or continue a persistent SIPS self-improvement loop. Use when the user asks for /selfloop, wants the agent to iteratively improve itself, or wants a goal dedicated only to SIPS and agent capability.",
+    "sips-tool-factory": "Decide whether to reuse, improve, or scaffold a deterministic helper. Use when repeated work is slow, brittle, or blocked by a missing local tool."
+  },
+  "total": 94,
   "verification": [
-    "codex plugin marketplace add ~/Code/Self-Improvement-Plugin --json",
-    "codex plugin add harness-self-improvement@harness-local --json",
-    "codex plugin add harness-self-improvement@ralto-local --json",
-    "python3 scripts/validate_v2.py --check-eval",
-    "python3 scripts/run_tests.py homebase_mcp --verbose",
-    "python3 scripts/run_tests.py hook_contract --verbose",
-    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/.codex/plugins/cache/harness-local/harness-self-improvement/0.2.2",
-    "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/.codex/plugins/cache/ralto-local/harness-self-improvement/0.2.2",
-    "python3 -m pytest"
+    "python3 -m pytest tests -q (exit 0)",
+    "python3 scripts/validate_v2.py (exit 0, 0 FAIL)",
+    "goal_state.py selfloop-set/selfloop-record/invalid-outcome smoke (pass, exit 2 on invalid)"
   ],
-  "version": "0.2.2"
+  "version": "0.4.0"
 }

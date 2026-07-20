@@ -7,7 +7,11 @@ from memory_fabric_install_paths import PLUGIN_NAME, read_json
 
 def check_marketplace(plugin_root: Path, marketplace_path: Path) -> dict[str, Any]:
     marketplace = read_json(marketplace_path)
-    entry = marketplace_entry(marketplace)
+    plugin_name = (
+        read_json(plugin_root / ".codex-plugin" / "plugin.json").get("name")
+        or PLUGIN_NAME
+    )
+    entry = marketplace_entry(marketplace, plugin_name)
     source = entry.get("source") or {}
     root = marketplace_root(marketplace_path)
     resolved = resolve_source_path(root, source.get("path", ""))
@@ -18,6 +22,7 @@ def check_marketplace(plugin_root: Path, marketplace_path: Path) -> dict[str, An
         "marketplace_root": str(root),
         "marketplace_exists": marketplace_path.exists(),
         "marketplace_name": marketplace.get("name", ""),
+        "plugin_name": plugin_name,
         "entry_exists": bool(entry),
         "entry_source": source.get("source", ""),
         "entry_path": source.get("path", ""),
@@ -28,9 +33,9 @@ def check_marketplace(plugin_root: Path, marketplace_path: Path) -> dict[str, An
     }
 
 
-def marketplace_entry(marketplace: dict[str, Any]) -> dict[str, Any]:
+def marketplace_entry(marketplace: dict[str, Any], plugin_name: str = PLUGIN_NAME) -> dict[str, Any]:
     for item in marketplace.get("plugins") or []:
-        if isinstance(item, dict) and item.get("name") == PLUGIN_NAME:
+        if isinstance(item, dict) and item.get("name") == plugin_name:
             return item
     return {}
 

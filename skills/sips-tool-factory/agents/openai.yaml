@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Tool Factory"
+  short_description: "Route or scaffold deterministic helpers"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-tool-factory to decide whether this needs a helper."

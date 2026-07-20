@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Proof Scanner"
+  short_description: "Verify repo and Homebase proof surfaces"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-proof-scanner to verify this SIPS repo or plugin install."

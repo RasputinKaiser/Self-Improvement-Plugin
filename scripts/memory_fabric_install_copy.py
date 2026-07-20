@@ -20,8 +20,12 @@ def copy_source(source: Path, target: Path) -> dict[str, Any]:
 
 
 def ignore(directory: str, names: list[str]) -> set[str]:
-    del directory
-    return {name for name in names if should_ignore(name)}
+    root = Path(directory)
+    return {
+        name
+        for name in names
+        if should_ignore(name) or (root / name).is_symlink()
+    }
 
 
 def should_ignore(name: str) -> bool:

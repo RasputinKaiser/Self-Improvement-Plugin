@@ -1,0 +1,22 @@
+{
+  "name": "sips-local",
+  "description": "Local marketplace for the SIPS self-improvement harness.",
+  "owner": {
+    "name": "RasputinKaiser",
+    "url": "https://github.com/RasputinKaiser"
+  },
+  "plugins": [
+    {
+      "name": "harness-self-improvement",
+      "description": "SIPS graph runtime and home-base for bounded task execution, memory fabric recall, verification, delegation, and lifecycle automation.",
+      "author": {
+        "name": "RasputinKaiser",
+        "url": "https://github.com/RasputinKaiser"
+      },
+      "source": ".",
+      "category": "development",
+      "homepage": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
+      "license": "MIT"
+    }
+  ]
+}

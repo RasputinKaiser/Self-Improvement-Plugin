@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
@@ -26,12 +27,13 @@ TESTS_DIR = Path(os.environ.get("SIPS_TESTS_DIR", str(PLUGIN_ROOT / "tests")))
 HOMEBASE_MCP = PLUGIN_ROOT / "scripts" / "harness_homebase_mcp.py"
 
 
-def run_script_with_input(script, payload):
+def run_script_with_input(script, payload, *, env=None):
     """Run a script with stdin JSON. Returns (returncode, stdout, stderr)."""
     r = subprocess.run(
         ["python3", str(script)],
         input=json.dumps(payload),
-        capture_output=True, text=True, timeout=10
+        capture_output=True, text=True, timeout=10,
+        env=env,
     )
     return r.returncode, r.stdout, r.stderr
 
@@ -43,6 +45,8 @@ def case(name, fn):
             return True, ""
         except AssertionError as e:
             return False, str(e)
+        except Exception as e:
+            return False, f"{type(e).__name__}: {e}"
     return (name, run)
 
 
@@ -339,28 +343,30 @@ def behavior_blocks_env_via_old_hook():
 
 def behavior_snapshot_on_script_edit():
     """Edit to ~/.ncode/scripts/<existing>.py → autonomy_gate creates snapshot."""
-    # Clean up existing snapshots for the test target
-    backup_dir = Path.home() / ".ncode" / "backups" / "scripts"
-    target = "validate_harness"
-    if backup_dir.is_dir():
-        for old in backup_dir.glob(f"{target}.*.py"):
-            old.unlink(missing_ok=True)
+    # Exercise the installed-path contract in an isolated home.  A source
+    # worktree path is intentionally low risk and cannot prove this behavior.
+    with tempfile.TemporaryDirectory(prefix="sips-run-tests-") as temporary:
+        harness_home = Path(temporary).resolve() / ".ncode"
+        harness_scripts = harness_home / "scripts"
+        harness_scripts.mkdir(parents=True)
+        target_path = (harness_scripts / "validate_harness.py").resolve()
+        shutil.copy2(SCRIPTS_DIR / "validate_harness.py", target_path)
+        backup_dir = harness_home / "backups" / "scripts"
+        environment = dict(os.environ, SIPS_HOME=str(harness_home))
 
-    rc, out, _ = run_script_with_input(
-        SCRIPTS_DIR / "autonomy_gate.py",
-        {"tool_name": "Edit", "tool_input": {"file_path": str(SCRIPTS_DIR / "validate_harness.py")}}
-    )
-    d = json.loads(out)
-    assert "decisionFeedback" in d, f"expected feedback, got {d}"
-    assert d["decisionFeedback"]["classification"] == "self-modification"
+        rc, out, err = run_script_with_input(
+            SCRIPTS_DIR / "autonomy_gate.py",
+            {"tool_name": "Edit", "tool_input": {"file_path": str(target_path)}},
+            env=environment,
+        )
+        assert rc == 0 and out.strip(), f"gate failed rc={rc} stderr={err!r}"
+        d = json.loads(out)
+        assert "decisionFeedback" in d, f"expected feedback, got {d}"
+        assert d["decisionFeedback"]["classification"] == "self-modification"
 
-    # Assert a snapshot file was created
-    snapshots = list(backup_dir.glob(f"{target}.*.py"))
-    assert snapshots, f"no snapshot created for {target}"
-    # Verify snapshot contains the original content
-    snap_content = snapshots[0].read_text()
-    original = (SCRIPTS_DIR / "validate_harness.py").read_text()
-    assert snap_content == original or len(snap_content) > 0, "snapshot empty"
+        snapshots = list(backup_dir.glob("validate_harness.*.py"))
+        assert snapshots, "no isolated snapshot created for validate_harness"
+        assert snapshots[0].read_text() == target_path.read_text(), "snapshot content drifted"
 
 def behavior_compact_lifecycle():
     """Full PreCompact → PostCompact cycle restores continuity packet."""
@@ -993,42 +999,42 @@ def hook_contract_all_manifest_hooks_exit_zero_and_emit_json_or_empty():
 
 def install_sh_check_returns_clean_after_install():
     """install.sh --check should return 0 (in-sync) after a fresh install."""
-    # First ensure manifest exists — if not, install
-    manifest_path = os.path.expanduser("~/.ncode/.harness.installed.json")
-    if not os.path.exists(manifest_path):
+    with tempfile.TemporaryDirectory(prefix="sips-install-check-") as temporary:
+        environment = dict(os.environ, HOME=temporary)
         r = subprocess.run(
-            ["/bin/bash", str(PLUGIN_ROOT / "install.sh")],
-            capture_output=True, text=True, timeout=30,
-            cwd=str(PLUGIN_ROOT)
+            ["/bin/bash", str(PLUGIN_ROOT / "install.sh"), "--no-snapshot"],
+            capture_output=True, text=True, timeout=60,
+            cwd=str(PLUGIN_ROOT), env=environment,
         )
         assert r.returncode == 0, f"first install failed: {r.stderr}"
-
-    r = subprocess.run(
-        ["/bin/bash", str(PLUGIN_ROOT / "install.sh"), "--check"],
-        capture_output=True, text=True, timeout=10,
-        cwd=str(PLUGIN_ROOT)
-    )
-    assert r.returncode == 0, f"--check failed (rc={r.returncode}): {r.stdout}\n{r.stderr}"
-    assert "OK" in r.stdout or "in sync" in r.stdout, f"unexpected output: {r.stdout}"
+        r = subprocess.run(
+            ["/bin/bash", str(PLUGIN_ROOT / "install.sh"), "--check"],
+            capture_output=True, text=True, timeout=30,
+            cwd=str(PLUGIN_ROOT), env=environment,
+        )
+        assert r.returncode == 0, f"--check failed (rc={r.returncode}): {r.stdout}\n{r.stderr}"
+        assert "OK" in r.stdout or "in sync" in r.stdout, f"unexpected output: {r.stdout}"
 
 
 def install_sh_manifest_has_expected_fields():
     """Manifest written by install.sh must have commit + files array."""
-    manifest_path = os.path.expanduser("~/.ncode/.harness.installed.json")
-    if not os.path.exists(manifest_path):
-        # Run install to create one
-        subprocess.run(
-            ["/bin/bash", str(PLUGIN_ROOT / "install.sh")],
-            capture_output=True, text=True, timeout=30,
-            cwd=str(PLUGIN_ROOT)
+    with tempfile.TemporaryDirectory(prefix="sips-install-manifest-") as temporary:
+        environment = dict(os.environ, HOME=temporary)
+        installed = subprocess.run(
+            ["/bin/bash", str(PLUGIN_ROOT / "install.sh"), "--no-snapshot"],
+            capture_output=True, text=True, timeout=60,
+            cwd=str(PLUGIN_ROOT), env=environment,
         )
-    d = json.load(open(manifest_path))
-    assert "commit" in d and len(d["commit"]) >= 7, f"no commit: {d}"
-    assert "files" in d and isinstance(d["files"], list) and len(d["files"]) > 0, f"no files: {d}"
-    assert "installedAt" in d, f"no installedAt: {d}"
-    assert "hooksSha256" in d, f"no hooksSha256: {d}"
-    first_file = d["files"][0]
-    assert "path" in first_file and "sha256" in first_file, f"bad entry: {first_file}"
+        assert installed.returncode == 0, installed.stderr
+        manifest_path = Path(temporary) / ".ncode" / ".harness.installed.json"
+        with manifest_path.open(encoding="utf-8") as handle:
+            d = json.load(handle)
+        assert "commit" in d and len(d["commit"]) >= 7, f"no commit: {d}"
+        assert "files" in d and isinstance(d["files"], list) and len(d["files"]) > 0, f"no files: {d}"
+        assert "installedAt" in d, f"no installedAt: {d}"
+        assert "hooksSha256" in d, f"no hooksSha256: {d}"
+        first_file = d["files"][0]
+        assert "path" in first_file and "sha256" in first_file, f"bad entry: {first_file}"
 
 
 # --- probe_hook ---
@@ -1535,10 +1541,11 @@ def eval_brief_emits_when_results_exist():
     import improvement_injector as ii
     ii.EVAL_RESULTS_PATH = Path(tempfile.gettempdir()) / "test_eval_brief.jsonl"
     try:
+        now = datetime.now(timezone.utc)
         runs = [
-            _make_eval_run("case-a", 1.0, True, "2026-06-29T01:00:00Z"),
-            _make_eval_run("case-b", 0.0, False, "2026-06-29T01:30:00Z"),
-            _make_eval_run("case-c", 1.0, True, "2026-06-29T02:00:00Z"),
+            _make_eval_run("case-a", 1.0, True, (now - timedelta(minutes=2)).isoformat()),
+            _make_eval_run("case-b", 0.0, False, (now - timedelta(minutes=1)).isoformat()),
+            _make_eval_run("case-c", 1.0, True, now.isoformat()),
         ]
         _write_eval_results(ii.EVAL_RESULTS_PATH, runs)
         brief = ii.latest_eval_summary()

@@ -1,4 +1,6 @@
 from __future__ import annotations
+import os
+import shutil
 from pathlib import Path
 
 from memory_fabric_install_paths import PLUGIN_NAME, read_json
@@ -8,7 +10,7 @@ def check_mcp(plugin_root: Path) -> dict[str, object]:
     mcp_path = plugin_root / ".mcp.json"
     server = mcp_server(mcp_path)
     command = server_command(server)
-    script = server_script(server)
+    script = server_script(server, plugin_root)
     command_path = command_path_value(command)
     command_ready = command_path_ready(command_path)
     script_ready = script_path_ready(script)
@@ -24,16 +26,26 @@ def check_mcp(plugin_root: Path) -> dict[str, object]:
 
 def mcp_server(mcp_path: Path) -> dict:
     servers = read_json(mcp_path).get("mcpServers") or {}
-    return servers.get(PLUGIN_NAME) or {}
+    return (
+        servers.get(PLUGIN_NAME)
+        or servers.get("sips-homebase")
+        or next((server for server in servers.values() if isinstance(server, dict)), {})
+    )
 
 
 def server_command(server: dict) -> str:
     return str(server.get("command", ""))
 
 
-def server_script(server: dict) -> Path | None:
+def server_script(server: dict, plugin_root: Path | None = None) -> Path | None:
     args = server.get("args") or []
-    return Path(args[0]).expanduser() if args else None
+    if not args:
+        return None
+    raw = str(args[0])
+    if plugin_root:
+        raw = raw.replace("${PLUGIN_ROOT}", str(plugin_root))
+        raw = raw.replace("${CLAUDE_PLUGIN_ROOT}", str(plugin_root))
+    return Path(os.path.expandvars(raw)).expanduser()
 
 
 def command_path_value(command: str) -> Path | None:
@@ -66,7 +78,13 @@ def mcp_ok(command_path: Path | None, script: Path | None) -> bool:
 
 
 def command_path_ready(command_path: Path | None) -> bool:
-    return bool(command_path and command_path.is_absolute() and command_path.exists())
+    return bool(
+        command_path
+        and (
+            (command_path.is_absolute() and command_path.exists())
+            or shutil.which(str(command_path))
+        )
+    )
 
 
 def script_path_ready(script: Path | None) -> bool:

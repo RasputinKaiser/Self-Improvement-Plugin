@@ -18,7 +18,7 @@ from typing import Any, Sequence
 
 from sips_paths import goal_state_path
 
-PLUGIN_VERSION = "0.2.0"
+DEFAULT_PLUGIN_VERSION = "0.4.0"
 STDIO_MODE = "framed"
 MAX_FILE_BYTES = 3_000_000
 DEFAULT_SCAN_PATTERNS = ["*.py", "*.md", "*.json", "*.yaml", "*.yml", "*.toml"]
@@ -43,6 +43,12 @@ class JsonRpcError(RuntimeError):
 
 def plugin_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def plugin_version() -> str:
+    manifest = read_json(plugin_root() / ".codex-plugin" / "plugin.json")
+    version = manifest.get("version")
+    return str(version) if version else DEFAULT_PLUGIN_VERSION
 
 
 def scripts_dir() -> Path:
@@ -236,6 +242,48 @@ TOOLS: list[dict[str, Any]] = [
             required=["task"],
         ),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "sips_runtime_read",
+        "title": "SIPS Graph Runtime Read",
+        "description": "Read bounded task-DAG, receipt, event, or memory-frontier state without changing it.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "operation": {
+                    "type": "string",
+                    "enum": ["status", "plan", "events", "receipt", "frontier"],
+                    "description": "Read operation.",
+                },
+                "request_json": {
+                    "type": "string",
+                    "description": "Compact JSON object for the operation. Defaults to {}.",
+                },
+            },
+            required=["operation"],
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "sips_runtime_write",
+        "title": "SIPS Graph Runtime Write",
+        "description": "Apply one revision-checked, idempotent graph-runtime transition.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "operation": {
+                    "type": "string",
+                    "enum": ["create", "submit", "lease", "advance", "cancel", "promote"],
+                    "description": "Write operation.",
+                },
+                "request_json": {
+                    "type": "string",
+                    "description": "JSON object including idempotency_key and expected_revision.",
+                },
+            },
+            required=["operation", "request_json"],
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
     },
 ]
 
@@ -574,12 +622,21 @@ def routes_payload(root: Path) -> dict[str, Any]:
         {"route": "repro", "mcp_tool": "homebase_execution_repro", "fallback": "scripts/run_tests.py <suite>"},
         {"route": "perception", "mcp_tool": "homebase_perception_plan", "fallback": "screenshot/browser/app visual QA"},
         {"route": "tool-factory", "mcp_tool": "homebase_tool_factory", "fallback": "python3 scripts/tool_factory.py"},
+        {"route": "runtime-read", "mcp_tool": "sips_runtime_read", "fallback": "python3 scripts/sips_runtime.py read --op ..."},
+        {"route": "runtime-write", "mcp_tool": "sips_runtime_write", "fallback": "python3 scripts/sips_runtime.py write --op ..."},
     ]
     return {"schema": "homebase.routes.v1", "root": str(root), "routes": routes}
 
 
 def sips_cache_root() -> Path:
-    return Path.home() / ".codex" / "plugins" / "cache" / "harness-local" / "harness-self-improvement" / "0.2.0"
+    base = Path.home() / ".codex" / "plugins" / "cache" / "harness-local" / "harness-self-improvement"
+    versioned = base / plugin_version()
+    if versioned.exists():
+        return versioned
+    candidates = [path for path in base.iterdir() if path.is_dir()] if base.exists() else []
+    if candidates:
+        return sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)[0]
+    return versioned
 
 
 def mcp_freshness_payload(root: Path) -> dict[str, Any]:
@@ -747,6 +804,32 @@ def tool_result(payload: dict[str, Any], markdown: str, *, is_error: bool = Fals
     }
 
 
+def runtime_tool_payload(root: Path, operation: str, request_json: str, *, write: bool) -> dict[str, Any]:
+    try:
+        request = json.loads(request_json or "{}")
+    except json.JSONDecodeError as exc:
+        raise JsonRpcError(-32602, f"request_json is invalid JSON: {exc.msg}") from exc
+    if not isinstance(request, dict):
+        raise JsonRpcError(-32602, "request_json must contain a JSON object")
+    request.setdefault("workspace_root", str(root))
+    try:
+        from sips_runtime.api import RuntimeAPI
+    except (ImportError, ModuleNotFoundError) as exc:
+        raise JsonRpcError(-32000, f"SIPS graph runtime unavailable: {exc}") from exc
+    api = RuntimeAPI()
+    result = api.write(operation, request) if write else api.read(operation, request)
+    return dict(result)
+
+
+def runtime_markdown(payload: dict[str, Any], title: str) -> str:
+    data = payload.get("data")
+    if isinstance(data, dict):
+        markdown = data.get("markdown")
+        if isinstance(markdown, str) and markdown.strip():
+            return markdown[:8000]
+    return render(payload, title)[:8000]
+
+
 def render(payload: dict[str, Any], title: str) -> str:
     lines = [f"# {title}", ""]
     for key, value in payload.items():
@@ -902,6 +985,32 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             bool(arguments.get("force_new")),
         )
         return tool_result(payload, render(payload, "SIPS Tool Factory"))
+    if name == "sips_runtime_read":
+        operation = str(arguments.get("operation") or "").strip().lower()
+        payload = runtime_tool_payload(
+            root,
+            operation,
+            str(arguments.get("request_json") or "{}"),
+            write=False,
+        )
+        return tool_result(
+            payload,
+            runtime_markdown(payload, "SIPS Graph Runtime Read"),
+            is_error=payload.get("ok") is not True,
+        )
+    if name == "sips_runtime_write":
+        operation = str(arguments.get("operation") or "").strip().lower()
+        payload = runtime_tool_payload(
+            root,
+            operation,
+            str(arguments.get("request_json") or "{}"),
+            write=True,
+        )
+        return tool_result(
+            payload,
+            runtime_markdown(payload, "SIPS Graph Runtime Write"),
+            is_error=payload.get("ok") is not True,
+        )
     raise JsonRpcError(-32601, f"Unknown tool: {name}")
 
 
@@ -913,7 +1022,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
             result = {
                 "protocolVersion": params.get("protocolVersion", "2025-03-26"),
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "sips-homebase", "version": PLUGIN_VERSION},
+                "serverInfo": {"name": "sips-homebase", "version": plugin_version()},
                 "instructions": "Use homebase_* tools as the SIPS shared harness control plane across Codex, NCode, and future harnesses.",
             }
         elif method == "notifications/initialized":

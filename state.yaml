@@ -1,41 +1,118 @@
 version: 1
 project: Self-Improvement-Plugin
-status: codex_marketplace_manifest_0_2_2
-updated_at: "2026-07-03T03:08:00Z"
+release: "0.4.0"
+status: design_decision_complete_additive_migration_source_verified
+updated_at: "2026-07-19T01:48:06Z"
+authority:
+  runtime: "${SIPS_HOME:-~/.codex/sips}/runtime/v1/runs/<run_id>/events.jsonl"
+  memory: "${CODEX_MEMORY_FABRIC_STORE:-~/.codex/memory-fabric/memory.jsonl}"
+  projection_only: state.yaml
 source:
-  path: "$HOME/Code/Self-Improvement-Plugin"
-  branch: main
+  canonical_path: "$HOME/Code/Self-Improvement-Plugin"
+  feature_worktree: "$HOME/Code/.worktrees/sips-graph-runtime-v0.4.0"
+  branch: codex/sips-graph-runtime-v0.4.0
+  base_head: bde0ca863781d22822a0239cefec434e9580fed9
   remote: "https://github.com/RasputinKaiser/Self-Improvement-Plugin.git"
   public_author: RasputinKaiser
+  original_dirty_checkout_preserved: content_preserved_digests_superseded_at_c1
+freeze:
+  receipt: Graph-Theory/receipts/c1-claude-host-refreeze.md
+  superseded_receipt: Graph-Theory/receipts/c0-freeze.md
+  superseded_reason: "C0 was deliberately broken to add .claude-plugin/ manifests and fix .mcp.json for Claude Code host install."
+  tracked_diff_sha256: e921b06994a0737333e4ece193a0b847ea7be5af26589705e97ee8a36033b9c8
+  porcelain_v2_sha256: 34ee29160b6813aee4ff7792d819fe40965204c630a7713db7de114321e1ccd0
+  untracked_manifest_sha256: 5277172227151254acc96d55f38bd49c4aafac87f09655858a628c76709534ba
+  state_yaml_sha256: beeb91f6b89aa0a00efac809134cbf491eeeb7edcc9c33b8078af237ba588251
+graph_runtime:
+  task_domain: strict_and_dag
+  memory_domain: bounded_cyclic_context_only
+  memory_can_unlock_tasks: false
+  default_workers: 2
+  lease_seconds: 90
+  heartbeat_seconds: 15
+  attempt_ceiling_seconds: 900
+  token_soft_limit: 60000
+  token_hard_limit: 120000
+  token_tranches: [30, 35, 35]
+  context_seed_limit: 8
+  context_token_limit: 4000
+  compatibility_modes: [legacy, shadow, dual, runtime]
+  default_mode: legacy
+  controller_authoritative_modes: []
+  planned_controller_authoritative_modes: [dual, runtime]
+  legacy_execution_bridge: blocked_fail_closed
 sips:
   mcp_server: sips-homebase
+  runtime_read_tool: sips_runtime_read
+  runtime_write_tool: sips_runtime_write
+  runtime_cli: scripts/sips_runtime.py
   memory_fabric_owner: SIPS
   memory_fabric_cli: scripts/memory_fabric.py
-  memory_fabric_resolver: scripts/sips_memory_fabric.py
+  memory_frontier_cli: "scripts/memory_fabric.py indexed-frontier"
 verification:
-  current_pass:
-    - "python3 -m compileall scripts"
-    - "python3 -m compileall scripts tests"
-    - "python3 scripts/validate_v2.py"
-    - "python3 scripts/run_tests.py memory_fabric --verbose"
-    - "python3 scripts/run_tests.py phase0_foundation --verbose"
-    - "python3 scripts/run_tests.py hook_contract --verbose"
-    - "python3 scripts/run_tests.py homebase_mcp --verbose"
-    - "python3 scripts/run_tests.py sips_presence_mirror --verbose"
-    - "python3 scripts/validate_v2.py --check-eval"
-    - "python3 -m pytest"
-    - "python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py ~/Code/Self-Improvement-Plugin"
-    - "vermin --target=3.10- --no-tips scripts (via temporary venv)"
+  source_worktree:
+    status: passed
+    receipt: Graph-Theory/receipts/source-verification.md
+    commands:
+      - "python3 -m compileall -q scripts tests"
+      - "python3 -m pytest -q  # 72/72"
+      - "python3 scripts/run_tests.py fan_out  # 4/4"
+      - "python3 scripts/memory_fabric_benchmark.py --output <temp>  # 77/77"
+      - "python3 scripts/validate_v2.py --check-eval  # 134/134"
+  feature_proofs:
+    event_chain_and_recovery: passed
+    deterministic_dag_and_fanin: passed
+    concurrent_path_locking_and_fencing: passed
+    heartbeat_loss_and_attempt_ceiling: passed
+    multidimensional_budget_and_tranches: passed
+    bounded_context_and_indexed_frontier_1000_records: passed
+    candidate_first_promotion_and_writer_failure_boundary: passed
+    cli_homebase_mcp_parity: passed
+    legacy_shadow_dual_runtime_mode_projection: passed
+    inline_visualization_static_parity: passed
+    inline_visualization_browser_render: not_proven_file_url_policy
+  installed_cache:
+    status: not_updated
+    claim_allowed: false
+  claude_code_host:
+    status: installed_0_4_0_from_feature_worktree
+    receipt: Graph-Theory/receipts/c2-claude-host-0-4-0.md
+    superseded_receipt: Graph-Theory/receipts/c1-claude-host-refreeze.md
+    marketplace: sips-local
+    marketplace_source: "$HOME/Code/.worktrees/sips-graph-runtime-v0.4.0"
+    plugin: "harness-self-improvement@sips-local"
+    discovery: "21 skills, 5 agents, 7 hook events, 1 MCP server"
+    mcp_connectivity: passed
+    cache_source_parity: passed
+    skill_hook_execution: not_tested
+    graph_runtime_modules_in_cache: 19
+    installs_0_4_0: true
+    selfloop_ported_from_canonical: true
+    worktree_path_dependency: true
+  host_configuration:
+    status: claude_marketplace_added_codex_unchanged
+    detail: "sips-local marketplace registered in Claude Code user settings at C1. Codex host wiring untouched."
+    claim_allowed: false
+  fresh_host_mcp_exposure:
+    status: not_tested
+    claim_allowed: false
+  production_cutover:
+    status: blocked
+    claim_allowed: false
+blockers:
+  - code: dirty_checkout_clean_integration
+    detail: "The original main checkout remains dirty by design; merge/cutover needs a separately reviewed clean integration."
+  - code: legacy_execution_bridge
+    detail: "Legacy fan-out and goal outputs do not yet carry runtime lease, fencing, structured result, and evidence-gate contracts; dual/runtime adapters fail closed."
+  - code: installed_cache_parity
+    detail: "0.4.0 has not been installed into the Codex plugin cache."
+  - code: fresh_host_rediscovery
+    detail: "A fresh Codex host has not rediscovered the 0.4.0 MCP schemas."
+  - code: runtime_cutover
+    detail: "Default remains legacy; rollback rehearsal and production-equivalent parity receipts are still required before cutover."
 notes:
-  - "run_tests.py defaults to repo-local scripts so targeted suites can run from a fresh clone"
-  - "pyproject.toml declares Python 3.10+ as the current supported floor"
-  - "sips_paths.py centralizes SIPS_HOME -> NCODE_HOME -> ~/.ncode path resolution"
-  - "SIPS_DEBUG=1 writes hook failures to logs/hook_errors.jsonl without changing silent production defaults"
-  - "hook_contract suite executes every hooks.json command and enforces exit-zero plus JSON-or-empty stdout"
-  - "validate_v2.py supports --check-eval and --write-eval so CI can block EVAL.md drift"
-  - "tests/ adds pytest bridge coverage for path resolution, Homebase MCP, EVAL drift, and hook-contract execution"
-  - "Memory Fabric records and schema data now carry schema_version 1.0"
-  - "pytest covers schema-version writes, legacy read backfill, invalid JSONL sentinels, and raw store-audit failures"
-  - "GitHub Actions CI verifies compile, Python floor, manifest coherence, EVAL drift, hook contract, targeted SIPS suites, and pytest"
-  - "Plugin-improver pass 0.2.1 added Codex app assets and PLUGIN_ROOT-first hook commands while preserving CLAUDE_PLUGIN_ROOT fallback"
-  - "0.2.2 adds a supported Codex marketplace manifest at .agents/plugins/marketplace.json"
+  - "Task dependencies and Memory Fabric edges are physically and semantically separate domains."
+  - "events.jsonl is append-only authority; head.json is the external anchor and snapshot.json is rebuildable."
+  - "Unknown provider usage is charged at reservation and cannot support efficiency or promotion claims."
+  - "Every lesson is journaled as candidate/verify_before_use before any active Memory Fabric write."
+  - "Source, installed-cache, configuration, child-process, and fresh-host proof layers are reported separately."

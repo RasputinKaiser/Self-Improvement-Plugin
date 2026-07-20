@@ -64,7 +64,6 @@ def create_snapshot(reason, force=False):
         return 0
 
     if snapshot_dir.exists() and force:
-        import shutil
         shutil.rmtree(snapshot_dir)
 
     snapshot_dir.mkdir(parents=True)
