@@ -15,7 +15,7 @@
   "interface": {
     "displayName": "SIPS Homebase",
     "shortDescription": "Coordinate agent memory and verification",
-    "longDescription": "SIPS is the home-base control plane for Codex, NCode, and future agent harnesses. It organizes the system around five surfaces: Control Plane status, Memory Fabric recall, Verification proof, Delegation routing, and Lifecycle Hooks. Host-specific commands, hooks, and agents stay as adapters while the SIPS MCP keeps the shared model portable.",
+    "longDescription": "SIPS is the home-base control plane for Claude Code, Codex, and future agent harnesses. It organizes the system around five surfaces: Control Plane status, Memory Fabric recall, Verification proof, Delegation routing, and Lifecycle Hooks. Host-specific commands, hooks, and agents stay as adapters while the SIPS MCP keeps the shared model portable.",
     "developerName": "RasputinKaiser",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write", "Verification", "Memory", "Delegation", "Task Graph"],

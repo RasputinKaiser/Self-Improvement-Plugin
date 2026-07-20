@@ -13,5 +13,5 @@ result. Then act on the highest-priority finding:
 3. Else if `stale_scripts` is non-empty → summarize them; suggest archiving.
 
 Finish by appending a one-line summary to ~/.ncode/improvements.md under a new
-`## /improve sweep — <ts>` heading. Do not edit `~/.ncode/scripts/*` without a
+`## /improve sweep — <ts>` heading. Do not edit `${CLAUDE_PLUGIN_ROOT}/scripts/*` without a
 snapshot — the autonomy gate will remind you, but snapshot proactively.

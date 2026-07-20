@@ -34,10 +34,10 @@ Relevant issues include:
 Please do not report:
 
 - issues caused by publishing your own secrets
-- problems in unrelated NCode, Codex, or third-party plugins
+- problems in unrelated Claude Code, Codex, or third-party plugins
 - missing features
 - theoretical issues without a plausible path to impact
 
 ## Local data warning
 
-This plugin can read and write local harness state. Treat `.ncode` data, Memory Fabric records, transcripts, screenshots, and logs as private unless you have reviewed and sanitized them.
+This plugin can read and write local harness state. Treat local harness state, Memory Fabric records, transcripts, screenshots, and logs as private unless you have reviewed and sanitized them.

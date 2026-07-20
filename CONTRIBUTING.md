@@ -2,7 +2,7 @@
 
 Thanks for taking a look at Self-Improvement-Plugin.
 
-This project is a local-first NCode harness plugin for agent memory, verification, self-correction, delegation, and eval workflows. Contributions are welcome, but changes should stay focused on the harness loop.
+This project is a local-first harness plugin for Claude Code and Codex for agent memory, verification, self-correction, delegation, and eval workflows. Contributions are welcome, but changes should stay focused on the harness loop.
 
 ## Good contribution areas
 
@@ -17,7 +17,7 @@ This project is a local-first NCode harness plugin for agent memory, verificatio
 ## Before opening a pull request
 
 1. Keep the change scoped.
-2. Avoid committing local transcripts, private repo paths, API keys, screenshots with private data, or generated `.ncode` state.
+2. Avoid committing local transcripts, private repo paths, API keys, screenshots with private data, or generated local harness state.
 3. Run the validation script:
 
 ```bash
@@ -52,4 +52,4 @@ For larger changes, open an issue first so the design can be discussed before co
 
 ## Local data warning
 
-This project touches local harness state. Do not include personal `.ncode` data, private Memory Fabric records, private agent transcripts, or local machine paths unless they are already sanitized.
+This project touches local harness state. Do not include personal local harness state, private Memory Fabric records, private agent transcripts, or local machine paths unless they are already sanitized.

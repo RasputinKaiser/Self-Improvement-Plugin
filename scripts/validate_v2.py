@@ -381,7 +381,7 @@ lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-c
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")
 lines.append("- **scoped recall ranking**: recall_ranker ranks failure-then-success and scopes to cwd (replaces raw prompt_search).")
-lines.append("- **no model routing**: dropped v1's tier-detection library entirely. Versatility comes from bounded fresh-context delegation + forced lesson capture, not model swaps. Same behavior on GLM 5.2 and Claude.")
+lines.append("- **no model routing**: dropped v1's tier-detection library entirely. Versatility comes from bounded fresh-context delegation + forced lesson capture, not model swaps. Same behavior on Claude Code and Codex.")
 lines.append("- **hook behavior preserved with portable roots** — commands now prefer `${PLUGIN_ROOT}` and fall back to `${CLAUDE_PLUGIN_ROOT}`; hook-contract tests still pass.\n")
 
 eval_text = "\n".join(lines)

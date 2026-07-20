@@ -12,7 +12,7 @@ Parse user arguments:
    `<parent objective> | slice 1; slice 2; slice 3`
 2. Call:
    ```
-   python3 ~/.ncode/scripts/fan_out.py prepare \
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fan_out.py prepare \
      --parent "<parent objective>" \
      --slices "<slice 1>" "<slice 2>" "<slice 3>"
    ```
@@ -24,7 +24,7 @@ Parse user arguments:
 5. Wait for all agents to return. Collect each agent's `result` field as the `response` for that slice.
 6. Replay results back into the run state:
    ```
-   python3 ~/.ncode/scripts/fan_out.py ingest --run-id <runId> \
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fan_out.py ingest --run-id <runId> \
      --outputs '[{"sliceId":"slice_1","response":"..."},{"sliceId":"slice_2","response":"..."}]'
    ```
 7. Read the resulting summary. Surface disagreements and lessons to the user.

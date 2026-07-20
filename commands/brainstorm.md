@@ -19,4 +19,4 @@ Present the user with:
 
 Append a one-line summary to `~/.ncode/improvements.md` under `## /brainstorm sweep — <ts>` noting what the top gap was and whether the escalate agent produced a plan.
 
-Do not edit `~/.ncode/scripts/*` or the SIPS plugin source beyond the journal append. If the escalate agent suggests code changes, surface them as proposals only - the user explicitly reviews before any implementation.
+Do not edit `${CLAUDE_PLUGIN_ROOT}/scripts/*` or the SIPS plugin source beyond the journal append. If the escalate agent suggests code changes, surface them as proposals only - the user explicitly reviews before any implementation.

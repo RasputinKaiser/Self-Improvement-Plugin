@@ -21,7 +21,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 
 - [x] Native macOS SwiftUI app (harness-app)
 - [x] Project navigator (three-column: projects → sessions → chat)
-- [x] Live NCode chat bridge (--print stream-json IPC)
+- [x] Live host chat bridge (--print stream-json IPC)
 - [x] Session transcript viewer (historical JSONL loading)
 - [x] Hook event feed (live tailing with outcome classification)
 - [x] Snapshot catalog with diff detection
@@ -61,7 +61,7 @@ Used by `/brainstorm` to identify gaps and prioritize the next build.
 - [x] MCP server browser (list from .config.json + settings.local.json)
 - [x] Cross-machine sync (plugin code via private git — DONE; session/memory data sync deferred per plan)
 - [x] Evaluation harness (Swift-native: EvalCase/EvalCaseStore/EvalGrader/EvalRunner/EvalPane; sandbox cwd per run, deterministic graders, results.jsonl persistence, last-score per case)
-- [x] Telemetry dashboard (session usage data visualized from ~/.ncode/usage-data/)
+- [x] Telemetry dashboard (session usage data visualized from local harness usage data)
 - [x] Voice input (hold-to-talk via SFSpeechRecognizer + AVAudioEngine)
 - [x] Scheduled task visualizer (native 5-field cron parser with next-fire + human schedule)
 

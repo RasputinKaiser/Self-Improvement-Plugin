@@ -1,6 +1,6 @@
 {
   "name": "harness-local",
-  "description": "Local marketplace for the self-improving NCode agent harness",
+  "description": "Local marketplace for the self-improving SIPS agent harness",
   "owner": {
     "name": "RasputinKaiser"
   },

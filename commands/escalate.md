@@ -8,7 +8,7 @@ Dispatch the `escalate` agent with this single, well-scoped task:
 
 Before dispatching, confirm the task is genuinely bounded (one decision or one
 localized fix). If it is broad, decompose it first and escalate only the slice
-the workhorse (GLM 5.2) is stuck on — escalation is a scalpel, not a session
+the main session is stuck on — escalation is a scalpel, not a session
 swap.
 
 When the agent returns its `DIFF:` and `LESSON:` blocks:

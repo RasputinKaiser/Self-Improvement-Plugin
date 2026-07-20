@@ -3,8 +3,7 @@ description: Run run_tests.py + script_smoke on touched files. If a coverage gap
 ---
 Verify the harness is still sound after edits:
 
-1. `python3 ~/.ncode/scripts/run_tests.py` (or `${CLAUDE_PLUGIN_ROOT}/scripts/run_tests.py`
-   if not installed) — report pass/fail counts.
+1. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_tests.py` — report pass/fail counts.
 2. For each file touched in this session, run
    `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/script_smoke.py` against it.
 3. If a test FAILS: do not paper over it. Either the test caught a real regression
