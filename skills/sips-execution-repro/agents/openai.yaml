@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Execution Repro"
+  short_description: "Turn failures into repro and verification plans"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-execution-repro to turn this failure into a repro plan."

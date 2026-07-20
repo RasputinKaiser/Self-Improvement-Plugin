@@ -1,0 +1,22 @@
+{
+  "name": "harness-self-improvement",
+  "description": "SIPS graph runtime and home-base for bounded task execution, memory fabric recall, verification, delegation, and lifecycle automation.",
+  "author": {
+    "name": "RasputinKaiser",
+    "url": "https://github.com/RasputinKaiser"
+  },
+  "homepage": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
+  "repository": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
+  "license": "MIT",
+  "version": "0.4.0",
+  "keywords": [
+    "sips",
+    "self-improvement",
+    "memory-fabric",
+    "delegation",
+    "harness",
+    "mcp",
+    "homebase",
+    "graph-runtime"
+  ]
+}

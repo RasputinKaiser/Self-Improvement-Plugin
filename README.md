@@ -45,14 +45,15 @@ Expect sharp edges. This is an active development harness, not a packaged end-us
 
 | Surface | Status | Notes |
 |---|---|---|
-| Plugin manifests | Works | `validate_v2.py` checks the v0.2.0 manifest, hooks, commands, agents, and MCP declaration. |
+| Plugin manifests | Works | `validate_v2.py` checks the current manifest, skills, hooks, commands, agents, and MCP declaration. |
 | SIPS Homebase MCP | Works | `homebase_status` and related read-only tools are exercised by regression tests. |
+| SIPS graph runtime 0.4.0 | Source-verified, opt-in blocked | Strict task DAG, bounded memory frontier, receipts, CLI, and MCP source surfaces are implemented. Default remains `legacy`; cache install, fresh-host exposure, and cutover are not claimed. |
 | Memory Fabric | Works, SIPS-owned | The CLI/runtime is vendored under `scripts/memory_fabric.py`; SIPS resolves it before legacy cache fallbacks. |
 | Hook event tap | Works | Silent by default; set `SIPS_DEBUG=1` to write hook failure details to `logs/hook_errors.jsonl`. |
 | Regression runner | Works, pytest bridge in progress | `scripts/run_tests.py` remains the compatibility runner; `tests/` now contains repo-local pytest smoke coverage for core surfaces. |
 | CI | Works for the core | GitHub Actions compiles scripts, checks Python floor, validates manifests, and runs targeted suites on Ubuntu/macOS. |
 | Packaging | Partial | `pyproject.toml` declares metadata and Python floor; no package entry points yet. |
-| Full pytest suite | Partial | Pytest covers path resolution, Homebase MCP smoke, EVAL drift, and hook-contract execution. Full case migration remains planned. |
+| Full source pytest suite | Works | 72 repo-local tests cover existing core surfaces plus the 0.4.0 runtime, indexed frontier, interfaces, recovery, and compatibility projections. |
 | Memory schema versioning | Partial | New records and the published schema carry `schema_version: 1.0`; migration tooling is still planned. |
 | Windows support | Untested | Current support target is macOS/Linux POSIX hosts. |
 
@@ -63,10 +64,27 @@ Self-Improvement-Plugin adds four main surfaces:
 | Surface | Purpose |
 |---|---|
 | Lifecycle hooks | Run checks and memory actions during startup, prompt submit, tool use, compaction, and session close. |
+| Codex skills | Expose Homebase surfaces as organized plugin rows in Codex. |
 | Slash commands | Give the user direct control over recall, improvement, verification, goals, escalation, and fan-out. |
 | Delegation agents | Send bounded subtasks into fresh context while keeping the parent session clean. |
 | SIPS Homebase MCP | Expose portable `homebase_*` tools for Codex, NCode, and future harnesses. |
 | Utility scripts | Validate, test, snapshot, restore, inspect, and improve the harness over time. |
+
+### Codex Skill Surface
+
+SIPS exposes compact Codex skill rows for the major Homebase surfaces:
+
+| Skill | Purpose |
+|---|---|
+| `sips-control-plane` | Inspect status, route inventory, host wiring, and MCP freshness. |
+| `sips-proof-scanner` | Verify manifest, repo, and plugin proof surfaces before completion claims. |
+| `sips-delegation-router` | Route tasks through SIPS commands, agents, scripts, or MCP tools. |
+| `sips-memory-fabric` | Search SIPS-owned Memory Fabric recall and memory health. |
+| `sips-repo-map` | Map repo structure, write scope, likely tests, and blast radius. |
+| `sips-context-distiller` | Compress large files into bounded source-linked context. |
+| `sips-execution-repro` | Turn failures, logs, and symptoms into repro plans. |
+| `sips-perception-plan` | Plan screenshot, browser, app, or UI runtime proof. |
+| `sips-tool-factory` | Decide whether to reuse, improve, or scaffold deterministic helpers. |
 
 ### SIPS Homebase MCP
 
@@ -89,8 +107,31 @@ The repo is the SIPS harness home-base for Codex, NCode, and future harnesses.
 | `homebase_execution_repro` | Build a focused repro and verification plan. |
 | `homebase_perception_plan` | Plan browser/app visual QA loops. |
 | `homebase_tool_factory` | Decide whether a local tool is warranted. |
+| `sips_runtime_read` | Read runtime status, plan, events, receipt, or bounded memory frontier. |
+| `sips_runtime_write` | Create, submit, lease, advance, cancel, or promote with idempotency and revision guards. |
 
 ## Current release
+
+### v0.4.0
+
+This additive release introduces the [SIPS Graph Runtime](Graph-Theory/README.md):
+
+- a strict, deterministic task DAG for readiness, fenced leases, budgets, execution, and fan-in;
+- a separate bounded cyclic Memory Fabric frontier that supplies context but cannot unlock tasks;
+- append-only hash-chained run events, rebuildable snapshots, immutable slice and graph receipts, and recovery-by-linked-fork;
+- structured result/evidence gates, candidate-first lesson promotion, and failed-writer receipts;
+- matching CLI and compact Homebase MCP read/write surfaces;
+- `legacy`, `shadow`, `dual`, and `runtime` compatibility projections, with `legacy` still the default.
+
+The source implementation and baselines are verified in an isolated worktree. Controller-authoritative `dual`/`runtime` execution, plugin-cache parity, and fresh-host MCP exposure remain explicit cutover gates; see [verification](Graph-Theory/verification.md).
+
+### v0.3.0
+
+This minor release adds the Codex skill surface shown in the plugin details page:
+
+- `skills/` now maps SIPS Homebase into nine first-class rows.
+- Each skill is a thin adapter over the existing SIPS MCP/control-plane model rather than a second implementation.
+- Per-skill display metadata and icons make the plugin organized in Codex like a real toolbelt, not only `MCP servers` plus `Hooks`.
 
 ### v0.2.2
 

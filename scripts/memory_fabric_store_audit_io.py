@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from memory_fabric_jsonl import store_path
+from memory_fabric_jsonl import store_path, validate_json_contract
 
 
 def store_entries(path: str | Path | None = None) -> tuple[Path, list[dict[str, Any]]]:
@@ -20,6 +20,17 @@ def store_entries(path: str | Path | None = None) -> tuple[Path, list[dict[str, 
 
 def parse_line(line: str, line_no: int) -> dict[str, Any]:
     try:
-        return {"line": line_no, "record": json.loads(line), "error": ""}
-    except json.JSONDecodeError as exc:
+        record = json.loads(
+            line,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"non-finite JSON constant: {value}")
+            ),
+        )
+        validate_json_contract(record)
+        return {
+            "line": line_no,
+            "record": record,
+            "error": "",
+        }
+    except (json.JSONDecodeError, ValueError) as exc:
         return {"line": line_no, "record": {}, "error": str(exc)}

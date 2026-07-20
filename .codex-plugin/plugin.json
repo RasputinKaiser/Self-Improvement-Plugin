@@ -1,7 +1,7 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.2.2",
-  "description": "SIPS: Self Improvement Plugin System home-base with delegation, lifecycle hooks, commands, and MCP control plane.",
+  "version": "0.4.0",
+  "description": "SIPS graph runtime and home-base for bounded task execution, memory, verification, delegation, and lifecycle automation.",
   "author": {
     "name": "RasputinKaiser",
     "url": "https://github.com/RasputinKaiser"
@@ -9,22 +9,24 @@
   "homepage": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
   "repository": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
   "license": "MIT",
+  "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "keywords": ["sips", "self-improvement", "memory-fabric", "delegation", "harness", "mcp", "codex", "homebase"],
   "interface": {
     "displayName": "SIPS Homebase",
-    "shortDescription": "Run SIPS homebase across harnesses.",
-    "longDescription": "SIPS, the Self Improvement Plugin System, provides a portable home-base MCP for Codex, NCode, and future harnesses. It surfaces status, verification, task routing, repo mapping, context scanning, recall, and goal inspection while keeping host-specific hook, command, and agent surfaces as adapters.",
+    "shortDescription": "Coordinate agent memory and verification",
+    "longDescription": "SIPS is the home-base control plane for Codex, NCode, and future agent harnesses. It organizes the system around five surfaces: Control Plane status, Memory Fabric recall, Verification proof, Delegation routing, and Lifecycle Hooks. Host-specific commands, hooks, and agents stay as adapters while the SIPS MCP keeps the shared model portable.",
     "developerName": "RasputinKaiser",
-    "category": "Productivity",
-    "capabilities": ["Read", "Interactive"],
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write", "Verification", "Memory", "Delegation", "Task Graph"],
     "websiteURL": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
     "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
     "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
     "defaultPrompt": [
-      "Show SIPS homebase status.",
-      "Route this task through SIPS.",
-      "Scan this repo with SIPS."
+      "Use $sips-control-plane to show SIPS status.",
+      "Use $sips-proof-scanner to scan this repo's proof surfaces.",
+      "Use $sips-delegation-router to route this task through SIPS delegation.",
+      "Use $sips-memory-fabric to inspect recall health."
     ],
     "brandColor": "#0B6E4F",
     "composerIcon": "./assets/sips-homebase-icon.svg",

@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Control Plane"
+  short_description: "Inspect Homebase status and host freshness"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-control-plane to show SIPS status and MCP freshness."

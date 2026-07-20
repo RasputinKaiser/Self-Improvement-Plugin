@@ -27,7 +27,11 @@ def doctor(
 ) -> dict:
     root = resolved_plugin_root(plugin_root)
     source = check_source(root)
-    cache = check_cache(resolved_cache_root(cache_root), source.get("version", ""))
+    cache = check_cache(
+        resolved_cache_root(cache_root),
+        source.get("version", ""),
+        source.get("plugin_name", ""),
+    )
     cli = check_cli(codex_command) if check_cli_surface else skipped_cli()
     mcp = check_mcp(root)
     return assemble_report(

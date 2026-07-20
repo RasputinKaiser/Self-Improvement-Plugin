@@ -7,13 +7,13 @@
   "plugins": [
     {
       "name": "harness-self-improvement",
-      "description": "SIPS (Self Improvement Plugin System) home-base: SIPS-owned Memory Fabric recall, autonomy gate, continuity packets, outcome tracking, drift detection, self-correction loop, delegation agents, commands, and a portable MCP control plane. All agents inherit the session model; versatility comes from bounded fresh-context delegation and forced lesson capture, not model swaps.",
-      "version": "0.2.2",
+      "description": "SIPS graph runtime and portable home-base: strict task DAG execution, bounded Memory Fabric context, verification proof, delegation routing, and lifecycle hooks.",
+      "version": "0.4.0",
       "source": "./",
       "author": {
         "name": "RasputinKaiser"
       },
-      "category": "engineering",
+      "category": "Developer Tools",
       "keywords": [
         "sips",
         "self-improvement",
@@ -26,6 +26,8 @@
         "homebase",
         "autonomy-gate",
         "continuity",
+        "graph-runtime",
+        "task-dag",
         "hooks"
       ]
     }

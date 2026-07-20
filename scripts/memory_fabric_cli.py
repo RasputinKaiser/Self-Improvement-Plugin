@@ -46,6 +46,7 @@ from memory_fabric_telemetry_status import telemetry_status
 from memory_fabric_thread_brief import thread_brief
 from memory_fabric_token_coverage import token_coverage
 from memory_fabric_usage import usage_report
+from sips_runtime.memory_frontier import query_frontier
 
 
 SPECIAL_ARGS = {
@@ -91,6 +92,11 @@ SPECIAL_ARGS = {
         arg("--output", default=""),
         arg("--min-scenarios", type=int, default=3),
     ],
+    "indexed-frontier": arg_specs_from_signature(
+        query_frontier,
+        "scope query include_untrusted seed_limit fanout max_depth max_nodes "
+        "max_edges max_paths token_budget",
+    ),
     "release-report": [
         *arg_specs_from_signature(
             release_report,
@@ -312,6 +318,22 @@ def command_capture_usage(args, store):
     )
 
 
+def command_indexed_frontier(args, store):
+    return query_frontier(
+        scope=args.scope,
+        query=args.query,
+        store=store or None,
+        include_untrusted=args.include_untrusted,
+        seed_limit=args.seed_limit,
+        fanout=args.fanout,
+        max_depth=args.max_depth,
+        max_nodes=args.max_nodes,
+        max_edges=args.max_edges,
+        max_paths=args.max_paths,
+        token_budget=args.token_budget,
+    )
+
+
 def command_projection_audit(args, store):
     del store
     return audit_projection(args.input, max_bytes=args.max_bytes, max_recent=args.max_recent)
@@ -328,6 +350,7 @@ def handlers():
         "projection-audit": command_projection_audit,
         "usage-report": command_usage_report,
         "capture-representative-usage": command_capture_usage,
+        "indexed-frontier": command_indexed_frontier,
         "release-report": command_release_report,
         "record-hook-event": lambda args, store: record_from_hook_event(read_event_json(args.event_json), store),
         "serve": command_serve,

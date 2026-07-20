@@ -6,7 +6,7 @@ from memory_fabric_install_cache import check_cache
 from memory_fabric_install_copy import copy_source
 from memory_fabric_install_fingerprint import compare_directories
 from memory_fabric_install_marketplace import check_marketplace
-from memory_fabric_install_paths import check_source
+from memory_fabric_install_paths import PLUGIN_NAME, check_source
 from memory_fabric_install_sync_result import sync_preflight, sync_result
 
 
@@ -23,23 +23,36 @@ def cache_sync(
     source = check_source(root)
     market = check_marketplace(root, marketplace)
     version = source.get("version", "")
-    target = sync_target(cache, market.get("marketplace_name", ""), marketplace_name, version)
+    plugin_name = source.get("plugin_name", "") or PLUGIN_NAME
+    target = sync_target(
+        cache,
+        market.get("marketplace_name", ""),
+        marketplace_name,
+        version,
+        plugin_name,
+    )
     preflight = sync_preflight(source, market, target, version)
     if execute and preflight["reasons"] == ["target_already_exists"]:
         comparison = compare_directories(root, target)
         if not comparison["ok"]:
             mismatch = {**preflight, "content_match": False, "fingerprint": comparison}
             return sync_result(False, root, target, source, market, mismatch)
-        cache_result = check_cache(cache, version)
+        cache_result = check_cache(cache, version, plugin_name)
         idempotent = {**preflight, "content_match": True, "fingerprint": comparison, "idempotent": True}
         return sync_result(False, root, target, source, market, idempotent, cache=cache_result)
     if not execute or not preflight["can_sync"]:
         return sync_result(False, root, target, source, market, preflight)
     copied = copy_source(root, target)
-    cache_result = check_cache(cache, version)
+    cache_result = check_cache(cache, version, plugin_name)
     return sync_result(True, root, target, source, market, preflight, copied, cache_result)
 
 
-def sync_target(cache_root: Path, detected_marketplace: str, override: str, version: str) -> Path:
+def sync_target(
+    cache_root: Path,
+    detected_marketplace: str,
+    override: str,
+    version: str,
+    plugin_name: str = PLUGIN_NAME,
+) -> Path:
     marketplace = override or detected_marketplace or "local"
-    return cache_root / marketplace / "codex-memory-fabric" / version
+    return cache_root / marketplace / plugin_name / version

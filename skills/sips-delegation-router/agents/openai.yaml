@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Delegation Router"
+  short_description: "Route tasks through commands, agents, and MCP"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-delegation-router to route this task through SIPS."

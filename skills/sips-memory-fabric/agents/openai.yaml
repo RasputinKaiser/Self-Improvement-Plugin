@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Memory Fabric"
+  short_description: "Recall scoped lessons and memory health"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-memory-fabric to search prior lessons for this task."

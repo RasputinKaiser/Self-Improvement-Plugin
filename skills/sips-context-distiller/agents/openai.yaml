@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS Context Distiller"
+  short_description: "Compress large inputs into source-linked context"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-context-distiller to compress these files into working context."

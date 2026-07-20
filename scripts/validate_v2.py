@@ -2,7 +2,7 @@
 """V2 manifest validator — proves the architecture is coherent and writes EVAL.md.
 
 Checks (all read-only; exit 0 if clean, 1 if any ERROR):
-  1. marketplace.json + plugin.json are valid JSON and version == 0.2.2.
+  1. marketplace.json + plugin.json are valid JSON and match EXPECTED_VERSION.
   2. plugin.json points at the MCP surface and omits host-specific hook/agent/command fields.
   2b. plugin.json points at a SIPS MCP server manifest and home-base MCP script.
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import argparse
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,19 +31,27 @@ HOOKS = ROOT / "hooks" / "hooks.json"
 MCP_JSON = ROOT / ".mcp.json"
 AGENTS_DIR = ROOT / "agents"
 COMMANDS_DIR = ROOT / "commands"
+SKILLS_DIR = ROOT / "skills"
 EVAL = ROOT / "EVAL.md"
 
 EXPECTED_AGENTS = ("escalate", "repo-scout", "memory-curator", "test-author", "fan-out")
 EXPECTED_COMMANDS = (
     "improve", "recall", "escalate", "checkpoint", "verify", "patterns", "teach",
-    "goal", "brainstorm", "fan-out",
+    "goal", "brainstorm", "fan-out", "selfloop",
+)
+EXPECTED_SKILLS = (
+    "sips-control-plane", "sips-proof-scanner", "sips-delegation-router",
+    "sips-memory-fabric", "sips-repo-map", "sips-context-distiller",
+    "sips-execution-repro", "sips-perception-plan", "sips-tool-factory",
+    "sips-selfloop",
 )
 NEW_SCRIPTS = (
     "escalation_advisor.py", "improvement_injector.py", "recall_ranker.py",
 )
 EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
 EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
-EXPECTED_VERSION = "0.2.2"
+EXPECTED_SKILL_SET = set(EXPECTED_SKILLS)
+EXPECTED_VERSION = "0.4.0"
 HOOK_ROOT_RE = re.compile(
     r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}/scripts/([\w_]+\.py)"
 )
@@ -95,6 +104,7 @@ if codex_mp:
 
 if pj:
     check(f"plugin.json version {EXPECTED_VERSION}", pj.get("version") == EXPECTED_VERSION, pj.get("version"))
+    check("plugin.json surfaces skills", pj.get("skills") == "./skills/", pj.get("skills"))
     check("plugin.json surfaces mcpServers", pj.get("mcpServers") == "./.mcp.json", pj.get("mcpServers"))
     check("plugin.json omits host hooks field", "hooks" not in pj, pj.get("hooks"))
     check("plugin.json omits host agents field", "agents" not in pj, pj.get("agents"))
@@ -118,8 +128,61 @@ if mcp:
           mcp_script.exists() and os.access(mcp_script, os.X_OK),
           str(mcp_script))
 
+# 1b. additive 0.4 graph-runtime surfaces
+try:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+except (OSError, tomllib.TOMLDecodeError):
+    pyproject = {}
+check(
+    f"pyproject.toml project version {EXPECTED_VERSION}",
+    (pyproject.get("project") or {}).get("version") == EXPECTED_VERSION,
+    str((pyproject.get("project") or {}).get("version")),
+)
+runtime_modules = {
+    "contracts.py", "dag.py", "scheduler.py", "leases.py", "budget.py",
+    "events.py", "snapshots.py", "controller.py", "context.py", "fanin.py",
+    "quality.py", "promotion.py", "projection.py", "adapters.py", "api.py",
+    "memory_frontier.py", "recovery.py",
+}
+runtime_dir = ROOT / "scripts" / "sips_runtime"
+check(
+    "0.4 graph runtime modules present",
+    runtime_modules.issubset({path.name for path in runtime_dir.glob("*.py")}),
+    str(runtime_dir),
+)
+runtime_cli = ROOT / "scripts" / "sips_runtime.py"
+check(
+    "0.4 graph runtime CLI exists+exec",
+    runtime_cli.exists() and os.access(runtime_cli, os.X_OK),
+    str(runtime_cli),
+)
+graph_docs = ROOT / "Graph-Theory"
+check(
+    "Graph-Theory canonical docs present",
+    all((graph_docs / name).exists() for name in ("README.md", "architecture.md", "operations.md", "recovery.md", "verification.md")),
+    str(graph_docs),
+)
+homebase_text = (ROOT / "scripts" / "harness_homebase_mcp.py").read_text(encoding="utf-8", errors="replace")
+check("Homebase exposes sips_runtime_read", '"name": "sips_runtime_read"' in homebase_text, "")
+check("Homebase exposes sips_runtime_write", '"name": "sips_runtime_write"' in homebase_text, "")
+check(
+    "indexed Memory Fabric frontier present",
+    (ROOT / "scripts" / "memory_fabric_graph_index.py").exists()
+    and (runtime_dir / "memory_frontier.py").exists(),
+    "SQLite projection + bounded frontier",
+)
+mode_text = "\n".join(
+    (ROOT / "scripts" / name).read_text(encoding="utf-8", errors="replace")
+    for name in ("fan_out.py", "goal_state.py")
+)
+check(
+    "compatibility modes default to legacy",
+    mode_text.count('RUNTIME_MODE_ENV, "legacy"') >= 2,
+    "fan_out.py + goal_state.py",
+)
+
 # 2. surfaces exist; lib/ must NOT
-for d in (AGENTS_DIR, COMMANDS_DIR):
+for d in (AGENTS_DIR, COMMANDS_DIR, SKILLS_DIR):
     check(f"{d.relative_to(ROOT)}/ exists", d.is_dir(), str(d))
 check("no lib/ directory (model_router dropped)", not (ROOT / "lib").exists(), str(ROOT / "lib"))
 
@@ -166,6 +229,30 @@ if COMMANDS_DIR.is_dir():
         check(f"command {f.stem} has description", has_desc, f.name)
 check(f"all {len(EXPECTED_COMMANDS)} commands present", EXPECTED_COMMAND_SET == cmd_names,
       f"missing={EXPECTED_COMMAND_SET - cmd_names}, extra={cmd_names - EXPECTED_COMMAND_SET}")
+
+# 5b. Codex skill rows
+skill_names = set()
+if SKILLS_DIR.is_dir():
+    for d in sorted(p for p in SKILLS_DIR.iterdir() if p.is_dir()):
+        skill_names.add(d.name)
+        skill_md = d / "SKILL.md"
+        openai_yaml = d / "agents" / "openai.yaml"
+        small_icon = d / "assets" / "icon-small.svg"
+        large_icon = d / "assets" / "icon-large.svg"
+        body = skill_md.read_text(encoding="utf-8", errors="replace") if skill_md.exists() else ""
+        fm = body.split("---", 2)[1] if body.count("---") >= 2 else ""
+        check(f"skill {d.name} has SKILL.md frontmatter",
+              body.startswith("---") and f"name: {d.name}" in fm and "description:" in fm,
+              str(skill_md))
+        yaml_text = openai_yaml.read_text(encoding="utf-8", errors="replace") if openai_yaml.exists() else ""
+        check(f"skill {d.name} has Codex display metadata",
+              "display_name:" in yaml_text and "short_description:" in yaml_text,
+              str(openai_yaml))
+        check(f"skill {d.name} icons exist",
+              small_icon.exists() and large_icon.exists(),
+              f"{small_icon}, {large_icon}")
+check(f"all {len(EXPECTED_SKILLS)} SIPS skills present", EXPECTED_SKILL_SET == skill_names,
+      f"missing={EXPECTED_SKILL_SET - skill_names}, extra={skill_names - EXPECTED_SKILL_SET}")
 
 # 6. new scripts executable
 for name in NEW_SCRIPTS:
@@ -239,6 +326,7 @@ lines.append("|---|---|---|---|")
 hook_count = sum(len(e.get('hooks', [])) for ev in (hk.get('hooks', {}) if hk else {}).values() for e in ev)
 lines.append(f"| L0 live surface | hooks wired | {hook_count} | ok |")
 lines.append(f"| L0 live surface | slash commands | {len(cmd_names)} | {'ok' if cmd_names==EXPECTED_COMMAND_SET else 'gap'} |")
+lines.append(f"| L0 live surface | Codex skills | {len(skill_names)} | {'ok' if skill_names==EXPECTED_SKILL_SET else 'gap'} |")
 lines.append(f"| L0 live surface | subagents (all model: inherit) | {len(agent_names)} | {'ok' if agent_names==EXPECTED_AGENT_SET else 'gap'} |")
 lines.append(f"| L1 guardrails | autonomy_gate + script_smoke + snapshot | 3 | ok |")
 lines.append(f"| L2 observation | session_close + outcome_tracker | 2 | ok |")
@@ -276,6 +364,7 @@ if errors:
 
 lines.append("## What v2 adds over v1\n")
 lines.append("- **live-service commands** (10): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /brainstorm, /fan-out — v1 had zero.")
+lines.append("- **Codex skill surface** (9): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, and tool factory.")
 lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.")
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")

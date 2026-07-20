@@ -126,6 +126,39 @@ if FastMCP is not None:
         )
 
     @mcp.tool()
+    def memory_fabric_indexed_frontier(
+        scope: str,
+        query: str,
+        include_untrusted: bool = False,
+        seed_limit: int = 8,
+        fanout: int = 4,
+        max_depth: int = 2,
+        max_nodes: int = 24,
+        max_edges: int = 80,
+        max_paths: int = 8,
+        token_budget: int = 4000,
+        store: str = "",
+    ) -> str:
+        """Return a bounded indexed Memory Fabric frontier for an explicit scope and query."""
+        return dumps(
+            call_fresh(
+                "sips_runtime.memory_frontier",
+                "query_frontier",
+                scope=scope,
+                query=query,
+                store=optional(store),
+                include_untrusted=include_untrusted,
+                seed_limit=seed_limit,
+                fanout=fanout,
+                max_depth=max_depth,
+                max_nodes=max_nodes,
+                max_edges=max_edges,
+                max_paths=max_paths,
+                token_budget=token_budget,
+            )
+        )
+
+    @mcp.tool()
     def memory_fabric_graph_audit(
         scope: str = "",
         query: str = "",
