@@ -25,7 +25,6 @@
     "defaultPrompt": [
       "Use $sips-control-plane to show SIPS status.",
       "Use $sips-proof-scanner to scan this repo's proof surfaces.",
-      "Use $sips-delegation-router to route this task through SIPS delegation.",
       "Use $sips-memory-fabric to inspect recall health."
     ],
     "brandColor": "#0B6E4F",

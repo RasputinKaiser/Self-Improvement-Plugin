@@ -16,6 +16,7 @@ MCP Protocol: JSON-RPC over stdio. Tools are advertised via tools/list.
 import json
 import os
 import socket
+import subprocess
 import sys
 import time
 import uuid

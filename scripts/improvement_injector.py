@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Improvement injector — SessionStart hook (loop closure).
 
-The missing v1 read-back: self_correct.py WRITES ~/.ncode/improvements.md but
+The missing v1 read-back: self_correct.py writes the SIPS improvements journal but
 nothing reads it back into a session. This hook reads the latest self-correction
 entry and injects it as additionalContext at SessionStart so the agent STARTS
 knowing the open self-improvement items.
@@ -55,7 +55,7 @@ def latest_entry():
 
 
 def latest_eval_summary():
-    """One-line eval brief from ~/.ncode/eval/results.jsonl.
+    """One-line eval brief from the active SIPS eval results file.
 
     Returns None if no runs in the last EVAL_STALE_SECONDS or on any error.
     Format: "Last eval: 12/15 cases passed. Regressed: qual-x (0.4→0.9)."

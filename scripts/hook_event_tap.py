@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Hook event tap — runs a wrapped hook command, writes a JSON line to
-~/.ncode/hook_events.jsonl, passes stdout through unchanged.
+the active SIPS state root's hook_events.jsonl, passes stdout through unchanged.
 
 The tap is transparent to the hook protocol: Claude Code sees the exact same
 stdout/stderr/exit-code as if the wrapped hook ran directly. Only addition
@@ -33,10 +33,10 @@ try:
     from sips_paths import hook_errors_path, hook_events_path
 except Exception:  # pragma: no cover - fallback for partially installed copies
     def hook_events_path():
-        return Path(os.path.expanduser("~/.ncode/hook_events.jsonl"))
+        return Path(os.path.expanduser("~/.codex/sips/hook_events.jsonl"))
 
     def hook_errors_path():
-        return Path(os.path.expanduser("~/.ncode/logs/hook_errors.jsonl"))
+        return Path(os.path.expanduser("~/.codex/sips/logs/hook_errors.jsonl"))
 
 MAX_PREVIEW = 400
 

@@ -16,6 +16,7 @@ Usage:
   self_correct.py --since 7d      # last 7 days only
   self_correct.py --json           # machine-readable, no file write
 """
+import ast
 import json
 import os
 import re
@@ -29,6 +30,7 @@ from sips_paths import harness_home, improvements_path, scripts_dir
 
 NCODE_DIR = harness_home()
 SCRIPTS_DIR = scripts_dir()
+TESTS_DIR = SCRIPTS_DIR.parent / "tests"
 IMPROVEMENTS_PATH = improvements_path()
 DEFAULT_LIMIT = 100
 
@@ -112,28 +114,63 @@ def find_repeated_approaches(records):
 
 
 def find_untested_scripts():
-    """Scripts without references in run_tests.py."""
+    """Scripts without references in the harness runner or pytest suite."""
     if not SCRIPTS_DIR.is_dir():
         return []
     run_tests = SCRIPTS_DIR / "run_tests.py"
     if not run_tests.exists():
         return []
-    content = run_tests.read_text(errors="replace")
+
+    coverage_sources = [run_tests]
+    if TESTS_DIR.is_dir():
+        coverage_sources.extend(sorted(TESTS_DIR.rglob("test_*.py")))
+
     tested_stems = set()
-    for m in re.findall(r"[\"']([\w_]+\.py)[\"']", content):
-        tested_stems.add(m.replace(".py", ""))
-    # also any function definition with that name
-    for m in re.findall(r"def (\w+)", content):
-        tested_stems.add(m)
-    # also SUITES keys
-    for m in re.findall(r"\"([\w_]+)\":\s*\[", content):
-        tested_stems.add(m)
+    for source in coverage_sources:
+        content = source.read_text(errors="replace")
+        for match in re.findall(r"[\"']([^\"']+\.py)[\"']", content):
+            tested_stems.add(Path(match).stem)
+        for match in re.findall(r"(?:from|import)\s+([A-Za-z_]\w*)", content):
+            tested_stems.add(match)
+
+        if source == run_tests:
+            # The bespoke runner also names coverage through test functions and
+            # SUITES keys rather than importing every script under test.
+            for match in re.findall(r"def (\w+)", content):
+                tested_stems.add(match)
+            for match in re.findall(r"\"([\w_]+)\":\s*\[", content):
+                tested_stems.add(match)
+
+    local_scripts = {
+        path.stem: path
+        for path in SCRIPTS_DIR.iterdir()
+        if path.suffix == ".py" and not path.name.startswith(".")
+    }
+    pending = list(tested_stems & local_scripts.keys())
+    while pending:
+        stem = pending.pop()
+        try:
+            tree = ast.parse(local_scripts[stem].read_text(errors="replace"))
+        except (OSError, SyntaxError):
+            continue
+
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+
+        for dependency in imported & local_scripts.keys():
+            if dependency not in tested_stems:
+                tested_stems.add(dependency)
+                pending.append(dependency)
 
     untested = []
-    for p in SCRIPTS_DIR.iterdir():
+    for p in sorted(SCRIPTS_DIR.iterdir()):
         if p.suffix != ".py" or p.name.startswith(".") or p.name == "run_tests.py":
             continue
-        if p.stem not in tested_stems and p.name not in content:
+        if p.stem not in tested_stems:
             untested.append(p.name)
     return untested
 

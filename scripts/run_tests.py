@@ -21,6 +21,8 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from sips_paths import harness_home
+
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = Path(os.environ.get("SIPS_SCRIPTS_DIR", str(PLUGIN_ROOT / "scripts")))
 TESTS_DIR = Path(os.environ.get("SIPS_TESTS_DIR", str(PLUGIN_ROOT / "tests")))
@@ -129,7 +131,7 @@ def autonomy_gate_silent_on_settings_local():
 
 def compact_continuity_writes_packet():
     session = "test-continuity-write"
-    packet_path = Path.home() / ".ncode" / "continuity" / f"{session}.md"
+    packet_path = harness_home() / "continuity" / f"{session}.md"
     packet_path.unlink(missing_ok=True)
 
     rc, out, _ = run_script_with_input(
@@ -143,7 +145,7 @@ def compact_continuity_writes_packet():
 
 def compact_continuity_restores_packet():
     session = "test-continuity-restore"
-    packet_path = Path.home() / ".ncode" / "continuity" / f"{session}.md"
+    packet_path = harness_home() / "continuity" / f"{session}.md"
     packet_path.write_text("# Continuity — test\nObjective: test this works\n")
 
     rc, out, _ = run_script_with_input(
@@ -201,7 +203,7 @@ def prompt_search_silent_on_empty_prompt():
 def prompt_search_finds_records():
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "memory_fabric_prompt_search.py",
-        {"hook_event_name": "UserPromptSubmit", "cwd": str(Path.home() / ".ncode"),
+        {"hook_event_name": "UserPromptSubmit", "cwd": str(harness_home()),
          "prompt": "GLM 5.2 max effort patch"}
     )
     if out.strip():
@@ -269,7 +271,7 @@ def proactive_drift_runs_clean():
     """Proactive drift should produce valid JSON or silent."""
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "proactive_drift.py",
-        {"hook_event_name": "SessionStart", "cwd": str(Path.home() / ".ncode")}
+        {"hook_event_name": "SessionStart", "cwd": str(harness_home())}
     )
     if out.strip():
         d = json.loads(out)
@@ -298,7 +300,7 @@ def doctor_surfaces_recent_work():
     """Doctor should surface recent work records as additionalContext."""
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "memory_fabric_doctor.py",
-        {"hook_event_name": "SessionStart", "cwd": str(Path.home() / ".ncode")}
+        {"hook_event_name": "SessionStart", "cwd": str(harness_home())}
     )
     if out.strip():
         d = json.loads(out)
@@ -371,7 +373,7 @@ def behavior_snapshot_on_script_edit():
 def behavior_compact_lifecycle():
     """Full PreCompact → PostCompact cycle restores continuity packet."""
     session = f"test-behavior-{int(time.time())}"
-    packet_path = Path.home() / ".ncode" / "continuity" / f"{session}.md"
+    packet_path = harness_home() / "continuity" / f"{session}.md"
     packet_path.unlink(missing_ok=True)
 
     # PreCompact: writes packet
@@ -400,7 +402,7 @@ def behavior_memory_loop():
     # Use a known existing learning we recorded earlier
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "memory_fabric_preflight.py",
-        {"tool_name": "Edit", "cwd": str(Path.home() / ".ncode"),
+        {"tool_name": "Edit", "cwd": str(harness_home()),
          "tool_input": {"file_path": str(SCRIPTS_DIR / "patch_effort_message.py")}}
     )
     if out.strip():
@@ -413,7 +415,7 @@ def behavior_prompt_search_surfaces_relevant():
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "memory_fabric_prompt_search.py",
         {"hook_event_name": "UserPromptSubmit",
-         "cwd": str(Path.home() / ".ncode"),
+         "cwd": str(harness_home()),
          "prompt": "how does max effort work for GLM 5.2?"}
     )
     if out.strip():
@@ -432,6 +434,56 @@ def smoke_snapshot_harness():
         capture_output=True, text=True, timeout=10
     )
     assert r.returncode == 0, f"snapshot_harness --list failed: {r.stderr}"
+
+
+def snapshot_harness_creates_new_snapshot_without_force():
+    """snapshot_harness creates a new snapshot without shadowing its shutil import."""
+    with tempfile.TemporaryDirectory() as td:
+        sips_home = Path(td) / "sips"
+        scripts_dir = sips_home / "scripts"
+        scripts_dir.mkdir(parents=True)
+        (scripts_dir / "example.py").write_text("print('ok')\n", encoding="utf-8")
+        env = os.environ.copy()
+        env["SIPS_HOME"] = str(sips_home)
+        env["SIPS_SCRIPTS_DIR"] = str(scripts_dir)
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "snapshot_harness.py"),
+             "--reason", "regression: non-force snapshot"],
+            capture_output=True, text=True, env=env,
+        )
+        assert r.returncode == 0, f"snapshot creation failed: {r.stderr}"
+        manifests = list((sips_home / "backups" / "snapshots").glob("*/manifest.json"))
+        assert len(manifests) == 1, manifests
+        manifest = json.loads(manifests[0].read_text(encoding="utf-8"))
+        assert manifest["reason"] == "regression: non-force snapshot", manifest
+
+
+def snapshot_harness_content_change_creates_new_snapshot():
+    """Changed script contents produce a new snapshot ID without --force."""
+    with tempfile.TemporaryDirectory() as td:
+        sips_home = Path(td) / "sips"
+        scripts_dir = sips_home / "scripts"
+        scripts_dir.mkdir(parents=True)
+        script = scripts_dir / "example.py"
+        env = os.environ.copy()
+        env["SIPS_HOME"] = str(sips_home)
+        env["SIPS_SCRIPTS_DIR"] = str(scripts_dir)
+
+        script.write_text("print('v1')\n", encoding="utf-8")
+        first = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "snapshot_harness.py"), "--reason", "v1"],
+            capture_output=True, text=True, env=env,
+        )
+        assert first.returncode == 0, first.stderr
+
+        script.write_text("print('v2')\n", encoding="utf-8")
+        second = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "snapshot_harness.py"), "--reason", "v2"],
+            capture_output=True, text=True, env=env,
+        )
+        assert second.returncode == 0, second.stderr
+        manifests = list((sips_home / "backups" / "snapshots").glob("*/manifest.json"))
+        assert len(manifests) == 2, manifests
 
 def smoke_restore_harness():
     """restore_harness --list should return success."""
@@ -583,7 +635,7 @@ def smoke_memory_fabric_compact_brief():
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "memory_fabric_compact_brief.py",
         {"hook_event_name": "PreCompact", "trigger": "manual",
-         "cwd": str(Path.home() / ".ncode"),
+         "cwd": str(harness_home()),
          "transcript_path": "", "session_id": "smoke-test"}
     )
     if out.strip():
@@ -716,54 +768,6 @@ def improvement_injector_surfaces_fresh_entry(tmp_path=None):
 # tree, so it is exercised by the run command itself (cwd = repo root), not here.
 # The cases above cover the three new lifecycle scripts as staged regressions.
 
-# --- sips_presence_mirror ---
-
-def sips_presence_mirror_silent_when_no_source_dir():
-    """No .codex/sips/ under cwd -> silent exit 0, no stdout, no stderr."""
-    rc, out, err = run_script_with_input(
-        PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
-        {"cwd": "/tmp"}
-    )
-    assert rc == 0, f"expected exit 0, got {rc}"
-    assert out == "", f"expected no stdout, got {out!r}"
-    assert err == "", f"expected no stderr, got {err!r}"
-
-def sips_presence_mirror_copies_files_when_source_exists():
-    """Source .codex/sips/ exists -> both presence files mirrored to <cwd>/.ncode/sips/."""
-    import shutil
-    td = tempfile.mkdtemp()
-    try:
-        src = Path(td) / ".codex" / "sips"
-        src.mkdir(parents=True)
-        (src / "chat-presence.md").write_text("chat presence body\n")
-        (src / "rich-presence.md").write_text("rich presence body\n")
-        rc, out, err = run_script_with_input(
-            PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
-            {"cwd": td}
-        )
-        assert rc == 0, f"expected exit 0, got {rc}"
-        dst = Path(td) / ".ncode" / "sips"
-        chat = (dst / "chat-presence.md").read_text()
-        rich = (dst / "rich-presence.md").read_text()
-        assert chat == "chat presence body\n", f"chat-presence.md mismatch: {chat!r}"
-        assert rich == "rich presence body\n", f"rich-presence.md mismatch: {rich!r}"
-    finally:
-        shutil.rmtree(td, ignore_errors=True)
-
-def sips_presence_mirror_silent_on_malformed_stdin():
-    """Malformed JSON stdin -> silent exit 0 (falls back to getcwd, isolated below)."""
-    with tempfile.TemporaryDirectory() as td:
-        r = subprocess.run(
-            ["python3", str(PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py")],
-            input="not json",
-            capture_output=True, text=True, timeout=10,
-            cwd=td
-        )
-        assert r.returncode == 0, f"expected exit 0 on malformed stdin, got {r.returncode}"
-        assert r.stdout == "", f"expected silent on malformed stdin, got {r.stdout!r}"
-        assert r.stderr == "", f"expected no stderr on malformed stdin, got {r.stderr!r}"
-
-
 # --- hook_event_tap (Phase 3) ---
 
 def hook_event_tap_passes_through_and_records():
@@ -778,7 +782,7 @@ def hook_event_tap_passes_through_and_records():
     with tempfile.TemporaryDirectory() as td:
         log_path = f"{td}/hook_events.jsonl"
         env = dict(os.environ)
-        native_log = os.path.expanduser("~/.ncode/hook_events.jsonl")
+        native_log = str(harness_home() / "hook_events.jsonl")
         before_size = os.path.getsize(native_log) if os.path.exists(native_log) else 0
 
         r = subprocess.run(
@@ -834,7 +838,7 @@ def hook_event_tap_classifies_block():
     assert r.returncode == 0, f"tap exit non-zero: {r.returncode}"
 
     # Read the last line of the side log
-    native_log = os.path.expanduser("~/.ncode/hook_events.jsonl")
+    native_log = str(harness_home() / "hook_events.jsonl")
     with open(native_log, "rb") as f:
         f.seek(0, 2)
         end = f.tell()
@@ -847,7 +851,7 @@ def hook_event_tap_classifies_block():
 
 
 def sips_paths_env_precedence():
-    """SIPS_HOME wins over NCODE_HOME; NCODE_HOME wins over ~/.ncode."""
+    """SIPS_HOME wins; NCODE_HOME never reactivates the legacy archive."""
     import importlib
     import sips_paths
 
@@ -862,7 +866,8 @@ def sips_paths_env_precedence():
 
             del os.environ["SIPS_HOME"]
             importlib.reload(sips_paths)
-            assert sips_paths.harness_home() == Path(ncode_td).resolve()
+            assert sips_paths.harness_home() == Path.home() / ".codex" / "sips"
+            assert sips_paths.harness_home() != Path(ncode_td).resolve()
     finally:
         if old_sips is None:
             os.environ.pop("SIPS_HOME", None)
@@ -1123,7 +1128,7 @@ def brainstorm_py_returns_gaps():
 
 def _backup_goal_state():
     """Snapshot ~/.ncode/goal_state.json so tests can restore it after destroying."""
-    src = Path.home() / ".ncode" / "goal_state.json"
+    src = harness_home() / "goal_state.json"
     if not src.exists():
         return None
     backup = Path(tempfile.gettempdir()) / f"goal_state_backup_{os.getpid()}.json"
@@ -1136,7 +1141,7 @@ def _backup_goal_state():
 
 def _restore_goal_state(backup):
     """Restore goal_state.json from a backup (or delete if backup is None)."""
-    src = Path.home() / ".ncode" / "goal_state.json"
+    src = harness_home() / "goal_state.json"
     if backup is None:
         if src.exists():
             src.unlink()
@@ -1304,6 +1309,42 @@ def goal_state_fail_subtask_records_reason():
         assert "1 failed" in d["summary"]
     finally:
         _restore_goal_state(backup)
+
+
+def goal_state_selfloop_cycle_records_proof():
+    """goal_state: selfloop-set and selfloop-record persist cycle metadata."""
+    with tempfile.TemporaryDirectory() as td:
+        env = os.environ.copy()
+        env["SIPS_HOME"] = str(Path(td) / "sips")
+        started = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"),
+             "selfloop-set", "memory recall fidelity"],
+            capture_output=True, text=True, env=env,
+        )
+        assert started.returncode == 0, started.stderr
+        started_state = json.loads(started.stdout)
+        assert started_state["mode"] == "selfloop", started_state
+
+        improved = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"),
+             "selfloop-record", "improved", "recall test rose from 3/4 to 4/4"],
+            capture_output=True, text=True, env=env,
+        )
+        assert improved.returncode == 0, improved.stderr
+        improved_state = json.loads(improved.stdout)
+        assert improved_state["cycleCount"] == 1, improved_state
+        assert improved_state["plateauStreak"] == 0, improved_state
+
+        plateau = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "goal_state.py"),
+             "selfloop-record", "plateau", "independent scan found no measured gap"],
+            capture_output=True, text=True, env=env,
+        )
+        assert plateau.returncode == 0, plateau.stderr
+        final_state = json.loads((Path(td) / "sips" / "goal_state.json").read_text(encoding="utf-8"))
+        assert final_state["cycleCount"] == 2, final_state
+        assert final_state["plateauStreak"] == 1, final_state
+        assert final_state["cycleHistory"][0]["outcome"] == "improved", final_state
 
 
 # --- Worktree scope resolver ---
@@ -1596,7 +1637,7 @@ def smoke_monitor_daemon():
 def monitor_daemon_json_emits_issues_list():
     """monitor_daemon.py --json returns valid JSON with issues array and counts."""
     r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "monitor_daemon.py"), "--json"],
+        ["python3", str(SCRIPTS_DIR / "monitor_daemon.py"), "--json", "--skip-tests"],
         capture_output=True, text=True, timeout=180
     )
     # Allow non-zero exit (critical issues present is acceptable for the test)
@@ -1673,7 +1714,7 @@ def fan_out_prepare_writes_handoff_per_slice():
     """fan_out.py prepare writes one HANDOFF.md per slice + run.json state."""
     import shutil
     from pathlib import Path
-    run_dir_snapshot = list((Path.home() / ".ncode/fan_out").glob("*")) if (Path.home() / ".ncode/fan_out").exists() else []
+    run_dir_snapshot = list((harness_home() / "fan_out").glob("*")) if (harness_home() / "fan_out").exists() else []
     r = subprocess.run(
         ["python3", str(SCRIPTS_DIR / "fan_out.py"), "prepare",
          "--parent", "Test parent objective",
@@ -1685,7 +1726,7 @@ def fan_out_prepare_writes_handoff_per_slice():
     assert d["ok"] is True
     assert d["sliceCount"] == 2
     run_id = d["runId"]
-    run_dir = Path.home() / ".ncode/fan_out" / run_id
+    run_dir = harness_home() / "fan_out" / run_id
     assert (run_dir / "run.json").exists(), "run.json missing"
     state = json.loads((run_dir / "run.json").read_text())
     assert state["parent"] == "Test parent objective"
@@ -1744,7 +1785,7 @@ def fan_out_ingest_updates_run_state():
         capture_output=True, text=True, timeout=10
     )
     run_id = json.loads(r.stdout)["runId"]
-    run_dir = Path.home() / ".ncode/fan_out" / run_id
+    run_dir = harness_home() / "fan_out" / run_id
     try:
         outputs = json.dumps([
             {"sliceId": "slice_1", "response": "SLICE: delivered S1\nDIFF: patch\nLESSON: keep it simple"},
@@ -2016,6 +2057,8 @@ SUITES = {
     ],
     "smoke_coverage": [
         case("snapshot_harness", smoke_snapshot_harness),
+        case("snapshot_harness_creates_new", snapshot_harness_creates_new_snapshot_without_force),
+        case("snapshot_harness_content_addressed", snapshot_harness_content_change_creates_new_snapshot),
         case("restore_harness", smoke_restore_harness),
         case("self_correct", smoke_self_correct),
         case("harness_gc", smoke_harness_gc),
@@ -2062,11 +2105,6 @@ SUITES = {
         case("lists_tools_jsonl", homebase_mcp_lists_tools_jsonl),
         case("status_call_returns_manifest", homebase_mcp_status_call_returns_manifest),
     ],
-    "sips_presence_mirror": [
-        case("silent_when_no_source_dir", sips_presence_mirror_silent_when_no_source_dir),
-        case("copies_files_when_source_exists", sips_presence_mirror_copies_files_when_source_exists),
-        case("silent_on_malformed_stdin", sips_presence_mirror_silent_on_malformed_stdin),
-    ],
     "hook_event_tap": [
         case("passes_through_and_records", hook_event_tap_passes_through_and_records),
         case("classifies_block", hook_event_tap_classifies_block),
@@ -2094,6 +2132,7 @@ SUITES = {
         case("set_status_complete_cycle", goal_state_set_status_complete_cycle),
         case("subtask_dag_cycle", goal_state_subtask_dag_cycle),
         case("fail_subtask_records_reason", goal_state_fail_subtask_records_reason),
+        case("selfloop_cycle_records_proof", goal_state_selfloop_cycle_records_proof),
     ],
     "eval_loop": [
         case("regression_detected_when_latest_drops", eval_regression_detected_when_latest_drops),
@@ -2110,13 +2149,22 @@ def main():
     ap = argparse.ArgumentParser(description="Run harness tests")
     ap.add_argument("suite", nargs="?", choices=list(SUITES.keys()) + ["all"], default="all")
     ap.add_argument("--verbose", "-v", action="store_true")
+    ap.add_argument(
+        "--include-legacy-ncode",
+        action="store_true",
+        help="include defunct NCode install/cron compatibility suites",
+    )
     args = ap.parse_args()
 
     total_pass = 0
     total_fail = 0
     failures = []
 
-    suites = list(SUITES.keys()) if args.suite == "all" else [args.suite]
+    legacy_suites = {"install_sh", "install_cron"}
+    if args.suite == "all":
+        suites = [name for name in SUITES if args.include_legacy_ncode or name not in legacy_suites]
+    else:
+        suites = [args.suite]
     for s in suites:
         if args.verbose:
             print(f"\n[{s}]")

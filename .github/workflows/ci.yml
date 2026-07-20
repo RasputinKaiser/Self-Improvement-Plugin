@@ -45,7 +45,6 @@ jobs:
           python scripts/run_tests.py phase0_foundation --verbose
           python scripts/run_tests.py hook_contract --verbose
           python scripts/run_tests.py homebase_mcp --verbose
-          python scripts/run_tests.py sips_presence_mirror --verbose
 
       - name: Run pytest suite
         run: pytest

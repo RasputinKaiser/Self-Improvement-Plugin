@@ -45,17 +45,18 @@
             "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script escalation_advisor.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/escalation_advisor.py",
             "timeout": 8,
             "statusMessage": "Escalation advisor"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
-        "hooks": [
+          },
           {
             "type": "command",
             "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script sips_presence_mirror.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/sips_presence_mirror.py || true",
             "timeout": 7,
             "statusMessage": "SIPS mirror"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script retry_lesson_reminder.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/retry_lesson_reminder.py",
+            "timeout": 8,
+            "statusMessage": "Retry lesson reminder"
           }
         ]
       }

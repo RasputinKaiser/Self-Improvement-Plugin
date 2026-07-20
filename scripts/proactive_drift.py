@@ -11,12 +11,12 @@ Hook input: {"hook_event_name": "SessionStart", "cwd": "...", ...}
 Hook output: {} on clean, {"additionalContext": "..."} on drift
 """
 import json
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
 
+import self_correct
 from sips_paths import harness_home, harness_scripts_dir
 
 NCODE_DIR = harness_home()
@@ -54,26 +54,8 @@ def stale_scripts():
 
 
 def untested_scripts():
-    """Scripts without corresponding tests."""
-    if not SCRIPTS_DIR.is_dir():
-        return []
-    tests_dir = NCODE_DIR / "tests"
-    tested = set()
-    if tests_dir.is_dir():
-        for t in tests_dir.iterdir():
-            if t.is_file():
-                tested.add(t.stem)
-    untested = []
-    for p in SCRIPTS_DIR.iterdir():
-        if p.suffix == ".py" and p.stem != "run_tests" and p.stem not in tested:
-            # Quick heuristic: check if run_tests.py references this script
-            run_tests = SCRIPTS_DIR / "run_tests.py"
-            if run_tests.exists():
-                content = run_tests.read_text(errors="replace")
-                if p.stem in content or p.name in content:
-                    continue
-            untested.append(p.name)
-    return untested[:MAX_FINDINGS]
+    """Return the canonical self-correction coverage gaps."""
+    return self_correct.find_untested_scripts()[:MAX_FINDINGS]
 
 
 def large_debug_dir():

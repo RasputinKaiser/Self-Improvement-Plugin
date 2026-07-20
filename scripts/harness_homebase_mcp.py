@@ -11,14 +11,18 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import re
+import select
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
 from sips_paths import goal_state_path
 
-DEFAULT_PLUGIN_VERSION = "0.4.0"
+UNKNOWN_PLUGIN_VERSION = "0.0.0"
+SIPS_PLUGIN_ID = "harness-self-improvement@harness-local"
 STDIO_MODE = "framed"
 MAX_FILE_BYTES = 3_000_000
 DEFAULT_SCAN_PATTERNS = ["*.py", "*.md", "*.json", "*.yaml", "*.yml", "*.toml"]
@@ -48,7 +52,7 @@ def plugin_root() -> Path:
 def plugin_version() -> str:
     manifest = read_json(plugin_root() / ".codex-plugin" / "plugin.json")
     version = manifest.get("version")
-    return str(version) if version else DEFAULT_PLUGIN_VERSION
+    return str(version) if version else UNKNOWN_PLUGIN_VERSION
 
 
 def scripts_dir() -> Path:
@@ -155,11 +159,58 @@ TOOLS: list[dict[str, Any]] = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     },
     {
+        "name": "homebase_record",
+        "title": "SIPS Homebase Record",
+        "description": "Record a SIPS-owned Memory Fabric lesson through the local memory_fabric_record-compatible CLI.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "tier": {"type": "string", "description": "Memory tier: work, knowledge, or learning."},
+                "title": {"type": "string", "description": "Short record title."},
+                "body": {"type": "string", "description": "The lesson or observation to retain."},
+                "scope": {"type": "string", "description": "Repo/file scope. Defaults to root."},
+                "tags": {"type": "string", "description": "Comma-separated tags."},
+                "confidence": {"type": "string", "description": "Record confidence. Defaults to medium."},
+                "status": {"type": "string", "description": "Record status. Defaults to active."},
+                "verify_before_use": {"type": "boolean", "description": "Require verification before recall use."},
+                "evidence_path": {"type": "string", "description": "Optional evidence path."},
+                "provenance": {"type": "string", "description": "Optional detail appended to the SIPS provenance."},
+                "store": {"type": "string", "description": "Optional Memory Fabric JSONL store override."},
+            },
+            required=["tier", "title", "body"],
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
         "name": "homebase_goal",
         "title": "SIPS Homebase Goal",
         "description": "Inspect the harness goal state without mutating it.",
         "inputSchema": object_schema({"root": ROOT_PROPERTY}),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_selfloop",
+        "title": "SIPS Selfloop",
+        "description": "Start or control a persistent goal dedicated only to iterative SIPS and agent self-improvement.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "action": {
+                    "type": "string",
+                    "enum": ["start", "status", "pause", "resume", "complete", "clear", "record"],
+                    "description": "Selfloop action.",
+                },
+                "focus": {"type": "string", "description": "Optional self-improvement focus for start."},
+                "outcome": {
+                    "type": "string",
+                    "enum": ["improved", "plateau", "blocked"],
+                    "description": "Cycle outcome for record.",
+                },
+                "summary": {"type": "string", "description": "Proof-bearing cycle summary for record."},
+            },
+            required=["action"],
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
     },
     {
         "name": "homebase_routes",
@@ -171,14 +222,38 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "homebase_mcp_freshness",
         "title": "SIPS MCP Freshness",
-        "description": "Check source, cache, config, and child-process MCP exposure for SIPS.",
-        "inputSchema": object_schema({"root": ROOT_PROPERTY}),
+        "description": "Check source, cache, config, child-process, and optional current-task MCP exposure for SIPS.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "task_advertised_tools": array_schema(
+                    {
+                        "type": "string",
+                        "description": "SIPS/Homebase tool names found in the current task; unrelated names may be omitted only after inspecting the complete inventory.",
+                    }
+                ),
+                "task_inventory_complete": {
+                    "type": "boolean",
+                    "description": "True only when task_advertised_tools came from a complete current-task inventory.",
+                },
+                "task_invoked_tools": array_schema(
+                    {
+                        "type": "string",
+                        "description": "SIPS/Homebase tool names successfully invoked from the current task, not through a child-process fallback.",
+                    }
+                ),
+                "task_surface_truncated": {
+                    "type": "boolean",
+                    "description": "True when the host may have truncated the task tool surface; absence then remains unproven.",
+                },
+            }
+        ),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     },
     {
         "name": "homebase_host_audit",
         "title": "SIPS Host Audit",
-        "description": "Audit Codex config and cache wiring for SIPS host visibility.",
+        "description": "Audit SIPS config rows plus live Codex hook presence, enablement, trust, and hash receipts.",
         "inputSchema": object_schema({"root": ROOT_PROPERTY}),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     },
@@ -389,11 +464,17 @@ def git_summary(root: Path) -> dict[str, Any]:
 
 
 def status_payload(root: Path) -> dict[str, Any]:
-    manifest = read_json(root / ".codex-plugin" / "plugin.json")
-    hooks = read_json(root / "hooks" / "hooks.json")
-    mcp = read_json(root / ".mcp.json")
+    manifest_path = root / ".codex-plugin" / "plugin.json"
+    hooks_path = root / "hooks" / "hooks.json"
+    mcp_path = root / ".mcp.json"
+    manifest = read_json(manifest_path)
+    hooks = read_json(hooks_path)
+    mcp = read_json(mcp_path)
+    source_available = manifest_path.is_file() and mcp_path.is_file()
+    worktree_available = (root / ".git").exists()
     return {
         "schema": "homebase.status.v1",
+        "status": "inspected" if source_available else "source_not_found",
         "root": str(root),
         "plugin_root": str(plugin_root()),
         "manifest": {
@@ -413,8 +494,20 @@ def status_payload(root: Path) -> dict[str, Any]:
             "mcp_servers": sorted((mcp.get("mcpServers") or {}).keys()),
             "mcp_tools": [tool["name"] for tool in TOOLS],
         },
+        "proof_layers": {
+            "repo_source": "inspected" if source_available else "not_found",
+            "worktree": "inspected" if worktree_available else "not_found",
+            "installed_cache": "not_inspected",
+            "host_config": "not_inspected",
+            "task_advertisement": "not_inspected",
+            "task_callability": "not_inspected",
+            "transport": "not_inspected",
+        },
         "git": git_summary(root),
-        "claim_boundary": "Status is local source/config proof. It does not prove an already-open host has refreshed this MCP server.",
+        "claim_boundary": (
+            "Status proves repo-local source and worktree inspection only. It does not inspect installed cache, "
+            "host config, task advertisement, task callability, or the transport used to obtain this payload."
+        ),
     }
 
 
@@ -450,6 +543,10 @@ def route_payload(root: Path, task: str, harness: str, mode: str) -> dict[str, A
     scripts: list[str] = []
     notes: list[str] = []
 
+    if any(phrase in lowered for phrase in ["selfloop", "self loop", "improve yourself", "self-improve"]):
+        selected.append("selfloop")
+        commands.extend(["homebase_selfloop", "/selfloop"])
+        scripts.append("scripts/goal_state.py")
     if any(word in lowered for word in ["context", "large file", "token", "budget"]):
         selected.append("context-scan")
         commands.append("homebase_context_scan")
@@ -589,6 +686,75 @@ def recall_payload(root: Path, query: str, limit: int) -> dict[str, Any]:
     }
 
 
+def record_payload(
+    root: Path,
+    tier: str,
+    title: str,
+    body: str,
+    scope: str,
+    tags: str,
+    confidence: str,
+    status: str,
+    verify_before_use: bool,
+    evidence_path: str,
+    provenance: str,
+    store: str,
+) -> dict[str, Any]:
+    from sips_memory_fabric import find_memory_fabric_cli
+
+    mf = find_memory_fabric_cli()
+    provenance_detail = "SIPS homebase_record via harness-self-improvement"
+    if provenance.strip():
+        provenance_detail += f": {provenance.strip()}"
+    if not mf:
+        return {
+            "schema": "homebase.record.v1",
+            "root": str(root),
+            "status": "memory_fabric_unavailable",
+            "provenance_type": "source_backed_agent_run",
+            "provenance": provenance_detail,
+            "record": None,
+        }
+
+    command = ["python3", mf]
+    if store.strip():
+        command.extend(["--store", store.strip()])
+    command.extend(
+        [
+            "record",
+            "--tier", tier,
+            "--title", title,
+            "--body", body,
+            "--scope", scope.strip() or str(root),
+            "--tags", tags.strip() or "lesson,sips,homebase",
+            "--provenance-type", "source_backed_agent_run",
+            "--provenance", provenance_detail,
+            "--evidence-path", evidence_path.strip(),
+            "--confidence", confidence.strip() or "medium",
+            "--status", status.strip() or "active",
+        ]
+    )
+    if verify_before_use:
+        command.append("--verify-before-use")
+    receipt = run(command, root, timeout=15)
+    record = None
+    if receipt["ok"] and receipt["stdout"]:
+        try:
+            record = json.loads(receipt["stdout"])
+        except json.JSONDecodeError:
+            record = None
+    return {
+        "schema": "homebase.record.v1",
+        "root": str(root),
+        "status": "passed" if receipt["ok"] and record is not None else "failed",
+        "provenance_type": "source_backed_agent_run",
+        "provenance": provenance_detail,
+        "record": record,
+        "receipt": receipt,
+        "claim_boundary": "Record proves a local SIPS Memory Fabric append; it does not prove host MCP rediscovery.",
+    }
+
+
 def goal_payload(root: Path) -> dict[str, Any]:
     candidates = [
         goal_state_path(),
@@ -607,6 +773,46 @@ def goal_payload(root: Path) -> dict[str, Any]:
     }
 
 
+def selfloop_payload(
+    root: Path,
+    action: str,
+    focus: str,
+    outcome: str,
+    summary: str,
+) -> dict[str, Any]:
+    script = scripts_dir() / "goal_state.py"
+    if action == "start":
+        command = ("python3", str(script), "selfloop-set", focus)
+    elif action == "record":
+        if outcome not in {"improved", "plateau", "blocked"}:
+            raise JsonRpcError(-32602, "record requires outcome: improved, plateau, or blocked")
+        if not summary.strip():
+            raise JsonRpcError(-32602, "record requires a proof-bearing summary")
+        command = ("python3", str(script), "selfloop-record", outcome, summary)
+    elif action in {"status", "pause", "resume", "complete", "clear"}:
+        command = ("python3", str(script), action)
+    else:
+        raise JsonRpcError(-32602, f"unknown selfloop action: {action}")
+
+    receipt = run(command, plugin_root(), timeout=15)
+    state: dict[str, Any] = {}
+    if receipt["stdout"]:
+        try:
+            state = json.loads(receipt["stdout"])
+        except json.JSONDecodeError:
+            state = {}
+    return {
+        "schema": "homebase.selfloop.v1",
+        "root": str(root),
+        "action": action,
+        "status": "passed" if receipt["ok"] and state.get("ok") is not False else "failed",
+        "state": state,
+        "receipt": receipt,
+        "protocol": "baseline -> select one evidence-backed weakness -> checkpoint -> improve -> verify delta -> record -> continue",
+        "claim_boundary": "The tool persists loop state; the agent must still execute and verify each improvement cycle.",
+    }
+
+
 def routes_payload(root: Path) -> dict[str, Any]:
     routes = [
         {"route": "status", "mcp_tool": "homebase_status", "fallback": "python3 scripts/validate_harness.py"},
@@ -615,8 +821,10 @@ def routes_payload(root: Path) -> dict[str, Any]:
         {"route": "repo-map", "mcp_tool": "homebase_repo_map", "fallback": "git status --short && find/rg"},
         {"route": "context-scan", "mcp_tool": "homebase_context_scan", "fallback": "bounded rg/sed reads"},
         {"route": "recall", "mcp_tool": "homebase_recall", "fallback": "python3 scripts/recall_ranker.py --query ..."},
+        {"route": "record", "mcp_tool": "homebase_record", "fallback": "python3 scripts/memory_fabric.py record ..."},
         {"route": "goal", "mcp_tool": "homebase_goal", "fallback": "python3 scripts/goal_state.py status"},
-        {"route": "host-audit", "mcp_tool": "homebase_host_audit", "fallback": "inspect ~/.codex/config.toml and cache .mcp.json"},
+        {"route": "selfloop", "mcp_tool": "homebase_selfloop", "fallback": "/selfloop or python3 scripts/goal_state.py selfloop-set"},
+        {"route": "host-audit", "mcp_tool": "homebase_host_audit", "fallback": "inspect ~/.codex/config.toml and codex app-server hooks/list"},
         {"route": "mcp-freshness", "mcp_tool": "homebase_mcp_freshness", "fallback": "child tools/list smoke"},
         {"route": "distill", "mcp_tool": "homebase_distill_context", "fallback": "sed -n bounded ranges"},
         {"route": "repro", "mcp_tool": "homebase_execution_repro", "fallback": "scripts/run_tests.py <suite>"},
@@ -639,7 +847,107 @@ def sips_cache_root() -> Path:
     return versioned
 
 
-def mcp_freshness_payload(root: Path) -> dict[str, Any]:
+def configured_sips_mcp(config_text: str) -> dict[str, Any]:
+    """Read the SIPS plugin MCP enablement and optional tool allowlist."""
+    header = '[plugins."harness-self-improvement@harness-local".mcp_servers.sips-homebase]'
+    match = re.search(
+        rf"^{re.escape(header)}\s*$(.*?)(?=^\[|\Z)",
+        config_text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if not match:
+        return {
+            "section_present": False,
+            "enabled": False,
+            "allowlist_declared": False,
+            "enabled_tools": [],
+        }
+
+    body = match.group(1)
+    enabled_match = re.search(r"^enabled\s*=\s*(true|false)\s*$", body, re.MULTILINE)
+    tools_match = re.search(r"^enabled_tools\s*=\s*\[(.*?)\]", body, re.MULTILINE | re.DOTALL)
+    enabled_tools = re.findall(r'"([^"]+)"', tools_match.group(1)) if tools_match else []
+    return {
+        "section_present": True,
+        "enabled": bool(enabled_match and enabled_match.group(1) == "true"),
+        "allowlist_declared": tools_match is not None,
+        "enabled_tools": enabled_tools,
+    }
+
+
+def _task_tool_is_present(expected: str, observed: str) -> bool:
+    if observed == expected:
+        return True
+    return bool(
+        re.fullmatch(
+            rf"(?:mcp__)?sips[_-]homebase(?:__|[./:]){re.escape(expected)}",
+            observed,
+        )
+    )
+
+
+def task_exposure_payload(
+    expected_tools: list[str],
+    task_advertised_tools: list[str] | None,
+    *,
+    task_inventory_complete: bool = False,
+    task_surface_truncated: bool = False,
+    task_invoked_tools: list[str] | None = None,
+) -> dict[str, Any]:
+    supplied = task_advertised_tools is not None
+    observed = sorted(set(task_advertised_tools or []))
+    expected = sorted(set(expected_tools))
+    present = [
+        tool
+        for tool in expected
+        if any(_task_tool_is_present(tool, candidate) for candidate in observed)
+    ]
+    invoked_observed = sorted(set(task_invoked_tools or []))
+    invoked = [
+        tool
+        for tool in expected
+        if any(_task_tool_is_present(tool, candidate) for candidate in invoked_observed)
+    ]
+    inventory_usable = supplied and task_inventory_complete and not task_surface_truncated
+    missing = [tool for tool in expected if tool not in present] if inventory_usable else []
+    status = "unproven"
+    if inventory_usable:
+        status = "advertised" if not missing else "missing_tools"
+    return {
+        "status": status,
+        "callability_status": "verified" if invoked else "unproven",
+        "tool_exposure_checked": inventory_usable,
+        "inventory_supplied": supplied,
+        "inventory_complete": bool(task_inventory_complete),
+        "surface_truncated": bool(task_surface_truncated),
+        "observed_tool_count": len(observed),
+        "present_tools": present,
+        "missing_tools": missing,
+        "invoked_tools": invoked,
+        "coverage": (
+            "unproven"
+            if not inventory_usable
+            else "complete"
+            if not missing
+            else "none"
+            if not present
+            else "partial"
+        ),
+        "claim_boundary": (
+            "A plugin or MCP server listed in app UI proves host enumeration only. A complete, non-truncated "
+            "task inventory proves advertisement or absence; successful task-local invocation proves callability."
+        ),
+    }
+
+
+def mcp_freshness_payload(
+    root: Path,
+    task_advertised_tools: list[str] | None = None,
+    *,
+    task_inventory_complete: bool = False,
+    task_surface_truncated: bool = False,
+    task_invoked_tools: list[str] | None = None,
+) -> dict[str, Any]:
     cache = sips_cache_root()
     config = Path.home() / ".codex" / "config.toml"
     cache_script = cache / "scripts" / "harness_homebase_mcp.py"
@@ -668,27 +976,281 @@ def mcp_freshness_payload(root: Path) -> dict[str, Any]:
         except Exception as exc:
             tools_smoke = {"ok": False, "tools": [], "stderr": str(exc)}
     config_text = config.read_text(encoding="utf-8", errors="replace") if config.exists() else ""
+    config_state = configured_sips_mcp(config_text)
+    configured_tools = sorted(set(config_state["enabled_tools"]))
+    advertised_tools = sorted(set(tools_smoke["tools"]))
+    missing_enabled_tools = (
+        sorted(set(advertised_tools) - set(configured_tools))
+        if config_state["allowlist_declared"]
+        else []
+    )
     checks = {
         "source_mcp_declares_sips": "sips-homebase" in json.dumps(source_mcp),
         "cache_mcp_declares_sips": "sips-homebase" in json.dumps(cache_mcp),
         "cache_script_exists": cache_script.exists(),
-        "codex_config_enables_sips": "sips-homebase" in config_text and "homebase_status" in config_text,
+        "codex_config_enables_sips": bool(
+            config_state["section_present"] and config_state["enabled"]
+        ),
+        "codex_config_allows_child_tools": bool(
+            config_state["enabled"] and not missing_enabled_tools
+        ),
         "child_tools_list_ok": bool(tools_smoke["ok"]),
     }
+    local_status = "fresh" if all(checks.values()) else "attention"
+    task_exposure = task_exposure_payload(
+        advertised_tools,
+        task_advertised_tools,
+        task_inventory_complete=task_inventory_complete,
+        task_surface_truncated=task_surface_truncated,
+        task_invoked_tools=task_invoked_tools,
+    )
+    if local_status != "fresh":
+        overall_status = "local_attention"
+    elif task_exposure["status"] == "missing_tools" and task_exposure["callability_status"] == "verified":
+        overall_status = "task_evidence_conflict"
+    elif task_exposure["status"] == "missing_tools":
+        overall_status = "task_tools_missing"
+    elif task_exposure["callability_status"] == "verified":
+        overall_status = "fresh"
+    elif task_exposure["status"] == "advertised":
+        overall_status = "task_tools_advertised_callability_unproven"
+    else:
+        overall_status = "task_tools_unproven"
     return {
         "schema": "homebase.mcp_freshness.v1",
         "root": str(root),
         "cache_root": str(cache),
         "config": str(config),
-        "status": "fresh" if all(checks.values()) else "attention",
+        "status": local_status,
+        "overall_status": overall_status,
         "checks": checks,
         "tools": tools_smoke["tools"],
+        "configured_tools": configured_tools,
+        "missing_enabled_tools": missing_enabled_tools,
         "smoke": tools_smoke,
-        "claim_boundary": "Fresh here means source/cache/config/child-process proof. Already-open Codex sessions still need host rediscovery after restart.",
+        "task_exposure": task_exposure,
+        "claim_boundary": (
+            "Local status covers source/cache/config/child-process proof. App UI listing proves host "
+            "enumeration only. A complete task inventory proves advertisement; successful task-local invocation "
+            "is required before overall_status claims callability."
+        ),
     }
 
 
-def host_audit_payload(root: Path) -> dict[str, Any]:
+def _read_app_server_response(
+    process: subprocess.Popen[str], request_id: int, timeout_seconds: float
+) -> dict[str, Any]:
+    if process.stdout is None:
+        raise RuntimeError("Codex app-server stdout is unavailable")
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        remaining = deadline - time.monotonic()
+        ready, _, _ = select.select([process.stdout], [], [], min(0.25, remaining))
+        if not ready:
+            continue
+        line = process.stdout.readline()
+        if not line:
+            break
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if message.get("id") != request_id:
+            continue
+        if message.get("error"):
+            raise RuntimeError(f"Codex app-server request {request_id} failed: {message['error']}")
+        return message
+    raise TimeoutError(f"Codex app-server request {request_id} timed out")
+
+
+def codex_hooks_catalog(root: Path, timeout_seconds: float = 5.0) -> dict[str, Any]:
+    """Inspect the live Codex hook catalog without trusting config rows alone."""
+    process: subprocess.Popen[str] | None = None
+    result: dict[str, Any]
+    try:
+        process = subprocess.Popen(
+            ["codex", "app-server"],
+            cwd=str(root),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+        if process.stdin is None:
+            raise RuntimeError("Codex app-server stdin is unavailable")
+        initialize = {
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "clientInfo": {
+                    "name": "sips-host-audit",
+                    "title": "SIPS Host Audit",
+                    "version": "0.1.0",
+                }
+            },
+        }
+        process.stdin.write(json.dumps(initialize) + "\n")
+        process.stdin.flush()
+        _read_app_server_response(process, 1, timeout_seconds)
+        process.stdin.write(json.dumps({"method": "initialized", "params": {}}) + "\n")
+        process.stdin.write(json.dumps({"id": 2, "method": "hooks/list", "params": {}}) + "\n")
+        process.stdin.flush()
+        response = _read_app_server_response(process, 2, timeout_seconds)
+        groups = response.get("result", {}).get("data")
+        if not isinstance(groups, list):
+            raise RuntimeError("Codex app-server hooks/list returned no data array")
+        resolved_root = root.resolve()
+        matching_groups = [
+            group
+            for group in groups
+            if isinstance(group, dict)
+            and group.get("cwd")
+            and Path(str(group["cwd"])).resolve() == resolved_root
+        ]
+        if len(matching_groups) != 1:
+            raise RuntimeError(
+                f"Codex app-server returned {len(matching_groups)} hook groups for {resolved_root}"
+            )
+        group = matching_groups[0]
+        hooks = [
+            {
+                "key": str(hook.get("key") or ""),
+                "pluginId": str(hook.get("pluginId") or ""),
+                "enabled": hook.get("enabled"),
+                "trustStatus": str(hook.get("trustStatus") or "unknown"),
+                "currentHash": str(hook.get("currentHash") or ""),
+            }
+            for hook in (group.get("hooks") or [])
+            if isinstance(hook, dict) and hook.get("pluginId") == SIPS_PLUGIN_ID
+        ]
+        result = {
+            "status": "inspected",
+            "hooks": hooks,
+            "warnings": [str(item) for item in (group.get("warnings") or [])],
+            "errors": [str(item) for item in (group.get("errors") or [])],
+            "error": "",
+        }
+    except (FileNotFoundError, OSError, RuntimeError, TimeoutError) as exc:
+        result = {"status": "unavailable", "hooks": [], "error": str(exc)}
+    finally:
+        if process is not None:
+            if process.stdin is not None:
+                try:
+                    process.stdin.close()
+                except OSError:
+                    pass
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=2)
+    return result
+
+
+def runtime_hook_findings(
+    expected_hook_rows: set[str], catalog: dict[str, Any]
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    findings: list[dict[str, str]] = []
+    status = str(catalog.get("status") or "unavailable")
+    hooks = [
+        item
+        for item in (catalog.get("hooks") or [])
+        if isinstance(item, dict) and item.get("pluginId") == SIPS_PLUGIN_ID
+    ]
+    if status != "inspected":
+        error = str(catalog.get("error") or "unknown error")
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex hook catalog could not be inspected: {error}",
+        })
+        return findings, {
+            "status": status,
+            "expected_count": len(expected_hook_rows),
+            "observed_count": 0,
+            "hooks": [],
+            "error": error,
+        }
+
+    keys = [str(item.get("key") or "") for item in hooks if item.get("key")]
+    by_key = {str(item.get("key") or ""): item for item in hooks if item.get("key")}
+    runtime_rows = set(by_key)
+    duplicate_rows = sorted({key for key in keys if keys.count(key) > 1})
+    missing_rows = sorted(expected_hook_rows - runtime_rows)
+    stale_rows = sorted(runtime_rows - expected_hook_rows)
+    catalog_errors = [str(item) for item in (catalog.get("errors") or [])]
+    catalog_warnings = [str(item) for item in (catalog.get("warnings") or [])]
+    if catalog_errors:
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex hook catalog reported errors: {'; '.join(catalog_errors)}",
+        })
+    if catalog_warnings:
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex hook catalog reported warnings: {'; '.join(catalog_warnings)}",
+        })
+    if duplicate_rows:
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex exposes duplicate SIPS hook key(s): {', '.join(duplicate_rows)}",
+        })
+    if missing_rows:
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex is missing {len(missing_rows)} expected SIPS hook(s): {', '.join(missing_rows)}",
+        })
+    if stale_rows:
+        findings.append({
+            "severity": "warning",
+            "detail": f"Live Codex exposes {len(stale_rows)} stale SIPS hook(s): {', '.join(stale_rows)}",
+        })
+    for key in sorted(expected_hook_rows & runtime_rows):
+        hook = by_key[key]
+        if hook.get("enabled") is not True:
+            findings.append({
+                "severity": "warning",
+                "detail": f"Live SIPS hook is disabled: {key}",
+            })
+        trust_status = str(hook.get("trustStatus") or "unknown")
+        if trust_status != "trusted":
+            findings.append({
+                "severity": "warning",
+                "detail": f"Live SIPS hook is not trusted ({trust_status}): {key}",
+            })
+        if not hook.get("currentHash"):
+            findings.append({
+                "severity": "warning",
+                "detail": f"Live SIPS hook has no current hash receipt: {key}",
+            })
+    return findings, {
+        "status": status,
+        "expected_count": len(expected_hook_rows),
+        "observed_count": len(runtime_rows),
+        "duplicate_count": len(duplicate_rows),
+        "hooks": [by_key[key] for key in sorted(runtime_rows)],
+        "warnings": catalog_warnings,
+        "errors": catalog_errors,
+        "error": str(catalog.get("error") or ""),
+    }
+
+
+def expected_sips_hook_rows(root: Path) -> set[str]:
+    hooks = read_json(root / "hooks" / "hooks.json").get("hooks") or {}
+    hook_prefix = f"{SIPS_PLUGIN_ID}:hooks/hooks.json:"
+    return {
+        f"{hook_prefix}{re.sub(r'(?<!^)(?=[A-Z])', '_', event).lower()}:{group_index}:{hook_index}"
+        for event, groups in hooks.items()
+        for group_index, group in enumerate(groups)
+        for hook_index, _ in enumerate(group.get("hooks") or [])
+    }
+
+
+def host_audit_payload(
+    root: Path, runtime_catalog: dict[str, Any] | None = None
+) -> dict[str, Any]:
     config = Path.home() / ".codex" / "config.toml"
     text = config.read_text(encoding="utf-8", errors="replace") if config.exists() else ""
     legacy_name = "codex-" + "self-improvement"
@@ -707,12 +1269,58 @@ def host_audit_payload(root: Path) -> dict[str, Any]:
         findings.append({"severity": "warning", "detail": "Standalone Memory Fabric plugin block is still enabled; SIPS should own Memory Fabric locally."})
     if "sips-homebase" not in text:
         findings.append({"severity": "error", "detail": "SIPS sips-homebase MCP block is missing from Codex config."})
+
+    hook_prefix = f"{SIPS_PLUGIN_ID}:hooks/hooks.json:"
+    expected_hook_rows = expected_sips_hook_rows(root)
+    configured_hook_rows = {
+        match.group(1)
+        for match in re.finditer(r'^\[hooks\.state\."([^"]+)"\]$', text, re.MULTILINE)
+        if match.group(1).startswith(hook_prefix)
+    }
+    stale_hook_rows = sorted(configured_hook_rows - expected_hook_rows)
+    missing_hook_rows = sorted(expected_hook_rows - configured_hook_rows)
+    if stale_hook_rows:
+        findings.append({
+            "severity": "warning",
+            "detail": f"SIPS has {len(stale_hook_rows)} stale hook trust row(s): {', '.join(stale_hook_rows)}",
+        })
+    if missing_hook_rows:
+        findings.append({
+            "severity": "warning",
+            "detail": f"SIPS has {len(missing_hook_rows)} hook row(s) missing from host trust state.",
+        })
+
+    runtime_findings, runtime_hooks = runtime_hook_findings(
+        expected_hook_rows,
+        runtime_catalog if runtime_catalog is not None else codex_hooks_catalog(root),
+    )
+    findings.extend(runtime_findings)
+
+    for match in re.finditer(r'^\[marketplaces\.([^\]]+)\]\s*$(.*?)(?=^\[|\Z)', text, re.MULTILINE | re.DOTALL):
+        name, body = match.groups()
+        source_type = re.search(r'^source_type\s*=\s*"([^"]+)"', body, re.MULTILINE)
+        source = re.search(r'^source\s*=\s*"([^"]+)"', body, re.MULTILINE)
+        if not source or not source_type or source_type.group(1) != "local":
+            continue
+        source_path = Path(source.group(1)).expanduser()
+        if not source_path.exists():
+            findings.append({
+                "severity": "warning",
+                "detail": f"Local marketplace {name} points at missing path: {source_path}",
+            })
+        if name == "openai-bundled" and "/Codex.app/" in source.group(1):
+            findings.append({
+                "severity": "warning",
+                "detail": "openai-bundled still points at the retired standalone Codex app instead of the merged ChatGPT runtime.",
+            })
     return {
-        "schema": "homebase.host_audit.v1",
+        "schema": "homebase.host_audit.v2",
         "root": str(root),
         "config": str(config),
         "status": "passed" if not findings else "attention",
         "findings": findings,
+        "runtime_hooks": runtime_hooks,
+        "claim_boundary": "Passed proves a freshly spawned Codex app-server catalog for this root has every expected SIPS hook present, enabled, trusted, and hashed. An already-open task can still retain stale dispatcher state until host rediscovery.",
     }
 
 
@@ -776,7 +1384,43 @@ def perception_plan_payload(root: Path, surface: str, target: str, expected: lis
     checks = ["capture screenshot", "inspect visible text", "verify no overlap/clipping", "exercise primary interaction"]
     if surface in {"browser", "game"}:
         checks.extend(["check console errors", "verify canvas/image is nonblank"])
-    return {"schema": "homebase.perception_plan.v1", "root": str(root), "surface": surface, "target": target, "expected_visible_state": expected, "checks": checks}
+    plugin_surface = any(token in target.lower() for token in ("plugin", "mcp"))
+    proof_layers = {
+        "visible_state": "visual_only",
+        "runtime_interaction": "requires_direct_interaction",
+    }
+    claim_boundary = "A screenshot proves only the visible state captured in that image."
+    if plugin_surface:
+        checks.extend(
+            [
+                "verify the plugin or MCP server is enumerated in the host UI",
+                "verify config and child tools/list separately",
+                "invoke a named tool from the current task",
+            ]
+        )
+        proof_layers.update(
+            {
+                "ui_enumeration": "visual_only",
+                "host_configuration": "requires_config_or_host_catalog",
+                "child_tool_advertisement": "requires_child_tools_list",
+                "task_tool_exposure": "requires_complete_task_inventory",
+                "task_tool_callability": "requires_successful_task_invocation",
+            }
+        )
+        claim_boundary = (
+            "A plugin or MCP server listed in app UI proves enumeration only; it does not "
+            "prove current-task callability. Verify the task tool inventory or invoke a named tool."
+        )
+    return {
+        "schema": "homebase.perception_plan.v2",
+        "root": str(root),
+        "surface": surface,
+        "target": target,
+        "expected_visible_state": expected,
+        "checks": checks,
+        "proof_layers": proof_layers,
+        "claim_boundary": claim_boundary,
+    }
 
 
 def tool_factory_payload(root: Path, task: str, desired_tool: str, existing_script: str, force_new: bool) -> dict[str, Any]:
@@ -833,19 +1477,96 @@ def runtime_markdown(payload: dict[str, Any], title: str) -> str:
 def render(payload: dict[str, Any], title: str) -> str:
     lines = [f"# {title}", ""]
     for key, value in payload.items():
-        if key in {"receipts", "files", "risks", "records", "surfaces", "git", "routes", "findings", "sources", "checks", "verification_commands", "repro_steps"}:
+        if key in {"receipt", "receipts", "state", "files", "risks", "records", "surfaces", "git", "routes", "findings", "sources", "checks", "verification_commands", "repro_steps", "runtime_hooks", "task_exposure", "proof_layers"}:
             continue
         lines.append(f"- **{key}** `{value}`")
+    if "runtime_hooks" in payload:
+        runtime = payload["runtime_hooks"] if isinstance(payload["runtime_hooks"], dict) else {}
+        hooks = [item for item in (runtime.get("hooks") or []) if isinstance(item, dict)]
+        lines.append("")
+        lines.append("## Runtime Hooks")
+        lines.append(f"- **status** `{runtime.get('status', 'unknown')}`")
+        lines.append(
+            f"- **observed / expected** `{runtime.get('observed_count', 0)} / {runtime.get('expected_count', 0)}`"
+        )
+        lines.append(f"- **duplicates** `{runtime.get('duplicate_count', 0)}`")
+        lines.append(f"- **disabled** `{sum(item.get('enabled') is not True for item in hooks)}`")
+        lines.append(f"- **untrusted** `{sum(item.get('trustStatus') != 'trusted' for item in hooks)}`")
+        lines.append(f"- **unhashed** `{sum(not item.get('currentHash') for item in hooks)}`")
+        lines.append(f"- **catalog warnings / errors** `{len(runtime.get('warnings') or [])} / {len(runtime.get('errors') or [])}`")
+        if runtime.get("error"):
+            lines.append(f"- **probe error** `{runtime['error']}`")
+    if "receipt" in payload:
+        receipt = payload["receipt"] if isinstance(payload["receipt"], dict) else {}
+        lines.append("")
+        lines.append("## Receipt")
+        for key in ("ok", "returncode", "timed_out"):
+            if key in receipt:
+                lines.append(f"- **{key}** `{receipt[key]}`")
+        command = receipt.get("command")
+        if isinstance(command, list):
+            lines.append(f"- **command** `{command}`")
+        stdout = receipt.get("stdout")
+        if isinstance(stdout, str):
+            lines.append(f"- **stdout chars** `{len(stdout)}`")
+        stderr = receipt.get("stderr")
+        if isinstance(stderr, str) and stderr:
+            lines.append(f"- **stderr** `{stderr[:240]}`")
+    if "state" in payload:
+        state = payload["state"] if isinstance(payload["state"], dict) else {}
+        lines.append("")
+        lines.append("## State")
+        for key in ("status", "mode", "focus", "objective", "turnCount", "cycleCount", "plateauStreak"):
+            value = state.get(key)
+            if value is None:
+                continue
+            if isinstance(value, str):
+                value = value[:320]
+            lines.append(f"- **{key}** `{value}`")
+        cycle = state.get("cycle")
+        if isinstance(cycle, dict):
+            lines.append(f"- **current cycle** `{cycle.get('cycle', '?')}` outcome=`{cycle.get('outcome', '?')}`")
+            summary = cycle.get("summary")
+            if isinstance(summary, str) and summary:
+                lines.append(f"- **current cycle summary** `{summary[:320]}`")
+        history = state.get("cycleHistory")
+        if isinstance(history, list):
+            lines.append(f"- **cycle history entries** `{len(history)}`")
     if "checks" in payload:
         lines.append("")
         lines.append("## Checks")
-        for key, value in payload["checks"].items():
+        checks = payload["checks"]
+        if isinstance(checks, dict):
+            for key, value in checks.items():
+                lines.append(f"- **{key}** `{value}`")
+        else:
+            for item in checks if isinstance(checks, list) else []:
+                lines.append(f"- `{item}`")
+    if "task_exposure" in payload:
+        task = payload["task_exposure"] if isinstance(payload["task_exposure"], dict) else {}
+        lines.append("")
+        lines.append("## Current Task Exposure")
+        lines.append(f"- **status** `{task.get('status', 'unproven')}`")
+        lines.append(f"- **callability** `{task.get('callability_status', 'unproven')}`")
+        lines.append(f"- **coverage** `{task.get('coverage', 'unproven')}`")
+        lines.append(f"- **present / expected** `{len(task.get('present_tools') or [])} / {len(payload.get('tools') or [])}`")
+        lines.append(f"- **inventory complete** `{task.get('inventory_complete', False)}`")
+        lines.append(f"- **surface truncated** `{task.get('surface_truncated', False)}`")
+    if "proof_layers" in payload:
+        lines.append("")
+        lines.append("## Proof Layers")
+        for key, value in payload["proof_layers"].items():
             lines.append(f"- **{key}** `{value}`")
     if "surfaces" in payload:
         lines.append("")
         lines.append("## Surfaces")
         for key, value in payload["surfaces"].items():
-            lines.append(f"- **{key}** `{value}`")
+            if isinstance(value, list):
+                sample = value[:12]
+                suffix = " ..." if len(value) > len(sample) else ""
+                lines.append(f"- **{key}** count=`{len(value)}` sample=`{sample}{suffix}`")
+            else:
+                lines.append(f"- **{key}** `{value}`")
     if "git" in payload:
         lines.append("")
         lines.append("## Git")
@@ -904,7 +1625,11 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     root = workspace_root(arguments.get("root")) if arguments.get("root") else plugin_root()
     if name == "homebase_status":
         payload = status_payload(root)
-        return tool_result(payload, render(payload, "Harness Homebase Status"))
+        return tool_result(
+            payload,
+            render(payload, "Harness Homebase Status"),
+            is_error=payload["status"] != "inspected",
+        )
     if name == "homebase_verify":
         suite = str(arguments.get("suite") or "").strip()
         payload = verify_payload(root, run_tests=bool(arguments.get("run_tests")), suite=suite)
@@ -932,15 +1657,63 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             raise JsonRpcError(-32602, "query is required")
         payload = recall_payload(root, query, int(arguments.get("limit") or 4))
         return tool_result(payload, render(payload, "Harness Homebase Recall"), is_error=payload["status"] == "failed")
+    if name == "homebase_record":
+        tier = str(arguments.get("tier") or "").strip()
+        title = str(arguments.get("title") or "").strip()
+        body = str(arguments.get("body") or "").strip()
+        if not tier or not title or not body:
+            raise JsonRpcError(-32602, "tier, title, and body are required")
+        payload = record_payload(
+            root,
+            tier,
+            title,
+            body,
+            str(arguments.get("scope") or ""),
+            str(arguments.get("tags") or ""),
+            str(arguments.get("confidence") or "medium"),
+            str(arguments.get("status") or "active"),
+            bool(arguments.get("verify_before_use")),
+            str(arguments.get("evidence_path") or ""),
+            str(arguments.get("provenance") or ""),
+            str(arguments.get("store") or ""),
+        )
+        return tool_result(payload, render(payload, "SIPS Homebase Record"), is_error=payload["status"] == "failed")
     if name == "homebase_goal":
         payload = goal_payload(root)
         return tool_result(payload, render(payload, "Harness Homebase Goal"))
+    if name == "homebase_selfloop":
+        action = str(arguments.get("action") or "").strip()
+        if not action:
+            raise JsonRpcError(-32602, "action is required")
+        payload = selfloop_payload(
+            root,
+            action,
+            str(arguments.get("focus") or ""),
+            str(arguments.get("outcome") or ""),
+            str(arguments.get("summary") or ""),
+        )
+        return tool_result(payload, render(payload, "SIPS Selfloop"), is_error=payload["status"] != "passed")
     if name == "homebase_routes":
         payload = routes_payload(root)
         return tool_result(payload, render(payload, "SIPS Homebase Routes"))
     if name == "homebase_mcp_freshness":
-        payload = mcp_freshness_payload(root)
-        return tool_result(payload, render(payload, "SIPS MCP Freshness"), is_error=payload["status"] != "fresh")
+        task_advertised_tools = (
+            safe_strings(arguments.get("task_advertised_tools"))
+            if "task_advertised_tools" in arguments
+            else None
+        )
+        payload = mcp_freshness_payload(
+            root,
+            task_advertised_tools,
+            task_inventory_complete=bool(arguments.get("task_inventory_complete")),
+            task_surface_truncated=bool(arguments.get("task_surface_truncated")),
+            task_invoked_tools=safe_strings(arguments.get("task_invoked_tools")),
+        )
+        is_error = payload["status"] != "fresh" or payload["overall_status"] in {
+            "task_tools_missing",
+            "task_evidence_conflict",
+        }
+        return tool_result(payload, render(payload, "SIPS MCP Freshness"), is_error=is_error)
     if name == "homebase_host_audit":
         payload = host_audit_payload(root)
         return tool_result(payload, render(payload, "SIPS Host Audit"), is_error=payload["status"] != "passed")

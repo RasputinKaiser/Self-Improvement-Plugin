@@ -12,7 +12,7 @@ the main session is stuck on — escalation is a scalpel, not a session
 swap.
 
 When the agent returns its `DIFF:` and `LESSON:` blocks:
-1. Apply the diff (the autonomy gate will snapshot first if it touches ~/.ncode/).
+1. Apply the diff (the autonomy gate will snapshot first if it touches SIPS plugin source).
 2. Record the LESSON to Memory Fabric scoped to the touched file:
    `python3 <mf_cli> record --tier learning --title "escalation lesson: <topic>" \
       --body "$LESSON" --tags lesson,escalation,frontier --scope <touched_file>`

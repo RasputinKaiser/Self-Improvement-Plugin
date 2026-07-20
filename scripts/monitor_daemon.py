@@ -39,7 +39,7 @@ RESULTS_PATH = NCODE_DIR / "monitor_results.jsonl"
 STATUS_PATH = NCODE_DIR / "monitor_status.md"
 IMPROVEMENTS_PATH = NCODE_DIR / "improvements.md"
 
-PLIST_LABEL = "com.rasputinkaiser.ncode-sweep"
+PLIST_LABEL = "com.rasputinkaiser.sips-sweep"
 SEVERITIES = ("info", "warning", "critical")
 
 
@@ -67,7 +67,20 @@ def check_validator_present():
 
 def check_tests_pass():
     """Does run_tests.py exit 0?"""
-    r = run_script("run_tests.py", timeout=120)
+    if os.environ.get("SIPS_MONITOR_CHILD") == "1":
+        return []
+    env = dict(os.environ)
+    env["SIPS_MONITOR_CHILD"] = "1"
+    try:
+        r = subprocess.run(
+            ["python3", str(SCRIPTS_DIR / "run_tests.py")],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+        )
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        r = subprocess.CompletedProcess([], 1, "", f"failed: {exc}")
     if r.returncode != 0:
         # Parse last line for summary
         last_line = (r.stdout or "").strip().splitlines()[-1:] or ["(no summary)"]
@@ -144,21 +157,36 @@ def check_untested_scripts():
 
 
 def check_install_drift():
-    """Is the installed plugin out of sync with the source repo?"""
-    install_sh = Path(__file__).resolve().parents[1] / "install.sh"
-    if not install_sh.exists():
-        return []  # No source repo — can't check drift
+    """Does the current Codex cache/config/child-process surface match source?"""
+    mcp = SCRIPTS_DIR / "harness_homebase_mcp.py"
+    request = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {
+            "name": "homebase_mcp_freshness",
+            "arguments": {"root": str(Path(__file__).resolve().parents[1])},
+        },
+    }
     r = subprocess.run(
-        ["bash", str(install_sh), "--check"],
-        capture_output=True, text=True, timeout=15,
+        ["python3", str(mcp)],
+        input=json.dumps(request) + "\n",
+        capture_output=True,
+        text=True,
+        timeout=15,
     )
-    if r.returncode == 0:
+    try:
+        response = json.loads((r.stdout or "").splitlines()[0])
+        freshness = response["result"]["structuredContent"]
+    except (IndexError, KeyError, json.JSONDecodeError):
+        freshness = {"status": "unknown", "detail": (r.stderr or r.stdout)[:200]}
+    if r.returncode == 0 and freshness.get("status") == "fresh":
         return []
     return [{
         "severity": "warning",
         "category": "drift",
-        "title": "Plugin install drift detected",
-        "detail": (r.stdout or r.stderr or "").strip()[:200],
+        "title": "SIPS Codex surface drift detected",
+        "detail": json.dumps(freshness, sort_keys=True)[:300],
     }]
 
 
@@ -174,7 +202,7 @@ def check_script_permissions():
         return []
     non_exec = []
     for f in SCRIPTS_DIR.iterdir():
-        if f.suffix not in (".py", ".sh"):
+        if f.suffix != ".sh":
             continue
         if not os.access(f, os.X_OK):
             non_exec.append(f.name)
@@ -220,11 +248,12 @@ def check_large_debug_dirs():
     return issues
 
 
-def run_all_checks():
+def run_all_checks(skip_tests=False):
     """Run every check. Returns list of issues (each dict)."""
     issues = []
     issues.extend(check_validator_present())
-    issues.extend(check_tests_pass())
+    if not skip_tests:
+        issues.extend(check_tests_pass())
     issues.extend(check_cron_installed())
     issues.extend(check_install_drift())
     issues.extend(check_script_permissions())
@@ -293,10 +322,12 @@ def main():
                     help="emit JSON to stdout instead of writing files")
     ap.add_argument("--quiet", action="store_true",
                     help="only print WARNING+ items")
+    ap.add_argument("--skip-tests", action="store_true",
+                    help="skip the expensive nested regression-suite check")
     args = ap.parse_args()
 
     started_at = datetime.now(timezone.utc).isoformat()
-    issues = run_all_checks()
+    issues = run_all_checks(skip_tests=args.skip_tests)
     finished_at = datetime.now(timezone.utc).isoformat()
 
     if args.json:

@@ -2,7 +2,7 @@
 """V2 manifest validator — proves the architecture is coherent and writes EVAL.md.
 
 Checks (all read-only; exit 0 if clean, 1 if any ERROR):
-  1. marketplace.json + plugin.json are valid JSON and match EXPECTED_VERSION.
+  1. Marketplace, plugin, and Python package metadata agree on the release version.
   2. plugin.json points at the MCP surface and omits host-specific hook/agent/command fields.
   2b. plugin.json points at a SIPS MCP server manifest and home-base MCP script.
   3. Every command referenced in hooks.json exists under scripts/ and is executable.
@@ -11,6 +11,7 @@ Checks (all read-only; exit 0 if clean, 1 if any ERROR):
   6. The three new v2 scripts are executable (no model_router import — dropped in v2).
   7. No lib/ directory exists and no script imports model_router (the pivot is real).
   8. Loop-closure chain is wired end-to-end (observe → distill → inject → recall → delegate).
+  9. The retired NCode presence path is an inert hot-refresh compatibility tombstone.
 
 Writes EVAL.md with the coverage table + per-check result. The EVAL.md is the
 primary output compared across experiment variants.
@@ -26,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".ncode-plugin" / "marketplace.json"
 CODEX_MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 PLUGIN_JSON = ROOT / ".codex-plugin" / "plugin.json"
+PYPROJECT = ROOT / "pyproject.toml"
 HOOKS = ROOT / "hooks" / "hooks.json"
 MCP_JSON = ROOT / ".mcp.json"
 AGENTS_DIR = ROOT / "agents"
@@ -51,6 +53,12 @@ EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
 EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
 EXPECTED_SKILL_SET = set(EXPECTED_SKILLS)
 EXPECTED_VERSION = "0.4.0"
+SEMVER_IDENTIFIER = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
+SEMVER_RE = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    rf"(?:-({SEMVER_IDENTIFIER}(?:\.{SEMVER_IDENTIFIER})*))?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
+)
 HOOK_ROOT_RE = re.compile(
     r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}\"?/scripts/([\w_]+\.py)"
 )
@@ -74,17 +82,37 @@ def check(name, ok, detail=""):
         errors.append(f"{name}: {detail}" if detail else name)
 
 
+def project_version(path):
+    """Read project.version without adding a Python 3.10 TOML dependency."""
+    try:
+        body = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        errors.append(f"{path.relative_to(ROOT)}: unreadable — {exc}")
+        return None
+    project = re.search(r"(?ms)^\[project\]\s*(.*?)(?=^\[|\Z)", body)
+    version = re.search(r'(?m)^version\s*=\s*"([^"]+)"\s*$', project.group(1)) if project else None
+    return version.group(1) if version else None
+
+
 # 1. manifests
 mp = load_json(MARKETPLACE)
 codex_mp = load_json(CODEX_MARKETPLACE)
 pj = load_json(PLUGIN_JSON)
 hk = load_json(HOOKS)
 mcp = load_json(MCP_JSON)
+package_version = project_version(PYPROJECT)
+expected_version = str(pj.get("version") or "") if pj else ""
+
+check(
+    f"pyproject.toml project version {expected_version}",
+    bool(expected_version) and package_version == expected_version,
+    f"version={package_version!r}",
+)
 
 if mp:
     plug = (mp.get("plugins") or [{}])[0]
-    check(f"marketplace.json valid + version {EXPECTED_VERSION}",
-          plug.get("version") == EXPECTED_VERSION,
+    check(f"marketplace.json valid + version {expected_version}",
+          bool(expected_version) and plug.get("version") == expected_version,
           f"version={plug.get('version')!r}")
     check("marketplace declares delegation/inherit keywords",
           "delegation" in (plug.get("keywords") or []) and "inherit" in (plug.get("keywords") or []),
@@ -102,7 +130,11 @@ if codex_mp:
     check("Codex marketplace category present", bool(codex_plugin.get("category")), str(codex_plugin.get("category")))
 
 if pj:
-    check(f"plugin.json version {EXPECTED_VERSION}", pj.get("version") == EXPECTED_VERSION, pj.get("version"))
+    check(
+        f"plugin.json version {expected_version}",
+        bool(SEMVER_RE.fullmatch(expected_version)),
+        pj.get("version"),
+    )
     check("plugin.json surfaces skills", pj.get("skills") == "./skills/", pj.get("skills"))
     check("plugin.json surfaces mcpServers", pj.get("mcpServers") == "./.mcp.json", pj.get("mcpServers"))
     check("plugin.json omits host hooks field", "hooks" not in pj, pj.get("hooks"))
@@ -112,6 +144,12 @@ if pj:
     check("plugin.json has interface object", isinstance(interface, dict) and bool(interface), str(type(interface)))
     for field in ("displayName", "shortDescription", "longDescription", "developerName", "category"):
         check(f"plugin.json interface.{field}", bool(interface.get(field)), str(interface.get(field)))
+    default_prompts = interface.get("defaultPrompt") or []
+    check(
+        "plugin.json interface.defaultPrompt respects Codex maximum of 3",
+        isinstance(default_prompts, list) and 1 <= len(default_prompts) <= 3,
+        f"count={len(default_prompts) if isinstance(default_prompts, list) else 'invalid'}",
+    )
     check("plugin.json has NO lib field (dropped in v2)", "lib" not in pj, pj.get("lib"))
 
 if mcp:
@@ -197,6 +235,21 @@ check(
 for d in (AGENTS_DIR, COMMANDS_DIR, SKILLS_DIR):
     check(f"{d.relative_to(ROOT)}/ exists", d.is_dir(), str(d))
 check("no lib/ directory (model_router dropped)", not (ROOT / "lib").exists(), str(ROOT / "lib"))
+legacy_presence_writer = ROOT / "scripts" / "sips_presence_mirror.py"
+legacy_presence_body = (
+    legacy_presence_writer.read_text(encoding="utf-8", errors="replace")
+    if legacy_presence_writer.exists()
+    else ""
+)
+check(
+    "retired NCode presence path is an inert compatibility tombstone",
+    legacy_presence_writer.exists()
+    and os.access(legacy_presence_writer, os.X_OK)
+    and "SIPS_PRESENCE_MIRROR_RETIRED = True" in legacy_presence_body
+    and "shutil" not in legacy_presence_body
+    and "copy" not in legacy_presence_body.lower(),
+    str(legacy_presence_writer),
+)
 
 # 3. hooks reference existing executable scripts
 if hk:
@@ -241,6 +294,11 @@ if COMMANDS_DIR.is_dir():
         check(f"command {f.stem} has description", has_desc, f.name)
 check(f"all {len(EXPECTED_COMMANDS)} commands present", EXPECTED_COMMAND_SET == cmd_names,
       f"missing={EXPECTED_COMMAND_SET - cmd_names}, extra={cmd_names - EXPECTED_COMMAND_SET}")
+selfloop_body = (COMMANDS_DIR / "selfloop.md").read_text(encoding="utf-8", errors="replace") if (COMMANDS_DIR / "selfloop.md").exists() else ""
+selfloop_markers = ("selfloop-set", "selfloop-record", "/checkpoint", "self_correct.py", "/teach", "plateau")
+check("selfloop command wires state, proof, and learning cycle",
+      all(marker in selfloop_body for marker in selfloop_markers),
+      f"missing={[marker for marker in selfloop_markers if marker not in selfloop_body]}")
 
 # 5b. Codex skill rows
 skill_names = set()
@@ -375,8 +433,8 @@ if errors:
     lines.append("")
 
 lines.append("## What v2 adds over v1\n")
-lines.append("- **live-service commands** (10): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /brainstorm, /fan-out — v1 had zero.")
-lines.append("- **Codex skill surface** (9): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, and tool factory.")
+lines.append("- **live-service commands** (11): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out — v1 had zero.")
+lines.append("- **Codex skill surface** (10): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, tool factory, and selfloop.")
 lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.")
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")

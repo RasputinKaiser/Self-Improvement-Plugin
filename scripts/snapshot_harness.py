@@ -37,10 +37,12 @@ def hash_file(path):
     return h.hexdigest()
 
 
-def hash_set(files):
+def hash_set(file_hashes):
     h = hashlib.sha256()
-    for f in sorted(files):
-        h.update(f.encode())
+    for name, digest in sorted(file_hashes.items()):
+        h.update(name.encode())
+        h.update(b"\0")
+        h.update(digest.encode())
         h.update(b"\0")
     return h.hexdigest()[:16]
 
@@ -55,7 +57,7 @@ def create_snapshot(reason, force=False):
                    if p.suffix in (".py", ".sh") and not p.name.startswith("."))
 
     file_hashes = {p.name: hash_file(p) for p in files}
-    set_hash = hash_set([p.name for p in files])
+    set_hash = hash_set(file_hashes)
     snapshot_dir = BACKUP_ROOT / set_hash
 
     if snapshot_dir.exists() and not force:

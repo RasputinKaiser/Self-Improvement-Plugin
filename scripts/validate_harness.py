@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harness validator for ~/.ncode/.
+"""Source-first validator for the active SIPS harness.
 
 Read-only. Reports:
 - skills referenced in NCODE.md that don't exist
@@ -17,12 +17,12 @@ import re
 import sys
 from pathlib import Path
 
-from sips_paths import harness_home
+from sips_paths import harness_home, plugin_root
 
-NCODE_DIR = harness_home()
-NCODE_MD = Path.home() / "NCODE.md"
-SETTINGS_LOCAL = NCODE_DIR / "settings.local.json"
-SETTINGS_GLOBAL = NCODE_DIR / "settings.json"
+NCODE_DIR = plugin_root()
+NCODE_MD = NCODE_DIR / "README.md"
+SETTINGS_LOCAL = harness_home() / "settings.local.json"
+SETTINGS_GLOBAL = harness_home() / "settings.json"
 
 findings = []
 
@@ -42,9 +42,9 @@ content = read(NCODE_MD)
 if not content:
     add("ERR", f"{NCODE_MD} missing")
 
-# Extract link/file references: paths/strings ending in .md, agents/, skills/, scripts/, references/
-# Only treat strings starting with .ncode/, /, ~/ or references/ as path refs.
-ref_pat = re.compile(r"(?:~/\.ncode/|/Users/[^)]+?\.ncode/|\.ncode/|references/)[^)\s`'\"]+")
+# Only source-relative reference paths belong to the active harness validator.
+# The defunct ~/.ncode tree is intentionally not inspected or mutated here.
+ref_pat = re.compile(r"references/[^)\s`'\"]+")
 backtick_pat = re.compile(r"`([a-z][a-z0-9_-]+\.(?:py|md|sh))`")
 matches = set(ref_pat.findall(content))
 backticks = set(backtick_pat.findall(content))
@@ -63,8 +63,6 @@ for m in matches:
     p = m
     if p.startswith("~"):
         p = str(Path(p).expanduser())
-    elif p.startswith(".ncode/"):
-        p = str(harness_home() / p.removeprefix(".ncode/"))
     elif p.startswith("references/"):
         p = str(NCODE_DIR / p)
     elif p.startswith("/Users/"):
@@ -84,7 +82,7 @@ for b in backticks:
 
 for p in checks:
     if not p.exists():
-        add("ERR", f"NCODE.md references missing path: {p}")
+        add("ERR", f"README.md references missing path: {p}")
 
 # Validate skills
 skills_dir = NCODE_DIR / "skills"
@@ -92,8 +90,12 @@ if skills_dir.is_dir():
     for d in skills_dir.iterdir():
         if not d.is_dir():
             continue
+        if d.name.startswith("."):
+            continue  # harness metadata, not an invokable skill
         sm = d / "SKILL.md"
         if not sm.exists():
+            if any(d.glob("*/SKILL.md")):
+                continue  # namespace package containing multiple skills
             add("ERR", f"skill '{d.name}' missing SKILL.md")
             continue
         body = read(sm)
@@ -120,11 +122,11 @@ if SETTINGS_LOCAL.exists():
     except json.JSONDecodeError as e:
         add("ERR", f"settings.local.json malformed: {e}")
 
-# Validate scripts are executable
+# Shell entry points may execute directly. Python hooks are launched via python3.
 scripts_dir = NCODE_DIR / "scripts"
 if scripts_dir.is_dir():
     for f in scripts_dir.iterdir():
-        if f.suffix == ".py" and not os.access(f, os.X_OK):
+        if f.suffix == ".sh" and not os.access(f, os.X_OK):
             add("INFO", f"script {f.name} not executable (chmod +x)")
 
 # Ensure references exist

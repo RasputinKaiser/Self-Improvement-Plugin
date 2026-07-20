@@ -99,7 +99,7 @@ for f in walk_files(NCODE_DIR, max_depth=3):
     if sz > LARGE_FILE_BYTES:
         add("INFO", f"large file ({sz // 1024}KB): {rel}")
 
-# Orphan presence mirror not matched by source
+# Historical presence-mirror residue not matched by active source
 src_presence = Path.home() / ".codex" / "sips"
 dst_presence = NCODE_DIR / "sips"
 if src_presence.is_dir() and dst_presence.is_dir():

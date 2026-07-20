@@ -8,7 +8,7 @@ description: Set a goal and enter the RALPH loop — keep working autonomously u
 Parse the user's arguments:
 
 ### `/goal "<objective>"`
-1. Write the goal to `~/.ncode/goal_state.json`:
+1. Write the goal to `${SIPS_HOME:-$HOME/.codex/sips}/goal_state.json`:
    ```json
    {"objective": "<the goal text>", "status": "active", "createdAt": "<ISO timestamp>", "turnCount": 0}
    ```
@@ -16,13 +16,13 @@ Parse the user's arguments:
 3. Immediately start working toward the goal. Do not wait for another user message.
 
 ### `/goal status`
-Read `~/.ncode/goal_state.json` and print the current objective, status, turn count, and created-at timestamp.
+Read `${SIPS_HOME:-$HOME/.codex/sips}/goal_state.json` and print the current objective, status, turn count, and created-at timestamp.
 
 ### `/goal complete`
-Mark the goal as `status: "complete"` in `~/.ncode/goal_state.json`. Only do this when the objective is genuinely achieved — verified, not just attempted.
+Mark the goal as `status: "complete"` in `${SIPS_HOME:-$HOME/.codex/sips}/goal_state.json`. Only do this when the objective is genuinely achieved — verified, not just attempted.
 
 ### `/goal clear`
-Delete `~/.ncode/goal_state.json`. Stop the RALPH loop immediately.
+Delete `${SIPS_HOME:-$HOME/.codex/sips}/goal_state.json`. Stop the RALPH loop immediately.
 
 ### `/goal pause`
 Set `status: "paused"` in the state file. The loop continues on the next user message.
