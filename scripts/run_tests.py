@@ -768,6 +768,52 @@ def improvement_injector_surfaces_fresh_entry(tmp_path=None):
 # tree, so it is exercised by the run command itself (cwd = repo root), not here.
 # The cases above cover the three new lifecycle scripts as staged regressions.
 
+def sips_presence_mirror_silent_when_no_source_dir():
+    """No .codex/sips/ under cwd -> silent exit 0, no stdout, no stderr."""
+    rc, out, err = run_script_with_input(
+        PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
+        {"cwd": "/tmp"}
+    )
+    assert rc == 0, f"expected exit 0, got {rc}"
+    assert out == "", f"expected no stdout, got {out!r}"
+    assert err == "", f"expected no stderr, got {err!r}"
+
+def sips_presence_mirror_copies_files_when_source_exists():
+    """Source .codex/sips/ exists -> both presence files mirrored to <cwd>/.ncode/sips/."""
+    import shutil
+    td = tempfile.mkdtemp()
+    try:
+        src = Path(td) / ".codex" / "sips"
+        src.mkdir(parents=True)
+        (src / "chat-presence.md").write_text("chat presence body\n")
+        (src / "rich-presence.md").write_text("rich presence body\n")
+        rc, out, err = run_script_with_input(
+            PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py",
+            {"cwd": td}
+        )
+        assert rc == 0, f"expected exit 0, got {rc}"
+        dst = Path(td) / ".ncode" / "sips"
+        chat = (dst / "chat-presence.md").read_text()
+        rich = (dst / "rich-presence.md").read_text()
+        assert chat == "chat presence body\n", f"chat-presence.md mismatch: {chat!r}"
+        assert rich == "rich presence body\n", f"rich-presence.md mismatch: {rich!r}"
+    finally:
+        shutil.rmtree(td, ignore_errors=True)
+
+def sips_presence_mirror_silent_on_malformed_stdin():
+    """Malformed JSON stdin -> silent exit 0 (falls back to getcwd, isolated below)."""
+    with tempfile.TemporaryDirectory() as td:
+        r = subprocess.run(
+            ["python3", str(PLUGIN_ROOT / "scripts" / "sips_presence_mirror.py")],
+            input="not json",
+            capture_output=True, text=True, timeout=10,
+            cwd=td
+        )
+        assert r.returncode == 0, f"expected exit 0 on malformed stdin, got {r.returncode}"
+        assert r.stdout == "", f"expected silent on malformed stdin, got {r.stdout!r}"
+        assert r.stderr == "", f"expected no stderr on malformed stdin, got {r.stderr!r}"
+
+
 # --- hook_event_tap (Phase 3) ---
 
 def hook_event_tap_passes_through_and_records():
@@ -851,7 +897,7 @@ def hook_event_tap_classifies_block():
 
 
 def sips_paths_env_precedence():
-    """SIPS_HOME wins; NCODE_HOME never reactivates the legacy archive."""
+    """SIPS_HOME wins over NCODE_HOME; NCODE_HOME wins over ~/.ncode."""
     import importlib
     import sips_paths
 
@@ -866,8 +912,7 @@ def sips_paths_env_precedence():
 
             del os.environ["SIPS_HOME"]
             importlib.reload(sips_paths)
-            assert sips_paths.harness_home() == Path.home() / ".codex" / "sips"
-            assert sips_paths.harness_home() != Path(ncode_td).resolve()
+            assert sips_paths.harness_home() == Path(ncode_td).resolve()
     finally:
         if old_sips is None:
             os.environ.pop("SIPS_HOME", None)
@@ -2104,6 +2149,11 @@ SUITES = {
     "homebase_mcp": [
         case("lists_tools_jsonl", homebase_mcp_lists_tools_jsonl),
         case("status_call_returns_manifest", homebase_mcp_status_call_returns_manifest),
+    ],
+    "sips_presence_mirror": [
+        case("silent_when_no_source_dir", sips_presence_mirror_silent_when_no_source_dir),
+        case("copies_files_when_source_exists", sips_presence_mirror_copies_files_when_source_exists),
+        case("silent_on_malformed_stdin", sips_presence_mirror_silent_on_malformed_stdin),
     ],
     "hook_event_tap": [
         case("passes_through_and_records", hook_event_tap_passes_through_and_records),

@@ -4,7 +4,7 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 ## Summary
 
-- **checks passed**: 144/144 (100%)
+- **checks passed**: 143/143 (100%)
 - **errors**: 0
 - **warnings**: 0
 - **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
@@ -80,112 +80,111 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 36 | commands/ exists | PASS |
 | 37 | skills/ exists | PASS |
 | 38 | no lib/ directory (model_router dropped) | PASS |
-| 39 | retired NCode presence path is an inert compatibility tombstone | PASS |
+| 39 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
 | 40 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
 | 41 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
-| 42 | hook command uses PLUGIN_ROOT-first root (PreToolUse) | PASS |
+| 42 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
 | 43 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
 | 44 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
 | 45 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
-| 46 | hook command uses PLUGIN_ROOT-first root (PostToolUse) | PASS |
+| 46 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
 | 47 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
 | 48 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
 | 49 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
 | 50 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
-| 51 | hook command uses PLUGIN_ROOT-first root (SessionStart) | PASS |
+| 51 | hook command uses PLUGIN_ROOT-first root (UserPromptSubmit) | PASS |
 | 52 | hook command uses PLUGIN_ROOT-first root (UserPromptSubmit) | PASS |
-| 53 | hook command uses PLUGIN_ROOT-first root (UserPromptSubmit) | PASS |
+| 53 | hook command uses PLUGIN_ROOT-first root (PreCompact) | PASS |
 | 54 | hook command uses PLUGIN_ROOT-first root (PreCompact) | PASS |
-| 55 | hook command uses PLUGIN_ROOT-first root (PreCompact) | PASS |
+| 55 | hook command uses PLUGIN_ROOT-first root (PostCompact) | PASS |
 | 56 | hook command uses PLUGIN_ROOT-first root (PostCompact) | PASS |
-| 57 | hook command uses PLUGIN_ROOT-first root (PostCompact) | PASS |
+| 57 | hook command uses PLUGIN_ROOT-first root (Stop) | PASS |
 | 58 | hook command uses PLUGIN_ROOT-first root (Stop) | PASS |
-| 59 | hook command uses PLUGIN_ROOT-first root (Stop) | PASS |
+| 59 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
 | 60 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
 | 61 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
-| 62 | hook script exists+exec: hook_event_tap.py (PreToolUse) | PASS |
+| 62 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
 | 63 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
 | 64 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
 | 65 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
-| 66 | hook script exists+exec: hook_event_tap.py (PostToolUse) | PASS |
+| 66 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
 | 67 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
 | 68 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
 | 69 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
 | 70 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
-| 71 | hook script exists+exec: hook_event_tap.py (SessionStart) | PASS |
+| 71 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
 | 72 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
-| 73 | hook script exists+exec: hook_event_tap.py (UserPromptSubmit) | PASS |
+| 73 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
 | 74 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
-| 75 | hook script exists+exec: hook_event_tap.py (PreCompact) | PASS |
+| 75 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
 | 76 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
-| 77 | hook script exists+exec: hook_event_tap.py (PostCompact) | PASS |
+| 77 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
 | 78 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 79 | hook script exists+exec: hook_event_tap.py (Stop) | PASS |
-| 80 | agent escalate has frontmatter + model: | PASS |
-| 81 | agent escalate model: inherit | PASS |
-| 82 | agent fan-out has frontmatter + model: | PASS |
-| 83 | agent fan-out model: inherit | PASS |
-| 84 | agent memory-curator has frontmatter + model: | PASS |
-| 85 | agent memory-curator model: inherit | PASS |
-| 86 | agent repo-scout has frontmatter + model: | PASS |
-| 87 | agent repo-scout model: inherit | PASS |
-| 88 | agent test-author has frontmatter + model: | PASS |
-| 89 | agent test-author model: inherit | PASS |
-| 90 | all 5 agents present | PASS |
-| 91 | command brainstorm has description | PASS |
-| 92 | command checkpoint has description | PASS |
-| 93 | command escalate has description | PASS |
-| 94 | command fan-out has description | PASS |
-| 95 | command goal has description | PASS |
-| 96 | command improve has description | PASS |
-| 97 | command patterns has description | PASS |
-| 98 | command recall has description | PASS |
-| 99 | command selfloop has description | PASS |
-| 100 | command teach has description | PASS |
-| 101 | command verify has description | PASS |
-| 102 | all 11 commands present | PASS |
-| 103 | selfloop command wires state, proof, and learning cycle | PASS |
-| 104 | skill sips-context-distiller has SKILL.md frontmatter | PASS |
-| 105 | skill sips-context-distiller has Codex display metadata | PASS |
-| 106 | skill sips-context-distiller icons exist | PASS |
-| 107 | skill sips-control-plane has SKILL.md frontmatter | PASS |
-| 108 | skill sips-control-plane has Codex display metadata | PASS |
-| 109 | skill sips-control-plane icons exist | PASS |
-| 110 | skill sips-delegation-router has SKILL.md frontmatter | PASS |
-| 111 | skill sips-delegation-router has Codex display metadata | PASS |
-| 112 | skill sips-delegation-router icons exist | PASS |
-| 113 | skill sips-execution-repro has SKILL.md frontmatter | PASS |
-| 114 | skill sips-execution-repro has Codex display metadata | PASS |
-| 115 | skill sips-execution-repro icons exist | PASS |
-| 116 | skill sips-memory-fabric has SKILL.md frontmatter | PASS |
-| 117 | skill sips-memory-fabric has Codex display metadata | PASS |
-| 118 | skill sips-memory-fabric icons exist | PASS |
-| 119 | skill sips-perception-plan has SKILL.md frontmatter | PASS |
-| 120 | skill sips-perception-plan has Codex display metadata | PASS |
-| 121 | skill sips-perception-plan icons exist | PASS |
-| 122 | skill sips-proof-scanner has SKILL.md frontmatter | PASS |
-| 123 | skill sips-proof-scanner has Codex display metadata | PASS |
-| 124 | skill sips-proof-scanner icons exist | PASS |
-| 125 | skill sips-repo-map has SKILL.md frontmatter | PASS |
-| 126 | skill sips-repo-map has Codex display metadata | PASS |
-| 127 | skill sips-repo-map icons exist | PASS |
-| 128 | skill sips-selfloop has SKILL.md frontmatter | PASS |
-| 129 | skill sips-selfloop has Codex display metadata | PASS |
-| 130 | skill sips-selfloop icons exist | PASS |
-| 131 | skill sips-tool-factory has SKILL.md frontmatter | PASS |
-| 132 | skill sips-tool-factory has Codex display metadata | PASS |
-| 133 | skill sips-tool-factory icons exist | PASS |
-| 134 | all 10 SIPS skills present | PASS |
-| 135 | new script escalation_advisor.py exec | PASS |
-| 136 | new script improvement_injector.py exec | PASS |
-| 137 | new script recall_ranker.py exec | PASS |
-| 138 | no runtime script imports model_router (v2 pivot) | PASS |
-| 139 | observe (Stop: task_outcome_tracker) | PASS |
-| 140 | distill (self_correct.py exists) | PASS |
-| 141 | inject (SessionStart: improvement_injector) | PASS |
-| 142 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 143 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 144 | delegate target (escalate agent exists, model: inherit) | PASS |
+| 79 | agent escalate has frontmatter + model: | PASS |
+| 80 | agent escalate model: inherit | PASS |
+| 81 | agent fan-out has frontmatter + model: | PASS |
+| 82 | agent fan-out model: inherit | PASS |
+| 83 | agent memory-curator has frontmatter + model: | PASS |
+| 84 | agent memory-curator model: inherit | PASS |
+| 85 | agent repo-scout has frontmatter + model: | PASS |
+| 86 | agent repo-scout model: inherit | PASS |
+| 87 | agent test-author has frontmatter + model: | PASS |
+| 88 | agent test-author model: inherit | PASS |
+| 89 | all 5 agents present | PASS |
+| 90 | command brainstorm has description | PASS |
+| 91 | command checkpoint has description | PASS |
+| 92 | command escalate has description | PASS |
+| 93 | command fan-out has description | PASS |
+| 94 | command goal has description | PASS |
+| 95 | command improve has description | PASS |
+| 96 | command patterns has description | PASS |
+| 97 | command recall has description | PASS |
+| 98 | command selfloop has description | PASS |
+| 99 | command teach has description | PASS |
+| 100 | command verify has description | PASS |
+| 101 | all 11 commands present | PASS |
+| 102 | selfloop command wires state, proof, and learning cycle | PASS |
+| 103 | skill sips-context-distiller has SKILL.md frontmatter | PASS |
+| 104 | skill sips-context-distiller has Codex display metadata | PASS |
+| 105 | skill sips-context-distiller icons exist | PASS |
+| 106 | skill sips-control-plane has SKILL.md frontmatter | PASS |
+| 107 | skill sips-control-plane has Codex display metadata | PASS |
+| 108 | skill sips-control-plane icons exist | PASS |
+| 109 | skill sips-delegation-router has SKILL.md frontmatter | PASS |
+| 110 | skill sips-delegation-router has Codex display metadata | PASS |
+| 111 | skill sips-delegation-router icons exist | PASS |
+| 112 | skill sips-execution-repro has SKILL.md frontmatter | PASS |
+| 113 | skill sips-execution-repro has Codex display metadata | PASS |
+| 114 | skill sips-execution-repro icons exist | PASS |
+| 115 | skill sips-memory-fabric has SKILL.md frontmatter | PASS |
+| 116 | skill sips-memory-fabric has Codex display metadata | PASS |
+| 117 | skill sips-memory-fabric icons exist | PASS |
+| 118 | skill sips-perception-plan has SKILL.md frontmatter | PASS |
+| 119 | skill sips-perception-plan has Codex display metadata | PASS |
+| 120 | skill sips-perception-plan icons exist | PASS |
+| 121 | skill sips-proof-scanner has SKILL.md frontmatter | PASS |
+| 122 | skill sips-proof-scanner has Codex display metadata | PASS |
+| 123 | skill sips-proof-scanner icons exist | PASS |
+| 124 | skill sips-repo-map has SKILL.md frontmatter | PASS |
+| 125 | skill sips-repo-map has Codex display metadata | PASS |
+| 126 | skill sips-repo-map icons exist | PASS |
+| 127 | skill sips-selfloop has SKILL.md frontmatter | PASS |
+| 128 | skill sips-selfloop has Codex display metadata | PASS |
+| 129 | skill sips-selfloop icons exist | PASS |
+| 130 | skill sips-tool-factory has SKILL.md frontmatter | PASS |
+| 131 | skill sips-tool-factory has Codex display metadata | PASS |
+| 132 | skill sips-tool-factory icons exist | PASS |
+| 133 | all 10 SIPS skills present | PASS |
+| 134 | new script escalation_advisor.py exec | PASS |
+| 135 | new script improvement_injector.py exec | PASS |
+| 136 | new script recall_ranker.py exec | PASS |
+| 137 | no runtime script imports model_router (v2 pivot) | PASS |
+| 138 | observe (Stop: task_outcome_tracker) | PASS |
+| 139 | distill (self_correct.py exists) | PASS |
+| 140 | inject (SessionStart: improvement_injector) | PASS |
+| 141 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 142 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 143 | delegate target (escalate agent exists, model: inherit) | PASS |
 
 ## What v2 adds over v1
 

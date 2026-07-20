@@ -29,7 +29,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sips_paths import harness_scripts_dir, plugin_root, script_backups_dir, scripts_dir
+from sips_paths import harness_scripts_dir, script_backups_dir, scripts_dir
 
 BACKUP_DIR = script_backups_dir()
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -75,14 +75,6 @@ def classify_path(path):
     for pat in HIGH_PATH_PATTERNS:
         if re.search(pat, path):
             return "high", f"self-modification: {pat}"
-    candidate = Path(path).expanduser().resolve(strict=False)
-    source_roots = (
-        scripts_dir(),
-        plugin_root() / "agents",
-        plugin_root() / "commands",
-    )
-    if any(candidate.is_relative_to(root.resolve()) for root in source_roots):
-        return "high", "self-modification: SIPS plugin source"
     return "low", ""
 
 

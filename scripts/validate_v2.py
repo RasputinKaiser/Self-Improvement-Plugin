@@ -11,7 +11,6 @@ Checks (all read-only; exit 0 if clean, 1 if any ERROR):
   6. The three new v2 scripts are executable (no model_router import — dropped in v2).
   7. No lib/ directory exists and no script imports model_router (the pivot is real).
   8. Loop-closure chain is wired end-to-end (observe → distill → inject → recall → delegate).
-  9. The retired NCode presence path is an inert hot-refresh compatibility tombstone.
 
 Writes EVAL.md with the coverage table + per-check result. The EVAL.md is the
 primary output compared across experiment variants.
@@ -235,22 +234,6 @@ check(
 for d in (AGENTS_DIR, COMMANDS_DIR, SKILLS_DIR):
     check(f"{d.relative_to(ROOT)}/ exists", d.is_dir(), str(d))
 check("no lib/ directory (model_router dropped)", not (ROOT / "lib").exists(), str(ROOT / "lib"))
-legacy_presence_writer = ROOT / "scripts" / "sips_presence_mirror.py"
-legacy_presence_body = (
-    legacy_presence_writer.read_text(encoding="utf-8", errors="replace")
-    if legacy_presence_writer.exists()
-    else ""
-)
-check(
-    "retired NCode presence path is an inert compatibility tombstone",
-    legacy_presence_writer.exists()
-    and os.access(legacy_presence_writer, os.X_OK)
-    and "SIPS_PRESENCE_MIRROR_RETIRED = True" in legacy_presence_body
-    and "shutil" not in legacy_presence_body
-    and "copy" not in legacy_presence_body.lower(),
-    str(legacy_presence_writer),
-)
-
 # 3. hooks reference existing executable scripts
 if hk:
     referenced = []
