@@ -107,6 +107,7 @@ The intent is to make each session leave behind useful state instead of vanishin
 | `/goal` | Sets, inspects, pauses, resumes, completes, or clears the persistent goal loop. | You want the harness to keep a persistent goal across steps. |
 | `/brainstorm` | Surveys capability gaps and asks the escalation agent for a build plan. | You want ideas for what the harness should improve next. |
 | `/fan-out` | Decomposes a parent task into parallel slice agents and merges their outputs. | A task can be split into independent research, coding, or inspection slices. |
+| `/selfloop` | Starts or controls a persistent self-improvement loop that iterates on SIPS through measured, verified steps. | You want the harness to keep improving itself across steps toward a focus. |
 
 ## Delegation agents
 
