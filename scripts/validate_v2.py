@@ -20,7 +20,6 @@ import os
 import re
 import sys
 import argparse
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +52,7 @@ EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
 EXPECTED_SKILL_SET = set(EXPECTED_SKILLS)
 EXPECTED_VERSION = "0.4.0"
 HOOK_ROOT_RE = re.compile(
-    r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}/scripts/([\w_]+\.py)"
+    r"\$\{(?:PLUGIN_ROOT:-\$\{CLAUDE_PLUGIN_ROOT\}|CLAUDE_PLUGIN_ROOT)\}\"?/scripts/([\w_]+\.py)"
 )
 
 errors = []
@@ -129,14 +128,27 @@ if mcp:
           str(mcp_script))
 
 # 1b. additive 0.4 graph-runtime surfaces
-try:
-    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-except (OSError, tomllib.TOMLDecodeError):
-    pyproject = {}
+def _pyproject_project_version() -> str | None:
+    # stdlib-only read (no tomllib) to preserve the Python 3.10 floor
+    try:
+        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    in_project = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            in_project = line == "[project]"
+        elif in_project and line.startswith("version") and "=" in line:
+            return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return None
+
+
+_project_version = _pyproject_project_version()
 check(
     f"pyproject.toml project version {EXPECTED_VERSION}",
-    (pyproject.get("project") or {}).get("version") == EXPECTED_VERSION,
-    str((pyproject.get("project") or {}).get("version")),
+    _project_version == EXPECTED_VERSION,
+    str(_project_version),
 )
 runtime_modules = {
     "contracts.py", "dag.py", "scheduler.py", "leases.py", "budget.py",
