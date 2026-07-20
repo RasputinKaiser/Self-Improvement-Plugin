@@ -14,7 +14,7 @@ It does not try to make an agent smarter by swapping models. It improves the *wo
 
 > Experimental, but CI-backed. The core is a deterministic graph runtime, SIPS-owned Memory Fabric recall, lifecycle hooks, slash-command and MCP surfaces, and focused regression suites — **97 harness cases + 360 pytest tests, green on macOS and Linux.**
 
-*Companion app: a very experimental, free, native macOS control surface — [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness).*
+*Companion app: a very very very experimental, free, native macOS control surface — [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness).*
 
 Each session can answer:
 
