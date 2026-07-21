@@ -23,9 +23,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sips_paths import harness_home, harness_scripts_dir, logs_dir, plugin_root
+from sips_paths import harness_home, logs_dir, plugin_root, scripts_dir
 
-SCRIPTS_DIR = harness_scripts_dir()
+SCRIPTS_DIR = scripts_dir()
 CORE_CRITICAL_STEPS = ("snapshot_pre", "tests", "self_correct", "snapshot_post")
 CRITICAL_STEPS = CORE_CRITICAL_STEPS + ("sweep_receipt",)
 
