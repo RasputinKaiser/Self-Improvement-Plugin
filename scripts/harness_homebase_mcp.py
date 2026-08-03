@@ -547,6 +547,14 @@ def route_payload(root: Path, task: str, harness: str, mode: str) -> dict[str, A
         selected.append("selfloop")
         commands.extend(["homebase_selfloop", "/selfloop"])
         scripts.append("scripts/goal_state.py")
+    if any(phrase in lowered for phrase in ["retro", "retrospective", "postmortem", "learn from this session", "fix-up", "fixup"]):
+        selected.append("retro")
+        commands.extend(["homebase_recall", "homebase_record", "/retro"])
+        scripts.extend([
+            "scripts/task_outcome_tracker.py",
+            "scripts/recall_ranker.py",
+            "scripts/memory_fabric.py",
+        ])
     if any(word in lowered for word in ["context", "large file", "token", "budget"]):
         selected.append("context-scan")
         commands.append("homebase_context_scan")
@@ -822,6 +830,7 @@ def routes_payload(root: Path) -> dict[str, Any]:
         {"route": "context-scan", "mcp_tool": "homebase_context_scan", "fallback": "bounded rg/sed reads"},
         {"route": "recall", "mcp_tool": "homebase_recall", "fallback": "python3 scripts/recall_ranker.py --query ..."},
         {"route": "record", "mcp_tool": "homebase_record", "fallback": "python3 scripts/memory_fabric.py record ..."},
+        {"route": "retro", "mcp_tool": "/retro", "fallback": "task_outcome_tracker.py + recall_ranker.py + Memory Fabric record"},
         {"route": "goal", "mcp_tool": "homebase_goal", "fallback": "python3 scripts/goal_state.py status"},
         {"route": "selfloop", "mcp_tool": "homebase_selfloop", "fallback": "/selfloop or python3 scripts/goal_state.py selfloop-set"},
         {"route": "host-audit", "mcp_tool": "homebase_host_audit", "fallback": "inspect ~/.codex/config.toml and codex app-server hooks/list"},

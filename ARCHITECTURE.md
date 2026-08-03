@@ -81,7 +81,7 @@ Self-Improvement-Plugin/            (marketplace plugin root)
 ├── .codex-plugin/plugin.json        # plugin manifest → skills + MCP + metadata
 ├── hooks/hooks.json                 # lifecycle wiring
 ├── .mcp.json                        # Homebase MCP server declaration (sips-homebase)
-├── commands/                        # 11 slash commands
+├── commands/                        # 12 slash commands
 ├── agents/                          # 5 delegation subagents (all model: inherit)
 ├── skills/                          # 10 sips-* skill rows over the Homebase surfaces
 ├── scripts/                         # hook, utility, memory, and eval scripts
@@ -129,10 +129,10 @@ compaction, and record outcomes at stop — all advisory, all silent on failure.
 
 ### Commands (user- and agent-driven)
 
-Eleven slash commands map onto the lifecycle the harness manages: `/improve`,
+Twelve slash commands map onto the lifecycle the harness manages: `/improve`,
 `/recall`, `/escalate`, `/checkpoint`, `/verify`, `/patterns`, `/teach`, `/goal`,
-`/brainstorm`, `/fan-out`, and `/selfloop`. See the README for the full command
-table and when to use each.
+`/brainstorm`, `/fan-out`, `/selfloop`, and `/retro`. See the README for the full
+command table and when to use each.
 
 ### Agents (delegated, parallel)
 
@@ -242,7 +242,7 @@ The same repo installs into either host from its own marketplace manifest.
   commands are treated as high-risk self-modification paths.
 - **Snapshot before self-edit.** `snapshot_harness.py` captures a rollback point;
   `restore_harness.py` recovers a known-good snapshot.
-- **Regression-gated.** `run_tests.py` (97 cases) and the pytest suite (360 tests)
+- **Regression-gated.** `run_tests.py` (94 core cases; 100 with legacy compatibility) and the pytest suite (425 tests)
   gate changes; CI runs both on macOS and Linux (Python 3.10 / 3.12).
 - **Local-first.** The plugin runs local scripts and reads local harness state.
   Review scripts before using them elsewhere; see `SECURITY.md`.

@@ -12,7 +12,7 @@
 
 It does not try to make an agent smarter by swapping models. It improves the *work loop* around whatever model you already run.
 
-> Experimental, but CI-backed. The core is a deterministic graph runtime, SIPS-owned Memory Fabric recall, lifecycle hooks, slash-command and MCP surfaces, and focused regression suites — **97 harness cases + 360 pytest tests, green on macOS and Linux.**
+> Experimental, but CI-backed. The core is a deterministic graph runtime, SIPS-owned Memory Fabric recall, lifecycle hooks, slash-command and MCP surfaces, and focused regression suites — **94 core harness cases (100 with legacy compatibility) + 425 pytest tests, green on macOS and Linux.**
 
 *Companion app: a very very very experimental, free, native macOS control surface — [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness).*
 
@@ -69,7 +69,7 @@ Runtime scripts resolve `$SIPS_HOME` first for harness state, falling back to le
 | Surface | Purpose |
 |---|---|
 | Lifecycle hooks | Run checks and memory actions during startup, prompt submit, tool use, compaction, and session close. |
-| Slash commands | Direct user control over recall, improvement, verification, goals, escalation, and fan-out. |
+| Slash commands | Direct user control over recall, improvement, verification, retrospectives, goals, escalation, and fan-out. |
 | Delegation agents | Send bounded subtasks into fresh context while keeping the parent session clean. |
 | SIPS Homebase MCP | Portable `homebase_*` tools shared across Claude Code and Codex. |
 | Codex skills | Expose the Homebase surfaces as organized, first-class plugin rows. |
@@ -108,6 +108,7 @@ The intent is to make each session leave behind useful state instead of vanishin
 | `/brainstorm` | Surveys capability gaps and asks the escalation agent for a build plan. | You want ideas for what the harness should improve next. |
 | `/fan-out` | Decomposes a parent task into parallel slice agents and merges their outputs. | A task can be split into independent research, coding, or inspection slices. |
 | `/selfloop` | Starts or controls a persistent self-improvement loop that iterates on SIPS through measured, verified steps. | You want the harness to keep improving itself across steps toward a focus. |
+| `/retro` | Runs an evidence-gated retrospective and records only durable, provenance-backed lessons. | You want to turn this session's hurdles into reusable SIPS memory and one concrete fix-up. |
 
 ## Delegation agents
 
@@ -152,11 +153,13 @@ Hook commands are portable: they run `python3` against `${PLUGIN_ROOT}` and fall
 |---|---|
 | `homebase_status` | Inspect manifest, commands, agents, hooks, MCP tools, and git state. |
 | `homebase_verify` | Run manifest validation and optional regression suites. |
-| `homebase_route` | Choose the right command, agent, script, or MCP path for a task. |
+| `homebase_route` | Choose the right command, agent, script, or MCP path for a task, including `/retro`. |
 | `homebase_repo_map` | Map repo files, git state, write scope, and likely test commands. |
 | `homebase_context_scan` | Find oversized context-drain files with bounded-read advice. |
 | `homebase_recall` | Search the SIPS Memory Fabric subsystem for scoped prior lessons. |
+| `homebase_record` | Record a SIPS-owned Memory Fabric lesson with provenance. |
 | `homebase_goal` | Inspect persistent harness goal state without mutating it. |
+| `homebase_selfloop` | Start or control the persistent SIPS self-improvement loop. |
 | `homebase_routes` | List SIPS routes and fallback commands. |
 | `homebase_mcp_freshness` | Check source/cache/config MCP freshness. |
 | `homebase_host_audit` | Audit host wiring for SIPS drift. |
@@ -165,6 +168,9 @@ Hook commands are portable: they run `python3` against `${PLUGIN_ROOT}` and fall
 | `homebase_perception_plan` | Plan browser/app visual QA loops. |
 | `homebase_tool_factory` | Decide whether a local tool is warranted. |
 | `sips_runtime_read` | Read runtime status, plan, events, receipt, or bounded memory frontier. |
+| `homebase_goal_board` | Show the read-only phase-aware Goal Board projection. |
+| `homebase_campaign_fleet_read` | Read campaign and child-thread metadata. |
+| `homebase_campaign_fleet_write` | Create or advance campaign metadata with revision and idempotency guards. |
 | `sips_runtime_write` | Create, submit, lease, advance, cancel, or promote with idempotency and revision guards. |
 
 ## Codex skill surface
@@ -210,13 +216,13 @@ The source implementation and baselines are verified in an isolated worktree. Co
 
 | Surface | Status | Notes |
 |---|---|---|
-| Plugin manifests | Works | `validate_v2.py` checks the manifest, skills, hooks, commands, agents, and MCP declaration (138 coherence checks). |
+| Plugin manifests | Works | `validate_v2.py` checks the manifest, skills, hooks, commands, agents, and MCP declaration (146 coherence checks). |
 | SIPS Homebase MCP | Works | `homebase_status` and related read-only tools are exercised by regression tests. |
 | SIPS graph runtime 0.4.0 | Source-verified, opt-in blocked | DAG, bounded memory frontier, receipts, CLI, and MCP surfaces are implemented. Default remains `legacy`; cache install, fresh-host exposure, and cutover are not yet claimed. |
 | Memory Fabric | Works, SIPS-owned | Vendored under `scripts/memory_fabric*.py`; resolved before any legacy fallback. |
 | Hook event tap | Works | Silent by default; `SIPS_DEBUG=1` writes failure details to `logs/hook_errors.jsonl`. |
-| Regression runner | Works | `scripts/run_tests.py` — 97 cases. |
-| pytest suite | Works | 360 repo-local tests covering core surfaces, the 0.4.0 runtime, indexed frontier, interfaces, recovery, and compatibility projections. |
+| Regression runner | Works | `scripts/run_tests.py` — 94 cases. |
+| pytest suite | Works | 425 repo-local tests covering core surfaces, the 0.4.0 runtime, indexed frontier, interfaces, recovery, and compatibility projections. |
 | CI | Green | GitHub Actions compiles scripts, checks the Python floor, validates the manifest, and runs the suites on Ubuntu and macOS (3.10 / 3.12). |
 | Packaging | Partial | `pyproject.toml` declares metadata and the Python floor; no package entry points yet. |
 | Memory schema versioning | Partial | New records and the published schema carry `schema_version: 1.0`; migration tooling is planned. |
@@ -239,11 +245,11 @@ python3 scripts/validate_v2.py --write-eval
 Run the regression harness and the pytest suite:
 
 ```bash
-python3 scripts/run_tests.py            # 97 cases
+python3 scripts/run_tests.py            # 94 core cases
 python3 scripts/run_tests.py homebase_mcp
 
 python3 -m pip install ".[dev]"
-pytest                                  # 360 tests
+pytest                                  # 425 tests
 ```
 
 ## Utility reference
@@ -254,7 +260,7 @@ pytest                                  # 360 tests
 |---|---|
 | `validate_harness.py` | Validates installed harness health. |
 | `validate_v2.py` | Validates plugin manifest coherence and regenerates `EVAL.md`. |
-| `run_tests.py` | Runs the regression harness (97 cases). |
+| `run_tests.py` | Runs the regression harness (94 core cases; 100 with legacy compatibility). |
 | `script_smoke.py` | Syntax and smoke checks for changed harness scripts. |
 | `eval_harness.py` | Python eval runner. |
 | `eval_llm_judge.py` | LLM-as-judge grader for eval cases. |

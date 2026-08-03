@@ -37,7 +37,7 @@ EVAL = ROOT / "EVAL.md"
 EXPECTED_AGENTS = ("escalate", "repo-scout", "memory-curator", "test-author", "fan-out")
 EXPECTED_COMMANDS = (
     "improve", "recall", "escalate", "checkpoint", "verify", "patterns", "teach",
-    "goal", "brainstorm", "fan-out", "selfloop",
+    "goal", "brainstorm", "fan-out", "selfloop", "retro",
 )
 EXPECTED_SKILLS = (
     "sips-control-plane", "sips-proof-scanner", "sips-delegation-router",
@@ -282,6 +282,24 @@ selfloop_markers = ("selfloop-set", "selfloop-record", "/checkpoint", "self_corr
 check("selfloop command wires state, proof, and learning cycle",
       all(marker in selfloop_body for marker in selfloop_markers),
       f"missing={[marker for marker in selfloop_markers if marker not in selfloop_body]}")
+retro_body = (COMMANDS_DIR / "retro.md").read_text(encoding="utf-8", errors="replace") if (COMMANDS_DIR / "retro.md").exists() else ""
+retro_markers = (
+    "task_outcome_tracker.py",
+    "recall_ranker.py",
+    "homebase_record",
+    "--evidence-path",
+    "--status candidate",
+    "--verify-before-use",
+    "No reusable lessons; wrote nothing.",
+)
+check("retro command wires evidence, provenance, and candidate-first learning",
+      all(marker in retro_body for marker in retro_markers),
+      f"missing={[marker for marker in retro_markers if marker not in retro_body]}")
+homebase_body = (ROOT / "scripts" / "harness_homebase_mcp.py").read_text(encoding="utf-8", errors="replace") if (ROOT / "scripts" / "harness_homebase_mcp.py").exists() else ""
+retro_route_markers = ("\"retro\"", "\"/retro\"", "homebase_record", "task_outcome_tracker.py")
+check("homebase route exposes retro workflow",
+      all(marker in homebase_body for marker in retro_route_markers),
+      f"missing={[marker for marker in retro_route_markers if marker not in homebase_body]}")
 
 # 5b. Codex skill rows
 skill_names = set()
@@ -416,7 +434,7 @@ if errors:
     lines.append("")
 
 lines.append("## What v2 adds over v1\n")
-lines.append("- **live-service commands** (11): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out — v1 had zero.")
+lines.append("- **live-service commands** (12): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out, /retro — v1 had zero.")
 lines.append("- **Codex skill surface** (10): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, tool factory, and selfloop.")
 lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.")
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
