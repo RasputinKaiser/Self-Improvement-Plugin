@@ -6,13 +6,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PreToolUse --script autonomy_gate.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/autonomy_gate.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PreToolUse --script autonomy_gate.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/autonomy_gate.py",
             "timeout": 7,
             "statusMessage": "Autonomy gate"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PreToolUse --script memory_fabric_preflight.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/memory_fabric_preflight.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PreToolUse --script memory_fabric_preflight.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/memory_fabric_preflight.py",
             "timeout": 10,
             "statusMessage": "Memory Fabric preflight"
           }
@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PreToolUse --script autonomy_gate.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/autonomy_gate.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PreToolUse --script autonomy_gate.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/autonomy_gate.py",
             "timeout": 7,
             "statusMessage": "Autonomy gate"
           }
@@ -36,13 +36,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PostToolUse --script script_smoke.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/script_smoke.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script script_smoke.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/script_smoke.py",
             "timeout": 7,
             "statusMessage": "Script smoke"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PostToolUse --script escalation_advisor.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/escalation_advisor.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script escalation_advisor.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/escalation_advisor.py",
             "timeout": 8,
             "statusMessage": "Escalation advisor"
           }
@@ -53,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PostToolUse --script sips_presence_mirror.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/sips_presence_mirror.py || true",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script sips_presence_mirror.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/sips_presence_mirror.py || true",
             "timeout": 7,
             "statusMessage": "SIPS mirror"
           }
@@ -66,31 +66,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event SessionStart --script validate_harness.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/validate_harness.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event SessionStart --script validate_harness.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/validate_harness.py",
             "timeout": 12,
             "statusMessage": "Harness drift check"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event SessionStart --script memory_fabric_doctor.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/memory_fabric_doctor.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event SessionStart --script memory_fabric_doctor.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/memory_fabric_doctor.py",
             "timeout": 10,
             "statusMessage": "Memory Fabric doctor + recent"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event SessionStart --script proactive_drift.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/proactive_drift.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event SessionStart --script proactive_drift.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/proactive_drift.py",
             "timeout": 7,
             "statusMessage": "Proactive drift"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event SessionStart --script agent_patterns.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/agent_patterns.py --brief",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event SessionStart --script agent_patterns.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/agent_patterns.py --brief",
             "timeout": 10,
             "statusMessage": "Agent patterns brief"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event SessionStart --script improvement_injector.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/improvement_injector.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event SessionStart --script improvement_injector.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/improvement_injector.py",
             "timeout": 8,
             "statusMessage": "Improvement injector (loop closure)"
           }
@@ -103,13 +103,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event UserPromptSubmit --script recall_ranker.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/recall_ranker.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event UserPromptSubmit --script recall_ranker.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/recall_ranker.py",
             "timeout": 10,
             "statusMessage": "Tier-aware recall"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event UserPromptSubmit --script probe_hook.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/probe_hook.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event UserPromptSubmit --script probe_hook.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/probe_hook.py",
             "timeout": 5,
             "statusMessage": "Probe"
           }
@@ -122,13 +122,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PreCompact --script memory_fabric_compact_brief.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/memory_fabric_compact_brief.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PreCompact --script memory_fabric_compact_brief.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/memory_fabric_compact_brief.py",
             "timeout": 12,
             "statusMessage": "Memory Fabric compact brief"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PreCompact --script compact_continuity.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/compact_continuity.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PreCompact --script compact_continuity.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/compact_continuity.py",
             "timeout": 12,
             "statusMessage": "Continuity write"
           }
@@ -141,13 +141,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PostCompact --script memory_fabric_session_record.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/memory_fabric_session_record.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostCompact --script memory_fabric_session_record.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/memory_fabric_session_record.py",
             "timeout": 12,
             "statusMessage": "Memory Fabric session record"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event PostCompact --script compact_continuity.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/compact_continuity.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostCompact --script compact_continuity.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/compact_continuity.py",
             "timeout": 12,
             "statusMessage": "Continuity restore"
           }
@@ -160,13 +160,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event Stop --script session_close.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/session_close.py",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event Stop --script session_close.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/session_close.py",
             "timeout": 12,
             "statusMessage": "Session close"
           },
           {
             "type": "command",
-            "command": "python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/hook_event_tap.py --event Stop --script task_outcome_tracker.py -- python3 ${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/scripts/task_outcome_tracker.py --record",
+            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event Stop --script task_outcome_tracker.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/task_outcome_tracker.py --record",
             "timeout": 12,
             "statusMessage": "Task outcome tracker"
           }
