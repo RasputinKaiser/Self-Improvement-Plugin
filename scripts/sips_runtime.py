@@ -42,13 +42,21 @@ def _compact(result: Mapping[str, Any]) -> dict[str, Any]:
     compact = {key: result[key] for key in ("ok", "operation", "error", "revision") if key in result}
     data = result.get("data")
     if isinstance(data, Mapping):
-        for key in ("status", "task_id", "run_id", "accepted", "count", "revision"):
+        for key in (
+            "status", "task_id", "run_id", "accepted", "count", "revision",
+            "objective", "foreground_task_id", "focus_reason", "next_revision",
+        ):
             if key in data:
                 compact[key] = data[key]
         if "tasks" in data and isinstance(data["tasks"], list):
             compact["task_count"] = len(data["tasks"])
         if "events" in data and isinstance(data["events"], list):
             compact["event_count"] = len(data["events"])
+        if "tasks" in data and isinstance(data["tasks"], list) and data.get("schema") == "sips.runtime.campaign-board.v1":
+            compact["task_count"] = len(data["tasks"])
+            compact["counts"] = data.get("counts", {})
+        if "changes" in data and isinstance(data["changes"], list):
+            compact["change_count"] = len(data["changes"])
     elif data is not None:
         compact["data"] = data
     return compact

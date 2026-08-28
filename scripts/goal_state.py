@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Goal state manager for the /goal RALPH loop.
 
-Reads/writes ~/.ncode/goal_state.json. Provides:
+Reads/writes ${SIPS_HOME:-~/.codex/sips}/goal_state.json. Provides:
   set <objective>               — create or replace the active goal
   status                       — print current goal state
+  board                       — read the runtime-backed Goal Board projection
   complete                     — mark goal as complete
   clear                        — delete goal state (stop loop)
   pause                        — set status to paused
@@ -55,11 +56,13 @@ try:
     from sips_runtime.api import RuntimeAPI
     from sips_runtime.controller import RuntimeController
     from sips_runtime.dag import compile_dag
+    from sips_runtime.board import build_board
 except ImportError:  # pragma: no cover - direct package/script execution fallback
     from scripts.sips_runtime.adapters import MODES, import_legacy
     from scripts.sips_runtime.api import RuntimeAPI
     from scripts.sips_runtime.controller import RuntimeController
     from scripts.sips_runtime.dag import compile_dag
+    from scripts.sips_runtime.board import build_board
 
 
 RUNTIME_MODE_ENV = "SIPS_RUNTIME_MODE"
@@ -91,6 +94,7 @@ def _runtime_tasks(state: Mapping[str, Any]) -> list[dict[str, Any]]:
             {
                 "id": task_id,
                 "objective": str(state.get("objective", "")),
+                "title": str(item.get("description") or state.get("objective", "")),
                 "description": str(item.get("description", "")),
                 "depends_on": [],
                 "estimated_tokens": 1,
@@ -105,6 +109,7 @@ def _runtime_tasks(state: Mapping[str, Any]) -> list[dict[str, Any]]:
             {
                 "id": "goal",
                 "objective": str(state.get("objective", "")),
+                "title": str(state.get("objective", "")),
                 "description": str(state.get("objective", "")),
                 "depends_on": [],
                 "estimated_tokens": 1,
@@ -222,6 +227,7 @@ def load() -> dict | None:
 
 def save(state: dict, *, mode: str | None = None, create_runtime: bool = False) -> dict:
     """Persist state, enriching only explicitly selected compatibility modes."""
+    state["lastUpdatedAt"] = datetime.now(timezone.utc).isoformat()
     state_runtime = state.get("runtime")
     prior_mode = state_runtime.get("mode") if isinstance(state_runtime, Mapping) else None
     selected = resolve_mode(mode or prior_mode)
@@ -478,6 +484,77 @@ def cmd_status(mode: str | None = None) -> None:
     print(json.dumps(attach_runtime(state, mode=selected, create_runtime=False), indent=2))
 
 
+def cmd_board(since_revision: int | None = None) -> None:
+    """Print a read-only Goal Board, preferring runtime events when attached."""
+    state = load()
+    if state is None:
+        print(json.dumps({"ok": False, "error": "no goal set"}))
+        sys.exit(1)
+    runtime = state.get("runtime") if isinstance(state.get("runtime"), Mapping) else {}
+    run_id = str(runtime.get("run_id", ""))
+    if run_id:
+        result = RuntimeAPI(controller=RuntimeController()).read(
+            "board", {"run_id": run_id, "since_revision": since_revision}
+        )
+        if not result.get("ok"):
+            print(json.dumps(result, indent=2))
+            sys.exit(1)
+        print(json.dumps(result.get("data", result), indent=2))
+        return
+
+    # Legacy goals still get the same read shape, but the authority is named
+    # explicitly so a caller cannot mistake this for runtime event proof.
+    legacy_tasks = {
+        task["id"]: {
+            "spec": task,
+            "status": next(
+                (
+                    str(item.get("status", "pending"))
+                    for item in state.get("subtasks", [])
+                    if isinstance(item, Mapping) and str(item.get("id")) == task["id"]
+                ),
+                "pending",
+            ),
+            "result": None,
+            "attempts": 0,
+        }
+        for task in _runtime_tasks(state)
+    }
+    try:
+        persisted_at = datetime.fromtimestamp(
+            STATE_PATH.stat().st_mtime, tz=timezone.utc
+        ).isoformat()
+    except OSError:
+        persisted_at = None
+    provenance = {
+        "source": "sips_goal_state",
+        "source_path": str(STATE_PATH),
+        "goal_id": str(state.get("id") or "legacy-goal"),
+        "created_at": state.get("createdAt"),
+        "last_updated_at": state.get("lastUpdatedAt") or persisted_at,
+        "restart_safe": True,
+        "runtime_events_attached": False,
+        "task_exposure": "separate_host_proof",
+        "note": "The board survives restart through goal_state.json; this does not prove current-task MCP visibility.",
+    }
+    board = build_board(
+        {
+            "run_id": "legacy-goal",
+            "objective": state.get("objective", ""),
+            "status": state.get("status", "active"),
+            "revision": 0,
+            "head_hash": "",
+            "tasks": legacy_tasks,
+            "provenance": provenance,
+        },
+        run_id="legacy-goal",
+        since_revision=since_revision,
+    )
+    board["authority"] = "legacy-goal-state"
+    board["claim_boundary"] = "Legacy projection only; no runtime event stream or lease proof is attached."
+    print(json.dumps(board, indent=2))
+
+
 def cmd_complete(mode: str | None = None) -> None:
     state = load()
     if state is None:
@@ -563,7 +640,7 @@ def main(argv: list[str] | None = None):
         print(json.dumps({"ok": False, "error": str(exc)}))
         return 2
     if not args or args[0] in ("-h", "--help"):
-        print("usage: goal_state.py [--mode legacy|shadow|dual|runtime] {set|selfloop-set|selfloop-record|status|complete|clear|pause|resume|increment-turn|is-active|add-subtask|complete-subtask|fail-subtask|next|progress|reset-subtasks} [args]")
+        print("usage: goal_state.py [--mode legacy|shadow|dual|runtime] {set|selfloop-set|selfloop-record|status|board|complete|clear|pause|resume|increment-turn|is-active|add-subtask|complete-subtask|fail-subtask|next|progress|reset-subtasks} [args]")
         print("\nSubtask DAG: add-subtask, complete-subtask, fail-subtask, next, progress, reset-subtasks")
         return 0 if args and args[0] in ("-h", "--help") else 2
 
@@ -583,6 +660,15 @@ def main(argv: list[str] | None = None):
         cmd_selfloop_record(args[1], " ".join(args[2:]))
     elif cmd == "status":
         cmd_status(mode)
+    elif cmd == "board":
+        since = None
+        if len(args) > 1:
+            try:
+                since = int(args[1])
+            except ValueError:
+                print(json.dumps({"ok": False, "error": "board since_revision must be an integer"}))
+                return 2
+        cmd_board(since)
     elif cmd == "complete":
         cmd_complete(mode)
     elif cmd == "clear":

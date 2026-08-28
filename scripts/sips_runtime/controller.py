@@ -56,6 +56,11 @@ from .projection import make_graph_receipt
 from .context import account_context_packet, build_context_packet
 from .memory_frontier import query_frontier
 
+try:
+    from sips_paths import harness_home
+except ImportError:  # pragma: no cover - direct package/script execution fallback
+    from scripts.sips_paths import harness_home
+
 
 TERMINAL_TASK_STATES = {"succeeded", "blocked", "failed", "canceled"}
 TERMINAL_RUN_STATES = {"succeeded", "blocked", "failed", "canceled"}
@@ -72,7 +77,7 @@ class InvalidTransition(ControllerError):
 
 def runtime_root(root: str | os.PathLike[str] | None = None) -> Path:
     if root is None:
-        root = os.environ.get("SIPS_HOME") or (Path.home() / ".codex" / "sips")
+        root = harness_home()
     return Path(root).expanduser().resolve() / "runtime" / "v1" / "runs"
 
 

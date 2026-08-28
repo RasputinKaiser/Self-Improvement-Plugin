@@ -19,6 +19,19 @@ use the existing `status`, `pause`, `resume`, `complete`, and `clear` actions.
 Immediately begin the first cycle after `selfloop-set`; do not wait for another
 message.
 
+### Progress surface
+
+For an attached runtime campaign, read the Goal Board:
+
+```bash
+python3 scripts/sips_runtime.py read --op board --json '{"run_id":"<run_id>"}'
+```
+
+Poll with `since_revision` to receive bounded event deltas. The board exposes
+one foreground next action for a responsive operator surface while the runtime
+may still have multiple bounded workers. Its labels are presentation aliases;
+event digests, leases, and immutable receipts remain authoritative.
+
 ### Scope lock
 
 The loop's entire focus is improving SIPS or the agent operating it. Valid
@@ -58,4 +71,4 @@ goal, and report the exact blocker. The user's stop command is always
 authoritative.
 
 Progress reports must name the current cycle, target, baseline, verification,
-and outcome. A plan or summary is not a completed cycle.
+foreground task, and outcome. A plan or summary is not a completed cycle.

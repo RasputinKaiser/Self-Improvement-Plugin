@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fan_out.py — multi-agent fan-out coordinator (Tier 5 #4).
 
-Spawns N fan-out agents in parallel via the NCode Agent tool, each given a
+Prepares N fan-out slices for the configured agent host, each given a
 distinct slice of a decomposable parent task. Merges outputs, surfaces
 disagreements, and captures one lesson per slice to Memory Fabric.
 
@@ -11,13 +11,13 @@ CLI:
   fan_out.py --parent "..." --handoff-only   # write HANDOFF.md files, no spawn
   fan_out.py --list-handoffs                  # list existing handoff dirs
 
-Writes N HANDOFF.md files under ~/.ncode/fan_out/<run_id>/slice_<i>/HANDOFF.md
+Writes N HANDOFF.md files under ${SIPS_HOME:-~/.codex/sips}/fan_out/<run_id>/slice_<i>/HANDOFF.md
 capturing the parent objective + each slice's description + dependencies.
 The Agent tool spawns the fan-out agent definition per slice; outputs
 return as the agent's text response (parsed for SLICE/DIFF/LESSON/BLOCKED).
 
 Output:
-- ~/.ncode/fan_out/<run_id>/run.json — full state per slice (status, lesson, diff_path)
+- ${SIPS_HOME:-~/.codex/sips}/fan_out/<run_id>/run.json — full state per slice (status, lesson, diff_path)
 - One Memory Fabric learning-tier record per slice capturing its lesson.
 
 This script does NOT spawn agents directly — it prepares the handoff
@@ -210,9 +210,16 @@ def attach_runtime(state: Mapping[str, Any], *, mode: str | None = None, create_
     return projected
 
 
-def cmd_prepare(parent, slices, dependencies=None, mode=None):
+def cmd_prepare(parent, slices, dependencies=None, mode=None, campaign_id=None):
     """Create the run dir + write one HANDOFF.md per slice. Print dispatch plan."""
     selected_mode = resolve_mode(mode)
+    campaign_id = str(campaign_id or "").strip()
+    if campaign_id:
+        try:
+            from sips_runtime.contracts import validate_safe_identifier
+        except ImportError:  # pragma: no cover
+            from scripts.sips_runtime.contracts import validate_safe_identifier
+        campaign_id = validate_safe_identifier(campaign_id, label="campaign_id")
     run_id = uuid.uuid4().hex[:10]
     run_dir = FAN_OUT_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -223,6 +230,8 @@ def cmd_prepare(parent, slices, dependencies=None, mode=None):
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "slices": [],
     }
+    if campaign_id:
+        state["campaignId"] = campaign_id
     for i, slice_text in enumerate(slices, start=1):
         slice_dir = run_dir / f"slice_{i}"
         slice_dir.mkdir(exist_ok=True)
@@ -244,6 +253,7 @@ def cmd_prepare(parent, slices, dependencies=None, mode=None):
             "slice": None,
             "diff": None,
             "lesson": None,
+            "receipt": None,
             "blockedReason": None,
         })
 
@@ -254,6 +264,7 @@ def cmd_prepare(parent, slices, dependencies=None, mode=None):
         "ok": True,
         "mode": selected_mode,
         "runId": run_id,
+        "campaignId": campaign_id or None,
         "statePath": str(state_path),
         "sliceCount": len(slices),
         "runtime": state.get("runtime"),
@@ -319,10 +330,29 @@ def cmd_ingest(run_id, slice_outputs=None, mode=None):
                 slice_state["finishedAt"] = datetime.now(timezone.utc).isoformat()
                 if parsed["blocked"] or parsed["malformed"]:
                     slice_state["blockedReason"] = parsed.get("blockedReason") or "malformed structured slice result"
+                    slice_state["receipt"] = {
+                        "schema": "sips.fanout.slice-receipt.v1",
+                        "schema_version": 1,
+                        "slice_id": slice_id,
+                        "status": "blocked",
+                        "blockers": [slice_state["blockedReason"]],
+                        "claim_boundary": "No completed slice claim is attached.",
+                    }
                 else:
                     slice_state["slice"] = parsed.get("slice", "")
                     slice_state["diff"] = parsed.get("diff", "")
                     slice_state["lesson"] = parsed.get("lesson", "")
+                    slice_state["receipt"] = {
+                        "schema": "sips.fanout.slice-receipt.v1",
+                        "schema_version": 1,
+                        "slice_id": slice_id,
+                        "status": "complete",
+                        "summary": slice_state["slice"],
+                        "diff_preview": slice_state["diff"][:4000],
+                        "lesson": slice_state["lesson"],
+                        "memory_status": "candidate",
+                        "claim_boundary": "The slice receipt records the response; focused verification remains separate.",
+                    }
                 if parsed.get("lesson"):
                     record_lesson(state, slice_state, parsed["lesson"])
                 updated += 1
@@ -477,6 +507,7 @@ def main():
     p_prep.add_argument("--slices", nargs="+", required=True, help="one slice description per arg")
     p_prep.add_argument("--deps", help="JSON dict {slice_num: [list of dependency slice descriptions]}")
     p_prep.add_argument("--mode", choices=MODES, default=None, help="legacy, shadow, dual, or runtime (default: legacy)")
+    p_prep.add_argument("--campaign-id", default="", help="optional campaign spine ID for the read-only run projection")
 
     p_ingest = sub.add_parser("ingest", help="replay completed agent outputs into run state")
     p_ingest.add_argument("--run-id", required=True)
@@ -492,7 +523,7 @@ def main():
     args = ap.parse_args()
     if args.command == "prepare":
         deps = json.loads(args.deps) if args.deps else None
-        return cmd_prepare(args.parent, args.slices, deps, args.mode)
+        return cmd_prepare(args.parent, args.slices, deps, args.mode, args.campaign_id)
     elif args.command == "ingest":
         outputs = json.loads(args.outputs) if args.outputs else []
         return cmd_ingest(args.run_id, outputs, args.mode)

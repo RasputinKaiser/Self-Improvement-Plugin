@@ -5,6 +5,53 @@ description: Set a goal and enter the RALPH loop — keep working autonomously u
 
 ## /goal — RALPH goal loop
 
+### Read-only Goal Board
+
+Use the board for a compact, responsive progress view:
+
+```bash
+python3 scripts/goal_state.py board
+python3 scripts/goal_state.py board <last_revision>
+```
+
+When a goal has a runtime attachment, this is projected from the event-backed
+runtime and includes one foreground task, explicit presentation states,
+bounded change deltas, suggestions, and task receipts. Without an attachment
+it returns the same shape with `authority: legacy-goal-state`; that is a
+compatibility projection, not runtime proof. The command is read-only and
+never creates or advances a run.
+
+### Campaign spine and child-thread fleet
+
+For a goal that fans out into several child tasks or host conversations, create
+one durable campaign spine and attach only the handles that the host actually
+returns:
+
+```bash
+python3 scripts/sips_campaign_fleet.py create "Improve SIPS" \
+  --campaign-id sips-overhaul \
+  --contract-json '{"acceptance":["tests pass","proof boundaries recorded"]}'
+python3 scripts/sips_campaign_fleet.py attach sips-overhaul \
+  --child-id scout --title "Inspect archived task behavior" \
+  --role Scout --thread-id '<host-thread-id>'
+python3 scripts/sips_campaign_fleet.py status sips-overhaul --markdown
+```
+
+The fleet projection chooses one foreground child, retains bounded recent
+activity, and supports `active`, `waiting`, `blocked`, `completed`, `failed`,
+`canceled`, `archived`, and `reopen` lifecycle transitions. Reopen creates a
+new child incarnation; pass a new `--thread-id` or `--task-id` when a fresh host
+or runtime binding already exists. Search keeps archived handles retrievable
+without treating them as active sidebar work. The registry does not enumerate,
+archive, or mutate host conversations; those remain a separate host proof
+layer.
+
+The same surfaces are available as the read-only
+`homebase_campaign_fleet_read` and write
+`homebase_campaign_fleet_write` MCP tools. A runtime run can join its campaign
+automatically by carrying `metadata.campaign_id`; the Goal Board then includes
+the campaign projection without changing runtime event authority.
+
 Parse the user's arguments:
 
 ### `/goal "<objective>"`

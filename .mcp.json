@@ -4,8 +4,9 @@
       "type": "stdio",
       "command": "python3",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/scripts/harness_homebase_mcp.py"
+        "./scripts/harness_homebase_mcp.py"
       ],
+      "cwd": ".",
       "env": {
         "PYTHONUNBUFFERED": "1"
       }

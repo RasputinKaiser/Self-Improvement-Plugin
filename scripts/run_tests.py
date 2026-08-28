@@ -897,7 +897,7 @@ def hook_event_tap_classifies_block():
 
 
 def sips_paths_env_precedence():
-    """SIPS_HOME wins over NCODE_HOME; NCODE_HOME wins over ~/.ncode."""
+    """SIPS_HOME wins; the retired NCODE_HOME variable is ignored."""
     import importlib
     import sips_paths
 
@@ -912,7 +912,7 @@ def sips_paths_env_precedence():
 
             del os.environ["SIPS_HOME"]
             importlib.reload(sips_paths)
-            assert sips_paths.harness_home() == Path(ncode_td).resolve()
+            assert sips_paths.harness_home() == (Path.home() / ".codex" / "sips").resolve()
     finally:
         if old_sips is None:
             os.environ.pop("SIPS_HOME", None)

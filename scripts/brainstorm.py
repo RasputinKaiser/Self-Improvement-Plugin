@@ -192,6 +192,48 @@ def find_gaps(capability_map, installed, app):
     return gaps[:5]  # top 5
 
 
+def make_idea_cards(gaps):
+    """Turn ranked gaps into bounded, actionable idea + plan cards.
+
+    These cards are suggestions only.  They give Goal Board consumers enough
+    structure to show a next step and its proof boundary without silently
+    creating work or editing the repository.
+    """
+    cards = []
+    for index, gap in enumerate(gaps, 1):
+        idea_id = f"idea-{index:03d}"
+        title = str(gap["name"])
+        cards.append({
+            "id": idea_id,
+            "kind": "idea",
+            "status": "suggested",
+            "title": title,
+            "description": f"Close the {title.lower()} capability gap.",
+            "signal": {
+                "source": "capability_map",
+                "tier": gap["tier"],
+                "area": gap["area"],
+                "leverage": gap["leverage"],
+                "effort": gap["effort"],
+            },
+            "recommended_next": "scout_then_plan",
+            "plan": {
+                "objective": f"Improve {title} with a measured, reversible SIPS change.",
+                "steps": [
+                    "Scout the current source and runtime evidence.",
+                    "Judge scope, risk, and acceptance checks.",
+                    "Worker implements one bounded change, then verifies it.",
+                ],
+                "proof": [
+                    "source receipt identifies changed files",
+                    "focused validation records pass/fail output",
+                    "runtime or browser claims remain explicitly separated",
+                ],
+            },
+        })
+    return cards
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true", help="machine-readable output")
@@ -201,12 +243,14 @@ def main():
     installed = survey_installed()
     app = survey_app()
     gaps = find_gaps(capability_map, installed, app)
+    idea_cards = make_idea_cards(gaps)
 
     if args.json:
         print(json.dumps({
             "installed": installed,
             "app": app,
             "gaps": gaps,
+            "idea_cards": idea_cards,
             "total_capabilities": len(capability_map),
             "shipped_count": sum(1 for e in capability_map if e["shipped"]),
             "gap_count": len(gaps),
@@ -230,6 +274,7 @@ def main():
         print(f"   - Leverage: {gap['leverage']}/10")
         print(f"   - Effort: {gap['effort']}")
         print(f"   - Area: {gap['area']}")
+        print(f"   - Suggested plan: Scout → Judge → Worker → verify (idea-{i:03d})")
         print()
 
 

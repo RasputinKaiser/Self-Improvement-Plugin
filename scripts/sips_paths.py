@@ -4,8 +4,7 @@
 Resolution order is intentionally simple and portable:
 
 1. ``SIPS_HOME``
-2. ``NCODE_HOME``
-3. ``~/.ncode``
+2. ``~/.codex/sips``
 
 Plugin-root resolution follows the host-provided plugin root when present,
 then falls back to the source checkout that owns this file.
@@ -21,11 +20,10 @@ def _expand(path: str) -> Path:
 
 
 def harness_home() -> Path:
-    for key in ("SIPS_HOME", "NCODE_HOME"):
-        value = os.environ.get(key)
-        if value:
-            return _expand(value)
-    return Path.home() / ".ncode"
+    value = os.environ.get("SIPS_HOME")
+    if value:
+        return _expand(value)
+    return Path.home() / ".codex" / "sips"
 
 
 def plugin_root() -> Path:

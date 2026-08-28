@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 import harness_homebase_mcp as homebase_mcp
+from sips_runtime.campaign_fleet import CampaignFleet
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +42,22 @@ def run_mcp_jsonl_with_home(message: dict, home: Path) -> dict:
     return json.loads(proc.stdout)
 
 
+def run_mcp_jsonl_with_sips_home(message: dict, sips_home: Path) -> dict:
+    env = dict(os.environ)
+    env["SIPS_HOME"] = str(sips_home)
+    proc = subprocess.run(
+        ["python3", str(HOMEBASE_MCP)],
+        input=json.dumps(message) + "\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=str(ROOT),
+        env=env,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(proc.stdout)
+
+
 def test_tools_list_exposes_homebase_status_and_verify():
     response = run_mcp_jsonl({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
 
@@ -51,8 +68,78 @@ def test_tools_list_exposes_homebase_status_and_verify():
     assert "homebase_mcp_freshness" in names
     assert "homebase_record" in names
     assert "homebase_selfloop" in names
+    assert "homebase_goal_board" in names
     assert "sips_runtime_read" in names
     assert "sips_runtime_write" in names
+
+    runtime_read = next(tool for tool in response["result"]["tools"] if tool["name"] == "sips_runtime_read")
+    assert "board" in runtime_read["inputSchema"]["properties"]["operation"]["enum"]
+
+
+def test_goal_board_tool_renders_current_goal(tmp_path):
+    env = dict(os.environ)
+    env["SIPS_HOME"] = str(tmp_path)
+    goal = subprocess.run(
+        ["python3", str(ROOT / "scripts" / "goal_state.py"), "set", "Visible board smoke"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=str(ROOT),
+        env=env,
+    )
+    assert goal.returncode == 0, goal.stderr
+
+    response = run_mcp_jsonl_with_sips_home(
+        {
+            "jsonrpc": "2.0",
+            "id": 8,
+            "method": "tools/call",
+            "params": {"name": "homebase_goal_board", "arguments": {"root": str(ROOT)}},
+        },
+        tmp_path,
+    )
+
+    result = response["result"]
+    assert result["structuredContent"]["data"]["schema"] == "sips.runtime.campaign-board.v1"
+    assert result["structuredContent"]["data"]["objective"] == "Visible board smoke"
+    markdown = result["content"][0]["text"]
+    assert markdown.startswith("# SIPS Goal Board")
+    assert "## Provenance" in markdown
+    assert "Current-task MCP exposure" in markdown
+    assert "## Suggested next step" in markdown
+    assert "## Suggested plan" in markdown
+
+
+def test_goal_board_can_attach_campaign_spine(tmp_path):
+    fleet = CampaignFleet(tmp_path)
+    fleet.create("Organize this goal's child threads", campaign_id="campaign-board", idempotency_key="board-campaign")
+    env = dict(os.environ)
+    env["SIPS_HOME"] = str(tmp_path)
+    goal = subprocess.run(
+        ["python3", str(ROOT / "scripts" / "goal_state.py"), "set", "Campaign-linked goal"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=str(ROOT),
+        env=env,
+    )
+    assert goal.returncode == 0, goal.stderr
+    response = run_mcp_jsonl_with_sips_home(
+        {
+            "jsonrpc": "2.0",
+            "id": 9,
+            "method": "tools/call",
+            "params": {
+                "name": "homebase_goal_board",
+                "arguments": {"root": str(ROOT), "campaign_id": "campaign-board"},
+            },
+        },
+        tmp_path,
+    )
+
+    result = response["result"]
+    assert result["structuredContent"]["campaign"]["campaign_id"] == "campaign-board"
+    assert "## Campaign spine" in result["content"][0]["text"]
 
 
 def test_initialize_reports_manifest_version():
@@ -390,12 +477,14 @@ def test_homebase_status_marks_missing_source_and_worktree_unavailable(tmp_path)
     assert payload["proof_layers"]["worktree"] == "not_found"
 
 
-def test_mcp_manifest_launches_homebase_via_plugin_root():
+def test_mcp_manifest_launches_homebase_via_plugin_cwd():
     manifest_path = ROOT / ".mcp.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     server = manifest["mcpServers"]["sips-homebase"]
 
-    assert server["args"] == ["${CLAUDE_PLUGIN_ROOT}/scripts/harness_homebase_mcp.py"]
+    assert server["args"] == ["./scripts/harness_homebase_mcp.py"]
+    assert server["cwd"] == "."
+    assert "${CLAUDE_PLUGIN_ROOT}" not in manifest_path.read_text(encoding="utf-8")
     assert "${PLUGIN_ROOT}" not in manifest_path.read_text(encoding="utf-8")
 
 

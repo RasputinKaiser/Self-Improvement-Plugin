@@ -5,6 +5,27 @@ description: Decompose a parent task into parallel slices and dispatch one fan-o
 
 # /fan-out — multi-agent fan-out coordinator
 
+Fan-out outputs can be displayed as board cards when attached to a runtime
+campaign. Preserve the role boundary in each card (`Scout`, `Judge`, `Worker`,
+or `PM`) and keep `SLICE`, `DIFF`, and `LESSON` as separate receipt fields.
+`LESSON` is a candidate memory record until it passes the existing
+verify-before-use path; a progress card is not evidence of execution.
+
+When the host creates child tasks or conversations, attach the returned handles
+to the campaign spine explicitly rather than guessing them:
+
+```bash
+python3 scripts/sips_campaign_fleet.py attach <campaign_id> \
+  --child-id <slice_id> --title "<slice objective>" \
+  --role Worker --thread-id <host_thread_id> --task-id <runtime_task_id>
+```
+
+Archive a finished child in the projection with `archive <campaign_id>
+<child_id>`; use `reopen` when the work returns to the foreground. Reopen
+creates a new child incarnation, so attach a new thread/task handle when one
+exists. This keeps archived chat receipts searchable while leaving the host
+conversation store untouched.
+
 Parse user arguments:
 
 ### `/fan-out "<parent objective>"`
@@ -14,7 +35,8 @@ Parse user arguments:
    ```
    python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fan_out.py prepare \
      --parent "<parent objective>" \
-     --slices "<slice 1>" "<slice 2>" "<slice 3>"
+     --slices "<slice 1>" "<slice 2>" "<slice 3>" \
+     --campaign-id "<campaign_id>"
    ```
 3. Read the resulting JSON. It contains a `runId` and per-slice `cwd` paths.
 4. For **each** slice, dispatch a `fan-out` agent in parallel:
@@ -28,6 +50,8 @@ Parse user arguments:
      --outputs '[{"sliceId":"slice_1","response":"..."},{"sliceId":"slice_2","response":"..."}]'
    ```
 7. Read the resulting summary. Surface disagreements and lessons to the user.
+   `--campaign-id` only adds the explicit campaign reference to the fan-out
+   projection; child host/thread handles are still attached after dispatch.
 
 ### `/fan-out status <runId>`
 Show the state of a fan-out run.

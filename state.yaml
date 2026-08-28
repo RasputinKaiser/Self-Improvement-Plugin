@@ -1,10 +1,11 @@
 version: 1
 project: Self-Improvement-Plugin
 release: "0.4.0"
-status: design_decision_complete_additive_migration_source_verified
-updated_at: "2026-07-19T01:48:06Z"
+status: goal_board_continuity_and_retro_command_source_verified
+updated_at: "2026-08-03T05:56:56Z"
 authority:
   runtime: "${SIPS_HOME:-~/.codex/sips}/runtime/v1/runs/<run_id>/events.jsonl"
+  campaign: "${SIPS_HOME:-~/.codex/sips}/runtime/v1/campaigns/<campaign_id>/events.jsonl"
   memory: "${CODEX_MEMORY_FABRIC_STORE:-~/.codex/memory-fabric/memory.jsonl}"
   projection_only: state.yaml
 source:
@@ -45,20 +46,49 @@ sips:
   mcp_server: sips-homebase
   runtime_read_tool: sips_runtime_read
   runtime_write_tool: sips_runtime_write
+  goal_board_tool: homebase_goal_board
+  goal_board_schema: sips.runtime.campaign-board.v1
+  goal_plan_schema: sips.runtime.goal-plan.v1
+  goal_board_visibility: "read-only MCP result with structured data and markdown summary"
+  campaign_fleet_read_tool: homebase_campaign_fleet_read
+  campaign_fleet_write_tool: homebase_campaign_fleet_write
+  campaign_fleet_schema: sips.runtime.campaign-fleet.v1
+  campaign_schema: sips.runtime.campaign.v1
+  campaign_event_schema: sips.runtime.campaign-event.v1
+  campaign_board_join: "runtime metadata.campaign_id -> read-only Goal Board campaign projection"
+  campaign_thread_ownership: "external thread/task handles only; host conversation lifecycle remains a separate proof layer"
   runtime_cli: scripts/sips_runtime.py
   memory_fabric_owner: SIPS
   memory_fabric_cli: scripts/memory_fabric.py
   memory_frontier_cli: "scripts/memory_fabric.py indexed-frontier"
+  retro_command: /retro
+  retro_command_contract: "evidence -> classify -> candidate-first Memory Fabric -> receipt"
+retro:
+  status: source_verified
+  ownership: "SIPS owns the retrospective operator workflow and Memory Fabric recording."
+  evidence_sources:
+    - "current session/task context"
+    - "scripts/task_outcome_tracker.py --query"
+    - "scripts/recall_ranker.py --query ... --json"
+    - "current repository git status and diff"
+  memory_policy: "Record durable lessons only; use candidate/verify-before-use until independent proof supports active status."
+  transcript_miner: "not duplicated; a separately owned Retro miner may supplement when installed and explicitly available"
 verification:
   source_worktree:
     status: passed
     receipt: Graph-Theory/receipts/source-verification.md
     commands:
       - "python3 -m compileall -q scripts tests"
-      - "python3 -m pytest -q  # 72/72"
-      - "python3 scripts/run_tests.py fan_out  # 4/4"
+      - "pytest -q  # full repository suite passed"
+      - "pytest -q tests/test_sips_campaign_fleet.py tests/test_campaign_fleet_mcp.py tests/test_homebase_mcp.py tests/test_sips_runtime_board.py tests/test_sips_paths.py tests/test_sips_runtime_races.py  # 77 passed"
+      - "python3 scripts/run_tests.py --verbose  # 94/94"
       - "python3 scripts/memory_fabric_benchmark.py --output <temp>  # 77/77"
-      - "python3 scripts/validate_v2.py --check-eval  # 134/134"
+      - "python3 scripts/validate_harness.py  # 0 errors, 0 warnings"
+      - "python3 scripts/validate_v2.py  # 146/146"
+      - "python3 scripts/validate_v2.py --write-eval  # 146/146"
+      - "python3 scripts/run_tests.py --verbose  # 94/94"
+      - "python3 scripts/run_tests.py --include-legacy-ncode  # 100/100"
+      - "python3 -m pytest -q  # 425 collected, exit 0"
   feature_proofs:
     event_chain_and_recovery: passed
     deterministic_dag_and_fanin: passed
@@ -68,12 +98,24 @@ verification:
     bounded_context_and_indexed_frontier_1000_records: passed
     candidate_first_promotion_and_writer_failure_boundary: passed
     cli_homebase_mcp_parity: passed
+    campaign_event_chain_rebuild_and_digest: passed
+    campaign_child_archive_reopen_incarnations: passed
+    campaign_idempotency_and_revision_guards: passed
+    campaign_runtime_board_join: passed
+    canonical_sips_home_and_retired_ncode_ignored: passed
+    goal_board_actionable_titles_and_provenance: passed
+    goal_board_legacy_done_readiness_projection: passed
+    retro_command_evidence_and_candidate_first_contract: passed
+    retro_route_exposure: passed
     legacy_shadow_dual_runtime_mode_projection: passed
     inline_visualization_static_parity: passed
     inline_visualization_browser_render: not_proven_file_url_policy
   installed_cache:
-    status: not_updated
-    claim_allowed: false
+    status: installed_0_4_0_official_cache_campaign_source_parity_passed
+    claim_allowed: true
+    goal_board_source_cache_hash_parity: passed
+    retro_command_source_cache_parity: passed
+    retro_child_process_route_invocation: passed
   claude_code_host:
     status: installed_0_4_0_from_feature_worktree
     receipt: Graph-Theory/receipts/c2-claude-host-0-4-0.md
@@ -85,7 +127,8 @@ verification:
     mcp_connectivity: passed
     cache_source_parity: passed
     skill_hook_execution: not_tested
-    graph_runtime_modules_in_cache: 19
+    graph_runtime_modules_in_cache: 21
+    campaign_source_cache_hash_parity: passed
     installs_0_4_0: true
     selfloop_ported_from_canonical: true
     worktree_path_dependency: true
@@ -94,8 +137,9 @@ verification:
     detail: "sips-local marketplace registered in Claude Code user settings at C1. Codex host wiring untouched."
     claim_allowed: false
   fresh_host_mcp_exposure:
-    status: not_tested
-    claim_allowed: false
+    status: child_process_and_current_task_21_tool_invocation_verified
+    claim_allowed: true
+    future_task_rediscovery: still_required
   production_cutover:
     status: blocked
     claim_allowed: false
@@ -104,10 +148,8 @@ blockers:
     detail: "The original main checkout remains dirty by design; merge/cutover needs a separately reviewed clean integration."
   - code: legacy_execution_bridge
     detail: "Legacy fan-out and goal outputs do not yet carry runtime lease, fencing, structured result, and evidence-gate contracts; dual/runtime adapters fail closed."
-  - code: installed_cache_parity
-    detail: "0.4.0 has not been installed into the Codex plugin cache."
-  - code: fresh_host_rediscovery
-    detail: "A fresh Codex host has not rediscovered the 0.4.0 MCP schemas."
+  - code: future_host_rediscovery
+    detail: "This task supplied a complete 21-tool inventory and successfully invoked native SIPS tools; a later fresh task still needs its own inventory and invocation proof."
   - code: runtime_cutover
     detail: "Default remains legacy; rollback rehearsal and production-equivalent parity receipts are still required before cutover."
 notes:
@@ -116,3 +158,19 @@ notes:
   - "Unknown provider usage is charged at reservation and cannot support efficiency or promotion claims."
   - "Every lesson is journaled as candidate/verify_before_use before any active Memory Fabric write."
   - "Source, installed-cache, configuration, child-process, and fresh-host proof layers are reported separately."
+  - "The Goal Board derives observe/plan/execute/verify/record phases and a proof-aware recommendation; this is presentation guidance, never runtime control authority."
+  - "The campaign fleet is an event-backed metadata spine: archive requires a terminal child outcome, reopen creates a fresh incarnation, and neither claims to mutate an external host conversation."
+  - "A runtime board joins a campaign only from explicit metadata.campaign_id; missing or stale campaign lookup is reported as an optional-join error, not hidden."
+  - "Canonical SIPS state resolves SIPS_HOME or ~/.codex/sips; retired NCODE_HOME is ignored so runtime, campaigns, goals, and fan-out do not split across homes."
+  - "The official 0.4.0 cache was refreshed after source validation; child-process tools/list exposes 21 tools with zero missing enabled tools."
+  - "The Goal Board now labels legacy subtask cards with their actionable descriptions, excludes legacy done cards from ready_task_ids, and exposes persisted-state provenance plus the separate current-task MCP boundary."
+  - "The bounded Goal Board continuity objective was completed with a 4/4 legacy board projection and a source-backed Memory Fabric lesson."
+  - "The /retro command is evidence-gated, writes provenance-backed learning records, and keeps the separately owned transcript miner out of the SIPS source tree."
+  - "The refreshed installed-cache child process routes a retrospective task to /retro with homebase_recall, homebase_record, task_outcome_tracker.py, and recall_ranker.py; the already-open native task may still need rediscovery."
+publication:
+  status: pushed
+  remote: origin
+  branch: main
+  commit: 6e22c148199278db586dfa8f9cfbecf16d57faad
+  url: "https://github.com/RasputinKaiser/Self-Improvement-Plugin/commit/6e22c148199278db586dfa8f9cfbecf16d57faad"
+  scope: "Scoped /retro command, documentation, validator, generated EVAL, and Homebase route only; unrelated dirty work remains local."

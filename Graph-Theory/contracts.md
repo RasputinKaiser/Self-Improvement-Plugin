@@ -35,6 +35,25 @@ canonical event without its own digest field.
 `snapshot.json` is a replayable projection and receipts are immutable derived
 artifacts.
 
+## Campaign fleet
+
+Campaign metadata uses the same append-only event and revision contract under
+`${SIPS_HOME:-$HOME/.codex/sips}/runtime/v1/campaigns/<campaign_id>/`:
+
+| Surface | Contract |
+| --- | --- |
+| Campaign spine | `campaign_id`, objective, contract, parent/runtime references, status, tags, revision, head hash, and projection digest. |
+| Logical child | Stable `child_id`, title, role, objective, current status, current `child_instance_id`, and bounded incarnation history. |
+| Child incarnation | Opaque host thread/task handles, lifecycle status, archive/reopen timestamps, and `reopened_from` link. A reopen creates a fresh instance identity. |
+| Archive | A retention projection event allowed only after a terminal child outcome; it never claims to archive the external host conversation. |
+| Runtime join | Optional `metadata.campaign_id` read-only Goal Board join. Runtime events, leases, fences, and receipts remain authoritative for execution. |
+
+Campaign writes use `idempotency_key` and `expected_revision` through the CLI
+or `homebase_campaign_fleet_write`. A repeated canonical request replays the
+same projection; a changed payload conflicts. Search and archive summaries are
+bounded projections over the campaign event stream, not a claim that every host
+conversation is enumerable or current.
+
 ## TaskSpec
 
 A task declares:

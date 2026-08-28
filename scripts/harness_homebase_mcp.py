@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from sips_paths import goal_state_path
+from sips_runtime.campaign_fleet import CampaignFleet, campaign_markdown
 
 UNKNOWN_PLUGIN_VERSION = "0.0.0"
 SIPS_PLUGIN_ID = "harness-self-improvement@harness-local"
@@ -327,8 +328,8 @@ TOOLS: list[dict[str, Any]] = [
                 "root": ROOT_PROPERTY,
                 "operation": {
                     "type": "string",
-                    "enum": ["status", "plan", "events", "receipt", "frontier"],
-                    "description": "Read operation.",
+                    "enum": ["status", "plan", "events", "receipt", "frontier", "board"],
+                    "description": "Read operation, including the read-only Goal Board projection.",
                 },
                 "request_json": {
                     "type": "string",
@@ -338,6 +339,63 @@ TOOLS: list[dict[str, Any]] = [
             required=["operation"],
         ),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_goal_board",
+        "title": "SIPS Goal Board",
+        "description": "Show the read-only Clonk-style Goal Board with one foreground action, explicit task states, suggestions, and bounded event deltas.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "run_id": {"type": "string", "description": "Optional runtime run ID. If omitted, read the current Goal Board."},
+                "campaign_id": {"type": "string", "description": "Optional campaign spine to attach to this Goal Board."},
+                "since_revision": {"type": "integer", "minimum": 0, "description": "Only return changes after this runtime revision."},
+                "max_changes": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Maximum bounded changes to return. Defaults to 24."},
+            }
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_campaign_fleet_read",
+        "title": "SIPS Campaign Fleet Read",
+        "description": "Read campaign spines, searchable child-thread metadata, archive summaries, and recent fleet activity.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "home": {"type": "string", "description": "Optional SIPS home directory override for the fleet registry."},
+                "operation": {
+                    "type": "string",
+                    "enum": ["campaign", "list", "search"],
+                    "description": "Read one campaign, list campaigns, or search campaign and child metadata.",
+                },
+                "campaign_id": {"type": "string", "description": "Campaign ID for the campaign operation."},
+                "query": {"type": "string", "description": "Search text for the search operation."},
+                "status": {"type": "string", "description": "Optional campaign status filter."},
+                "include_archived": {"type": "boolean", "description": "Include archived campaigns/children. Defaults to false for list and true for campaign/search."},
+                "limit": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Maximum campaign summaries to return."},
+            },
+            required=["operation"],
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_campaign_fleet_write",
+        "title": "SIPS Campaign Fleet Write",
+        "description": "Create campaign spines, attach external child threads, and advance/archive/reopen their lifecycle metadata. Runtime execution remains separate and authoritative.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "home": {"type": "string", "description": "Optional SIPS home directory override for the fleet registry."},
+                "operation": {
+                    "type": "string",
+                    "enum": ["create", "attach", "set_child_status", "archive_child", "reopen_child", "set_campaign_status"],
+                    "description": "Campaign-fleet mutation operation.",
+                },
+                "request_json": {"type": "string", "description": "JSON object matching the selected operation."},
+            },
+            required=["operation", "request_json"],
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": False, "openWorldHint": False},
     },
     {
         "name": "sips_runtime_write",
@@ -1474,6 +1532,270 @@ def runtime_tool_payload(root: Path, operation: str, request_json: str, *, write
     return dict(result)
 
 
+def goal_board_payload(
+    root: Path,
+    run_id: str,
+    since_revision: int | None,
+    max_changes: int,
+    campaign_id: str = "",
+) -> dict[str, Any]:
+    """Read the current Goal Board without requiring the caller to know a run ID."""
+    if run_id:
+        request: dict[str, Any] = {
+            "run_id": run_id,
+            "max_changes": max_changes,
+        }
+        if since_revision is not None:
+            request["since_revision"] = since_revision
+        payload = runtime_tool_payload(root, "board", json.dumps(request), write=False)
+    else:
+        command = [sys.executable, str(root / "scripts" / "goal_state.py"), "board"]
+        if since_revision is not None:
+            command.append(str(since_revision))
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=str(root),
+                check=False,
+                text=True,
+                capture_output=True,
+                timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return {"ok": False, "operation": "board", "error": str(exc)}
+        try:
+            data = json.loads(completed.stdout) if completed.stdout.strip() else {}
+        except json.JSONDecodeError as exc:
+            return {"ok": False, "operation": "board", "error": f"goal board returned invalid JSON: {exc}"}
+        if completed.returncode != 0 or data.get("ok") is False:
+            return {"ok": False, "operation": "board", "error": data.get("error", completed.stderr.strip() or "goal board unavailable"), "data": data}
+        payload = {
+            "ok": True,
+            "operation": "board",
+            "revision": data.get("revision", 0),
+            "data": data,
+        }
+    if campaign_id:
+        try:
+            payload["campaign"] = CampaignFleet().read(campaign_id, include_archived=True)
+        except Exception as exc:
+            payload["campaign_error"] = {"campaign_id": campaign_id, "error": str(exc)}
+    return payload
+
+
+def goal_board_markdown(payload: dict[str, Any]) -> str:
+    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    lines = ["# SIPS Goal Board", ""]
+    lines.append(f"- **status** `{data.get('status', 'unknown')}`")
+    lines.append(f"- **objective** `{data.get('objective', '')}`")
+    lines.append(f"- **authority** `{data.get('authority', 'unknown')}`")
+    progress = data.get("progress") if isinstance(data.get("progress"), dict) else {}
+    lines.append(f"- **progress** `{progress.get('complete', 0)}/{progress.get('total', 0)}`")
+    provenance = data.get("provenance") if isinstance(data.get("provenance"), dict) else {}
+    if provenance:
+        lines.extend(["", "## Provenance", ""])
+        lines.append(f"- Source: `{provenance.get('source', 'unknown')}`")
+        if provenance.get("source_path"):
+            lines.append(f"- Persisted state: `{provenance['source_path']}`")
+        if provenance.get("last_updated_at"):
+            lines.append(f"- Last persisted: `{provenance['last_updated_at']}`")
+        lines.append(f"- Restart-safe: `{provenance.get('restart_safe', False)}`")
+        lines.append(f"- Current-task MCP exposure: `{provenance.get('task_exposure', 'unproven')}`")
+    foreground_id = data.get("foreground_task_id")
+    tasks = data.get("tasks") if isinstance(data.get("tasks"), list) else []
+    foreground = next((item for item in tasks if isinstance(item, dict) and item.get("id") == foreground_id), None)
+    lines.extend(["", "## Foreground action", ""])
+    if foreground:
+        lines.append(f"- `{foreground.get('id')}` {foreground.get('title', '')} — `{foreground.get('status', 'unknown')}`")
+    else:
+        lines.append("- None — the campaign is terminal or has no tasks.")
+    recommendation = data.get("recommendation") if isinstance(data.get("recommendation"), dict) else {}
+    if recommendation:
+        lines.extend(["", "## Suggested next step", ""])
+        lines.append(f"- **{recommendation.get('title', '')}** — phase `{recommendation.get('phase', 'unknown')}`")
+        if recommendation.get("why"):
+            lines.append(f"- Why: {recommendation['why']}")
+        if recommendation.get("proof_required"):
+            lines.append(f"- Proof: {recommendation['proof_required']}")
+    plan = data.get("plan") if isinstance(data.get("plan"), dict) else {}
+    phases = plan.get("phases") if isinstance(plan.get("phases"), list) else []
+    if phases:
+        lines.extend(["", "## Suggested plan", ""])
+        lines.extend(
+            f"- `{phase.get('title', phase.get('id', 'phase'))}` — `{phase.get('status', 'unknown')}`"
+            for phase in phases
+            if isinstance(phase, dict) and phase.get("status") != "not_applicable"
+        )
+    idea_cards = data.get("idea_cards") if isinstance(data.get("idea_cards"), list) else []
+    if idea_cards:
+        lines.extend(["", "## Suggested ideas", ""])
+        for card in idea_cards[:3]:
+            if not isinstance(card, dict):
+                continue
+            title = card.get("title") or card.get("name") or card.get("id") or "idea"
+            plan_name = card.get("recommended_next") or "scout_then_plan"
+            lines.append(f"- `{card.get('id', 'idea')}` {title} — `{plan_name}`")
+    counts = data.get("counts") if isinstance(data.get("counts"), dict) else {}
+    if counts:
+        lines.extend(["", "## Counts", ""])
+        lines.extend(f"- **{key}** `{value}`" for key, value in sorted(counts.items()))
+    claim_boundary = data.get("claim_boundary")
+    if claim_boundary:
+        lines.extend(["", f"> {claim_boundary}"])
+    campaign = payload.get("campaign") if isinstance(payload.get("campaign"), dict) else {}
+    if campaign:
+        lines.extend(["", "## Campaign spine", ""])
+        lines.append(f"- `{campaign.get('campaign_id', '')}` {campaign.get('objective', '')} — `{campaign.get('status', 'unknown')}`")
+        lines.append(f"- Child fleet: `{campaign.get('visible_child_count', 0)}/{campaign.get('child_count', 0)}` visible; archived `{campaign.get('archived_child_count', 0)}`")
+        if campaign.get("foreground_child_id"):
+            lines.append(f"- Foreground child: `{campaign['foreground_child_id']}`")
+    if payload.get("campaign_error"):
+        lines.extend(["", f"> Campaign lookup unavailable: {payload['campaign_error'].get('error', 'unknown error')}"])
+    return "\n".join(lines)[:8000]
+
+
+def campaign_fleet_read_payload(arguments: dict[str, Any]) -> dict[str, Any]:
+    operation = str(arguments.get("operation") or "").strip().lower()
+    fleet = CampaignFleet(arguments.get("home") or None)
+    raw_include_archived = arguments.get("include_archived")
+    if raw_include_archived is not None and type(raw_include_archived) is not bool:
+        raise JsonRpcError(-32602, "include_archived must be a boolean")
+    include_archived = (
+        operation in {"campaign", "search"}
+        if raw_include_archived is None
+        else raw_include_archived
+    )
+    limit = int(arguments.get("limit") or 50)
+    if operation == "campaign":
+        campaign_id = str(arguments.get("campaign_id") or "").strip()
+        if not campaign_id:
+            raise JsonRpcError(-32602, "campaign_id is required for campaign reads")
+        data = fleet.read(campaign_id, include_archived=include_archived, max_children=200, max_activity=50)
+    elif operation == "list":
+        data = fleet.list(
+            query=str(arguments.get("query") or ""),
+            status=str(arguments.get("status") or ""),
+            include_archived=include_archived,
+            limit=limit,
+        )
+    elif operation == "search":
+        query = str(arguments.get("query") or "").strip()
+        if not query:
+            raise JsonRpcError(-32602, "query is required for fleet search")
+        data = fleet.search(query, include_archived=include_archived, limit=limit)
+    else:
+        raise JsonRpcError(-32602, "operation must be campaign, list, or search")
+    return {
+        "ok": True,
+        "schema": "sips.runtime.campaign-fleet.v1",
+        "operation": operation,
+        "data": data,
+        "storage_root": str(fleet.root),
+        "claim_boundary": "Fleet metadata is event-backed; external host conversation enumeration and mutation remain separate proof layers.",
+    }
+
+
+def campaign_fleet_write_payload(arguments: dict[str, Any]) -> dict[str, Any]:
+    operation = str(arguments.get("operation") or "").strip().lower()
+    try:
+        request = json.loads(str(arguments.get("request_json") or "{}"))
+    except json.JSONDecodeError as exc:
+        raise JsonRpcError(-32602, f"request_json is invalid JSON: {exc.msg}") from exc
+    if not isinstance(request, dict):
+        raise JsonRpcError(-32602, "request_json must contain a JSON object")
+    fleet = CampaignFleet(arguments.get("home") or None)
+    if operation == "create":
+        data = fleet.create(
+            str(request.get("objective") or ""),
+            campaign_id=request.get("campaign_id"),
+            contract=request.get("contract"),
+            parent_thread_id=str(request.get("parent_thread_id") or ""),
+            runtime_run_id=str(request.get("runtime_run_id") or ""),
+            workspace_root=str(request.get("workspace_root") or ""),
+            tags=request.get("tags"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    elif operation == "attach":
+        data = fleet.attach_child(
+            str(request.get("campaign_id") or ""),
+            title=str(request.get("title") or ""),
+            role=str(request.get("role") or "Worker"),
+            child_id=request.get("child_id"),
+            thread_id=str(request.get("thread_id") or ""),
+            task_id=str(request.get("task_id") or ""),
+            objective=str(request.get("objective") or ""),
+            summary=str(request.get("summary") or ""),
+            tags=request.get("tags"),
+            expected_revision=request.get("expected_revision"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    elif operation == "set_child_status":
+        data = fleet.set_child_status(
+            str(request.get("campaign_id") or ""),
+            str(request.get("child_id") or ""),
+            str(request.get("status") or ""),
+            reason=str(request.get("reason") or ""),
+            summary=str(request.get("summary") or ""),
+            receipt_id=str(request.get("receipt_id") or ""),
+            expected_revision=request.get("expected_revision"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    elif operation == "archive_child":
+        data = fleet.archive_child(
+            str(request.get("campaign_id") or ""),
+            str(request.get("child_id") or ""),
+            reason=str(request.get("reason") or "completed child archived"),
+            expected_revision=request.get("expected_revision"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    elif operation == "reopen_child":
+        data = fleet.reopen_child(
+            str(request.get("campaign_id") or ""),
+            str(request.get("child_id") or ""),
+            reason=str(request.get("reason") or "reopened from campaign fleet"),
+            thread_id=str(request.get("thread_id") or ""),
+            task_id=str(request.get("task_id") or ""),
+            expected_revision=request.get("expected_revision"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    elif operation == "set_campaign_status":
+        data = fleet.set_campaign_status(
+            str(request.get("campaign_id") or ""),
+            str(request.get("status") or ""),
+            reason=str(request.get("reason") or ""),
+            expected_revision=request.get("expected_revision"),
+            idempotency_key=request.get("idempotency_key"),
+        )
+    else:
+        raise JsonRpcError(-32602, "operation is not a supported campaign-fleet write")
+    return {
+        "ok": True,
+        "schema": "sips.runtime.campaign-fleet.v1",
+        "operation": operation,
+        "data": data,
+        "storage_root": str(fleet.root),
+        "claim_boundary": "This changes campaign metadata only. It does not mutate or archive the external host conversation.",
+    }
+
+
+def campaign_fleet_markdown(payload: dict[str, Any], *, title: str) -> str:
+    data = payload.get("data")
+    if isinstance(data, dict) and data.get("schema") == "sips.runtime.campaign.v1":
+        return campaign_markdown(data, title=title)
+    lines = [f"# {title}", "", f"- **operation** `{payload.get('operation', '')}`"]
+    if isinstance(data, list):
+        lines.extend(["", "## Campaigns", ""])
+        for item in data[:50]:
+            if isinstance(item, dict):
+                lines.append(f"- `{item.get('campaign_id', '')}` {item.get('objective', '')} — `{item.get('status', 'unknown')}`; archived children `{item.get('archived_child_count', 0)}`")
+    elif isinstance(data, dict):
+        lines.extend(["", f"- **result** `{data}`"])
+    boundary = payload.get("claim_boundary")
+    if boundary:
+        lines.extend(["", f"> {boundary}"])
+    return "\n".join(lines)[:12_000]
+
+
 def runtime_markdown(payload: dict[str, Any], title: str) -> str:
     data = payload.get("data")
     if isinstance(data, dict):
@@ -1780,6 +2102,28 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             runtime_markdown(payload, "SIPS Graph Runtime Read"),
             is_error=payload.get("ok") is not True,
         )
+    if name == "homebase_goal_board":
+        since_revision = arguments.get("since_revision")
+        if since_revision is not None:
+            since_revision = int(since_revision)
+        payload = goal_board_payload(
+            root,
+            str(arguments.get("run_id") or "").strip(),
+            since_revision,
+            int(arguments.get("max_changes") or 24),
+            str(arguments.get("campaign_id") or "").strip(),
+        )
+        return tool_result(
+            payload,
+            goal_board_markdown(payload),
+            is_error=payload.get("ok") is not True,
+        )
+    if name == "homebase_campaign_fleet_read":
+        payload = campaign_fleet_read_payload(arguments)
+        return tool_result(payload, campaign_fleet_markdown(payload, title="SIPS Campaign Fleet"))
+    if name == "homebase_campaign_fleet_write":
+        payload = campaign_fleet_write_payload(arguments)
+        return tool_result(payload, campaign_fleet_markdown(payload, title="SIPS Campaign Fleet Mutation"))
     if name == "sips_runtime_write":
         operation = str(arguments.get("operation") or "").strip().lower()
         payload = runtime_tool_payload(

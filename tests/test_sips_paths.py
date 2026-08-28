@@ -17,14 +17,15 @@ def test_harness_home_prefers_sips_home(monkeypatch, tmp_path):
     assert sips_paths.harness_home() == sips_home.resolve()
 
 
-def test_harness_home_falls_back_to_ncode_home(monkeypatch, tmp_path):
+def test_harness_home_ignores_legacy_ncode_home(monkeypatch, tmp_path):
     ncode_home = tmp_path / "ncode-home"
     monkeypatch.delenv("SIPS_HOME", raising=False)
     monkeypatch.setenv("NCODE_HOME", str(ncode_home))
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     importlib.reload(sips_paths)
 
-    assert sips_paths.harness_home() == ncode_home.resolve()
+    assert sips_paths.harness_home() == (tmp_path / ".codex" / "sips").resolve()
 
 
 def test_plugin_root_prefers_explicit_env(monkeypatch, tmp_path):

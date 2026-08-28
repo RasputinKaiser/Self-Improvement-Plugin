@@ -27,12 +27,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from sips_paths import harness_home, harness_scripts_dir
+from sips_paths import harness_home, harness_scripts_dir, plugin_root
 
 SCRIPTS_DIR = harness_scripts_dir()
 SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+SOURCE_SCRIPTS_DIR = plugin_root() / "scripts"
 SKILLS_DIR = harness_home() / "skills"
-RUN_TESTS_PATH = SCRIPTS_DIR / "run_tests.py"
+RUN_TESTS_PATH = next(
+    (path for path in (SCRIPTS_DIR / "run_tests.py", SOURCE_SCRIPTS_DIR / "run_tests.py") if path.exists()),
+    SOURCE_SCRIPTS_DIR / "run_tests.py",
+)
 
 SUBCOMMANDS = {"scaffold", "validate", "promote"}
 
@@ -122,10 +126,10 @@ description: {summary}
 Run `{name}` from the scripts directory:
 
 ```
-python3 ~/.ncode/scripts/{filename} [--dry-run] [--json]
+python3 ${SIPS_HOME:-$HOME/.codex/sips}/scripts/{filename} [--dry-run] [--json]
 ```
 
-See `~/.ncode/scripts/{name}.md` for the full spec.
+See `${SIPS_HOME:-$HOME/.codex/sips}/scripts/{name}.md` for the full spec.
 '''
 
 
@@ -159,14 +163,19 @@ def cmd_scaffold(args):
     os.chmod(script_path, 0o755)
     doc_path.write_text(DOC_TEMPLATE.format(name=name, summary=args.summary), encoding="utf-8")
     print(f"scaffolded:\n  {script_path}\n  {doc_path}")
-    print("\nreview, edit, then run: python3 ~/.ncode/scripts/tool_factory.py validate " + name)
+    print("\nreview, edit, then run: python3 ${SIPS_HOME:-$HOME/.codex/sips}/scripts/tool_factory.py validate " + name)
 
 
 def cmd_validate(args):
     name, script_path, doc_path = _resolve_paths(args.name, args.lang)
     if not script_path.exists():
-        print(f"ERR: {script_path} does not exist", file=sys.stderr)
-        sys.exit(1)
+        source_script = SOURCE_SCRIPTS_DIR / f"{name}.{args.lang}"
+        source_doc = SOURCE_SCRIPTS_DIR / f"{name}.md"
+        if source_script.exists():
+            script_path, doc_path = source_script, source_doc
+        else:
+            print(f"ERR: {script_path} does not exist", file=sys.stderr)
+            sys.exit(1)
 
     # Syntax check (py only — sh doesn't have a portable equivalent)
     if args.lang == "py":
@@ -264,7 +273,7 @@ def main():
     parser = argparse.ArgumentParser(description="Scaffold, validate, or promote a local helper")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_scaffold = sub.add_parser("scaffold", help="create ~/.ncode/scripts/<name>.<ext> + .md spec")
+    p_scaffold = sub.add_parser("scaffold", help="create ${SIPS_HOME:-$HOME/.codex/sips}/scripts/<name>.<ext> + .md spec")
     p_scaffold.add_argument("name", help="helper name")
     p_scaffold.add_argument("--summary", required=True, help="one-line purpose")
     p_scaffold.add_argument("--lang", choices=["py", "sh"], default="py")

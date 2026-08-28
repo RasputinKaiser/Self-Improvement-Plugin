@@ -53,6 +53,37 @@ python3 scripts/sips_runtime.py write --op create --json '{...}'
 
 Compact output is the default; `detail=full` returns the complete receipt. The controller grants work but does not spawn agents.
 
+## Campaign spine and child-thread fleet
+
+The campaign fleet is a separate event stream rooted at
+`${SIPS_HOME:-$HOME/.codex/sips}/runtime/v1/campaigns/<campaign_id>/`. Its
+`events.jsonl` plus `head.json` are authority for campaign metadata; the
+rebuildable `projection.json` exposes one foreground child, bounded child
+cards, lifecycle counts, recent activity, and archive summaries.
+
+```text
+python3 scripts/sips_campaign_fleet.py create <objective> --campaign-id <id>
+python3 scripts/sips_campaign_fleet.py attach <id> --child-id <child> --title <title> --thread-id <host-handle>
+python3 scripts/sips_campaign_fleet.py status <id> --markdown
+python3 scripts/sips_campaign_fleet.py search <thread-or-task-handle>
+```
+
+Child states are `planned`, `active`, `waiting`, `blocked`, `completed`,
+`failed`, `canceled`, `archived`, and `abandoned`; `archive` is allowed only
+after a child has a terminal outcome and removes it from the active foreground
+projection without deleting its event history. `reopen` creates a new child
+incarnation and leaves the old thread/task binding archived evidence. Writes
+require an idempotency key and use the verified campaign revision for
+optimistic concurrency. A runtime run may carry
+`metadata.campaign_id`; the Goal Board performs a read-only join so the
+campaign spine appears beside runtime task state.
+
+This registry deliberately stores external thread/task handles instead of
+claiming ownership of the host conversation store. Runtime task events,
+leases, and immutable receipts remain authoritative for execution; host
+enumeration, visible sidebar state, and actual chat archiving require their own
+fresh host proof.
+
 ## Compatibility modes
 
 - `legacy`: existing files are authoritative.

@@ -17,7 +17,7 @@ except ImportError:  # direct sibling import when the CLI shadows the package na
     from promotion import promote_lesson  # type: ignore
 
 
-READ_OPS = {"status", "plan", "events", "receipt", "frontier"}
+READ_OPS = {"status", "plan", "events", "receipt", "frontier", "board"}
 WRITE_OPS = {"create", "submit", "lease", "advance", "cancel", "promote"}
 _IDENTIFIER_FIELDS = {
     "task_id": "task_id",
@@ -120,6 +120,22 @@ class RuntimeAPI:
                     function = getattr(module, "query_frontier", None)
                     if callable(function):
                         return function(**frontier_payload)
+                except ImportError:
+                    continue
+        if operation == "board":
+            if not payload.get("run_id"):
+                return None
+            for module_name in ("sips_runtime.board", "scripts.sips_runtime.board", "board"):
+                try:
+                    module = importlib.import_module(module_name)
+                    function = getattr(module, "project_board", None)
+                    if callable(function):
+                        return function(
+                            self.controller,
+                            str(payload["run_id"]),
+                            since_revision=payload.get("since_revision"),
+                            max_changes=payload.get("max_changes", 24),
+                        )
                 except ImportError:
                     continue
         if self.controller is None:
@@ -226,7 +242,14 @@ class RuntimeAPI:
         values = dict(payload or {})
         if operation == "frontier" and (not values.get("scope") or not values.get("query")):
             return {"ok": False, "error": "scope_and_query_required", "operation": operation}
-        if operation in {"status", "plan", "events", "receipt"} and "run_id" in values:
+        if operation == "board":
+            since_revision = values.get("since_revision")
+            if since_revision is not None and (type(since_revision) is not int or since_revision < 0):
+                return {"ok": False, "error": "since_revision_invalid", "operation": operation}
+            max_changes = values.get("max_changes", 24)
+            if type(max_changes) is not int or not 0 <= max_changes <= 100:
+                return {"ok": False, "error": "max_changes_invalid", "operation": operation}
+        if operation in {"status", "plan", "events", "receipt", "board"} and "run_id" in values:
             raw_run_id = values["run_id"]
             if raw_run_id is not None and raw_run_id != "":
                 try:
@@ -247,6 +270,17 @@ class RuntimeAPI:
                     result = {"events": list(self._state.get("events", [])), "revision": self._revision}
                 elif operation == "receipt":
                     result = self._state.get("receipt") or {"status": self._state.get("status", "idle"), "revision": self._revision}
+                elif operation == "board":
+                    result = {
+                        "schema": "sips.runtime.campaign-board.v1",
+                        "authority": "process-local-fallback",
+                        "read_only": True,
+                        "run_id": str(values.get("run_id", "")),
+                        "status": self._state.get("status", "idle"),
+                        "revision": self._revision,
+                        "tasks": list(self._state.get("tasks", [])),
+                        "changes": [],
+                    }
                 else:
                     result = {"tasks": list(self._state.get("tasks", [])), "leases": dict(self._state.get("leases", {})), "revision": self._revision}
             if operation == "receipt":
