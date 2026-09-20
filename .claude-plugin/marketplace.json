@@ -16,7 +16,14 @@
       "source": ".",
       "category": "development",
       "homepage": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
-      "license": "MIT"
+      "license": "MIT",
+      "version": "0.11.1",
+      "keywords": [
+        "sips",
+        "delegation",
+        "inherit",
+        "adaptive-core"
+      ]
     }
   ]
 }

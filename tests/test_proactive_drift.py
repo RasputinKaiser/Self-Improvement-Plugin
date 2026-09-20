@@ -19,7 +19,7 @@ def test_untested_scripts_reuses_canonical_coverage_signal(tmp_path, monkeypatch
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(proactive_drift, "NCODE_DIR", tmp_path)
+    monkeypatch.setattr(proactive_drift, "SIPS_DIR", tmp_path)
     monkeypatch.setattr(proactive_drift, "SCRIPTS_DIR", scripts)
     monkeypatch.setattr(self_correct, "SCRIPTS_DIR", scripts)
     monkeypatch.setattr(self_correct, "TESTS_DIR", tests)

@@ -158,6 +158,6 @@ def test_brainstorm_idea_cards_are_suggestions_with_plan_proof():
     }])
     assert cards[0]["id"] == "idea-001"
     assert cards[0]["status"] == "suggested"
-    assert cards[0]["recommended_next"] == "scout_then_plan"
-    assert cards[0]["plan"]["steps"][-1].startswith("Worker implements")
+    assert cards[0]["recommended_next"] == "inspect_then_plan"
+    assert cards[0]["plan"]["steps"][-1].startswith("The active task agent authors")
     assert cards[0]["plan"]["proof"]

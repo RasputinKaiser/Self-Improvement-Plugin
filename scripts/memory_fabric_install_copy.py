@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-IGNORE_NAMES = {".codex", ".git", ".plugin-eval", "__pycache__"}
+IGNORE_NAMES = {".codex", ".git", ".plugin-eval", ".local-release", "__pycache__"}
 IGNORE_PATTERNS = {"*.pyc", ".DS_Store", ".plugin-eval-analysis*"}
 
 

@@ -48,12 +48,6 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script sips_presence_mirror.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/sips_presence_mirror.py || true",
-            "timeout": 7,
-            "statusMessage": "SIPS mirror"
-          },
-          {
-            "type": "command",
             "command": "python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/hook_event_tap.py --event PostToolUse --script retry_lesson_reminder.py -- python3 \"${PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}\"/scripts/retry_lesson_reminder.py",
             "timeout": 8,
             "statusMessage": "Retry lesson reminder"

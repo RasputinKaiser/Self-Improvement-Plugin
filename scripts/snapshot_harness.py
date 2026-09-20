@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Harness snapshot — writes a known-good backup of all ~/.ncode/scripts/*.py.
+"""Harness snapshot — writes a known-good backup of all ~/.codex/sips/scripts/*.py.
 
 Used before risky self-modification batches. If run_tests.py regresses after
 edits, the snapshot can be restored wholesale via restore_harness.py.
 
 Snapshot contents:
-  - All .py and .sh files in ~/.ncode/scripts/
+  - All .py and .sh files in ~/.codex/sips/scripts/
   - manifest.json (hash, timestamp, file list, reason field)
 
 Usage:
@@ -24,9 +24,9 @@ from pathlib import Path
 
 from sips_paths import harness_home, harness_scripts_dir
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 SCRIPTS_DIR = harness_scripts_dir()
-BACKUP_ROOT = NCODE_DIR / "backups" / "snapshots"
+BACKUP_ROOT = SIPS_DIR / "backups" / "snapshots"
 
 
 def hash_file(path):

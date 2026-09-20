@@ -12,7 +12,7 @@
 
 It does not try to make an agent smarter by swapping models. It improves the *work loop* around whatever model you already run.
 
-> Experimental, but CI-backed. The core is a deterministic graph runtime, SIPS-owned Memory Fabric recall, lifecycle hooks, slash-command and MCP surfaces, and focused regression suites — **94 core harness cases (100 with legacy compatibility) + 425 pytest tests, green on macOS and Linux.**
+> **SIPS 0.11 — visual evidence and explainable memory reuse.** Compose tools with declared units, roles and context identities; inspect dependency drift; run bounded diagnostic policies against recorded probe outcomes. Frozen behavioral cases independently evaluate proposed policies. Passing tests never activate a change automatically. [Workflow and migration guide](docs/sips-09.md).
 
 *Companion app: a very very very experimental, free, native macOS control surface — [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness).*
 
@@ -62,7 +62,7 @@ harness-self-improvement@harness-local
 | Claude Code or Codex | Host harness that loads the plugin's hooks, commands, agents, and MCP server. |
 | POSIX host | macOS / Linux. Windows is untested. |
 
-Runtime scripts resolve `$SIPS_HOME` first for harness state, falling back to legacy locations when it is unset. The SIPS-owned Memory Fabric subsystem is vendored in-repo — no external memory plugin is required.
+Runtime scripts resolve `$SIPS_HOME` first, otherwise `~/.codex/sips`. Retired host directories are never a runtime fallback. The SIPS-owned Memory Fabric subsystem is vendored in-repo — no external memory plugin is required.
 
 ## What it adds
 
@@ -74,6 +74,12 @@ Runtime scripts resolve `$SIPS_HOME` first for harness state, falling back to le
 | SIPS Homebase MCP | Portable `homebase_*` tools shared across Claude Code and Codex. |
 | Codex skills | Expose the Homebase surfaces as organized, first-class plugin rows. |
 | Utility scripts | Validate, test, snapshot, restore, inspect, and improve the harness over time. |
+
+## Adaptive core
+
+`observe → diagnose → propose → build → evaluate → ready_for_review`
+
+The active task agent writes the candidate; SIPS owns evidence, frozen evaluation, durable state, and review. Activation and rollback require an explicit reviewed candidate digest. The `homebase_adaptation_read` and `homebase_adaptation_write` MCP tools share the same controller as the CLI. NCode is retired; Codex is primary and Claude Code compatibility is retained.
 
 ## Core workflow
 
@@ -189,41 +195,30 @@ SIPS exposes compact skill rows for the major Homebase surfaces, so the plugin r
 | `sips-perception-plan` | Plan screenshot, browser, app, or UI runtime proof. |
 | `sips-tool-factory` | Decide whether to reuse, improve, or scaffold deterministic helpers. |
 
-## Current release — v0.4.0
+## Current release — v0.8.0
 
-This additive release introduces the [SIPS Graph Runtime](Graph-Theory/README.md):
+SIPS now issues resumable work packets to the active task agent, tests evaluator
+sensitivity against frozen wrong implementations, and links subsequent authored
+evaluations to reviewed candidates. Evaluation receipts are content-pinned.
+Unknown probe predictions no longer count as contradictions.
 
-- a strict, deterministic task DAG for readiness, fenced leases, budgets, execution, and fan-in;
-- a separate bounded cyclic Memory Fabric frontier that supplies context but cannot unlock tasks;
-- append-only hash-chained run events, rebuildable snapshots, immutable slice and graph receipts, and recovery-by-linked-fork;
-- structured result/evidence gates, candidate-first lesson promotion, and failed-writer receipts;
-- matching CLI and compact Homebase MCP read/write surfaces;
-- `legacy`, `shadow`, `dual`, and `runtime` compatibility projections, with `legacy` still the default.
-
-The source implementation and baselines are verified in an isolated worktree. Controller-authoritative `dual`/`runtime` execution, plugin-cache parity, and fresh-host MCP exposure remain explicit cutover gates; see [verification](Graph-Theory/verification.md).
-
-<details>
-<summary>Earlier releases</summary>
-
-- **v0.3.0** — Mapped the Homebase surfaces into nine first-class skill rows, each a thin adapter over the existing control plane.
-- **v0.2.2** — Added the Codex marketplace manifest so the repo installs as a local marketplace.
-- **v0.2.1** — `${PLUGIN_ROOT}`-first hook commands with `${CLAUDE_PLUGIN_ROOT}` fallback; plugin icon/metadata; validator bookkeeping.
-- **v0.2.0** — 10 slash commands, 5 delegation agents, loop closure through session-learning capture, bounded fresh-context delegation, SIPS-owned Memory Fabric recall, touched-script verification, the persistent `/goal` loop, `/fan-out`, and the portable Homebase MCP tools.
-
-</details>
+Read [the foreground workflow and API](docs/sips-08.md). All 0.7 advisory methods
+remain available. Optimize remains 0.6.0. Local foreground replays and proposed
+procedure reuse are recorded separately from independently controlled transfer
+experiments; broad self-improvement effectiveness remains unmeasured.
 
 ## Status matrix
 
 | Surface | Status | Notes |
 |---|---|---|
-| Plugin manifests | Works | `validate_v2.py` checks the manifest, skills, hooks, commands, agents, and MCP declaration (146 coherence checks). |
+| Plugin manifests | Works | `validate_v2.py` checks the manifest, skills, hooks, commands, agents, and MCP declaration (generated coherence checks recorded in EVAL.md). |
 | SIPS Homebase MCP | Works | `homebase_status` and related read-only tools are exercised by regression tests. |
-| SIPS graph runtime 0.4.0 | Source-verified, opt-in blocked | DAG, bounded memory frontier, receipts, CLI, and MCP surfaces are implemented. Default remains `legacy`; cache install, fresh-host exposure, and cutover are not yet claimed. |
+| Adaptive core 0.6.0 | Implemented | Durable episodes, independent evaluation, factory contracts, and explicit activation; see release evidence for local installation proof. |
 | Memory Fabric | Works, SIPS-owned | Vendored under `scripts/memory_fabric*.py`; resolved before any legacy fallback. |
 | Hook event tap | Works | Silent by default; `SIPS_DEBUG=1` writes failure details to `logs/hook_errors.jsonl`. |
-| Regression runner | Works | `scripts/run_tests.py` — 94 cases. |
-| pytest suite | Works | 425 repo-local tests covering core surfaces, the 0.4.0 runtime, indexed frontier, interfaces, recovery, and compatibility projections. |
-| CI | Green | GitHub Actions compiles scripts, checks the Python floor, validates the manifest, and runs the suites on Ubuntu and macOS (3.10 / 3.12). |
+| Regression runner | Works | `scripts/run_tests.py`; actual release results are recorded in the ledger. |
+| pytest suite | Works | Repo-local coverage for adaptive evaluation, graph execution, interfaces, recovery, and compatibility; release counts come from the final collected suite. |
+| CI | Not run for this local release | GitHub Actions compiles scripts, checks the Python floor, validates the manifest, and runs the suites on Ubuntu and macOS (3.10 / 3.12). |
 | Packaging | Partial | `pyproject.toml` declares metadata and the Python floor; no package entry points yet. |
 | Memory schema versioning | Partial | New records and the published schema carry `schema_version: 1.0`; migration tooling is planned. |
 | Windows support | Untested | Current target is macOS / Linux POSIX hosts. |
@@ -245,11 +240,11 @@ python3 scripts/validate_v2.py --write-eval
 Run the regression harness and the pytest suite:
 
 ```bash
-python3 scripts/run_tests.py            # 94 core cases
+python3 scripts/run_tests.py            # local core regression harness
 python3 scripts/run_tests.py homebase_mcp
 
 python3 -m pip install ".[dev]"
-pytest                                  # 425 tests
+pytest                                  # complete regression collection
 ```
 
 ## Utility reference
@@ -260,7 +255,7 @@ pytest                                  # 425 tests
 |---|---|
 | `validate_harness.py` | Validates installed harness health. |
 | `validate_v2.py` | Validates plugin manifest coherence and regenerates `EVAL.md`. |
-| `run_tests.py` | Runs the regression harness (94 core cases; 100 with legacy compatibility). |
+| `run_tests.py` | Runs the regression harness; release evidence records the executed collection. |
 | `script_smoke.py` | Syntax and smoke checks for changed harness scripts. |
 | `eval_harness.py` | Python eval runner. |
 | `eval_llm_judge.py` | LLM-as-judge grader for eval cases. |
@@ -308,7 +303,7 @@ pytest                                  # 425 tests
 |---|---|
 | `fan_out.py` | Prepares, ingests, lists, and inspects fan-out runs. |
 | `goal_state.py` | Manages the persistent `/goal` loop state. |
-| `sips_runtime.py` | 0.4.0 graph-runtime CLI. |
+| `sips_runtime.py` | Graph-runtime CLI. |
 | `harness_homebase_mcp.py` | Serves the Homebase MCP control plane. |
 | `harness_browser_mcp.py` | Exposes browser tools to the host harness over MCP stdio. |
 | `hook_event_tap.py` | Wraps hook commands and appends hook-event JSONL. |
@@ -341,3 +336,15 @@ Contributions are welcome through issues and pull requests. See `CONTRIBUTING.md
 ## License
 
 MIT. See `LICENSE`.
+
+### Improve skills and tools during a run
+
+When evidence exposes stale instructions, a reusable workflow, or a tool defect,
+SIPS can capture an improvement notice without changing the active task's scope.
+The `sips-in-run-improvement` skill routes creation, extension, refresh and repair;
+`opportunities` supplies a source-checked handoff to an isolated candidate. See
+[the in-run workflow](docs/sips-in-run-improvement.md). Shared changes still require
+independent checks and exact-candidate activation; useful task-local findings can
+inform the current task immediately.
+
+Episode and dependency diagrams plus explicit procedure-rejection reasons are available through [visual evidence views](docs/sips-visual-evidence.md).

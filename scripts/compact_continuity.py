@@ -2,7 +2,7 @@
 """Compact continuity packet for PreCompact/PostCompact hooks.
 
 PreCompact: reads recent session activity, writes a structured continuity
-packet to ~/.ncode/continuity/<session_id>.md so the compacted context
+packet to ~/.codex/sips/continuity/<session_id>.md so the compacted context
 retains the thread. The packet captures: objective, changed files, evidence
 paths, blockers, and the exact next command.
 
@@ -83,7 +83,7 @@ def extract_recent_activity(transcript_path):
 
 
 def write_continuity_packet(session_id, cwd, files_changed, recent_commands, objective):
-    """Write structured continuity packet to ~/.ncode/continuity/<id>.md."""
+    """Write structured continuity packet to ~/.codex/sips/continuity/<id>.md."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     path = CONTINUITY_DIR / f"{session_id}.md"
 

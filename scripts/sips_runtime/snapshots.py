@@ -25,7 +25,7 @@ class SnapshotStore:
         document: dict[str, Any] = {
             "schema": "sips.runtime.state.v1",
             "schema_version": 1,
-            "runtime_version": "0.4.0",
+            "runtime_version": "0.5.0",
             "revision": int(revision),
             "event_head": str(head_hash),
             "head_hash": str(head_hash),
@@ -52,7 +52,7 @@ class SnapshotStore:
                 document.get("schema") != "sips.runtime.state.v1"
                 or type(document.get("schema_version")) is not int
                 or document.get("schema_version") != 1
-                or document.get("runtime_version") != "0.4.0"
+                or document.get("runtime_version") not in {"0.4.0", "0.5.0"}
             ):
                 raise SnapshotMismatch("snapshot schema or version mismatch")
             revision = document.get("revision")

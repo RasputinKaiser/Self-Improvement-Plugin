@@ -7,3 +7,8 @@ __pycache__/
 *.tmp
 .claude/
 .pytest_cache/
+
+.local-release/
+
+# Machine-local optimization receipts and isolated candidates
+.optimize/runs/

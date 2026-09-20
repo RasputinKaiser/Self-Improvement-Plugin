@@ -7,7 +7,7 @@ from memory_fabric_semantic_aliases import CLAIM_BOUNDARY
 def match_score(record: dict[str, Any], profile: dict[str, Any], fields: list[tuple[str, int]]) -> int:
     direct = sum(weighted_presence(term, fields, semantic=False) for term in profile["direct_terms"])
     semantic = sum(weighted_presence(term, fields, semantic=True) for term in profile["expanded_terms"])
-    return max(1, direct + semantic)
+    return direct + semantic
 
 
 def weighted_presence(term: str, fields: list[tuple[str, int]], *, semantic: bool) -> int:

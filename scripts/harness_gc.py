@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Harness garbage collector for ~/.ncode/.
+"""Harness garbage collector for ~/.codex/sips/.
 
 Read-only drift report. Does NOT delete or mutate anything.
 
 Reports:
 - Stale backups older than 90 days (suggestion only)
 - Orphan presence/cache files not referenced anywhere
-- SIPS trace artifacts accumulated under ~/.ncode/sips/
+- SIPS trace artifacts accumulated under ~/.codex/sips/sips/
 - Duplicate settings backups
 - Large files that may bloat context
 - (optional --deep) SIPS host surface audit: plugin drift, broken refs, MCP errors
@@ -25,7 +25,7 @@ from pathlib import Path
 
 from sips_paths import harness_home
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 STALE_DAYS = 90
 LARGE_FILE_BYTES = 512 * 1024  # 512 KB
@@ -56,7 +56,7 @@ now = time.time()
 stale_threshold = now - (STALE_DAYS * 86400)
 
 # Stale backups
-backups = NCODE_DIR / "backups"
+backups = SIPS_DIR / "backups"
 if backups.is_dir():
     for f in walk_files(backups, max_depth=2):
         try:
@@ -65,10 +65,10 @@ if backups.is_dir():
             continue
         if mtime < stale_threshold:
             age_days = int((now - mtime) / 86400)
-            add("INFO", f"stale backup ({age_days}d): {f.relative_to(NCODE_DIR)}")
+            add("INFO", f"stale backup ({age_days}d): {f.relative_to(SIPS_DIR)}")
 
 # SIPS trace artifacts
-sips_dir = NCODE_DIR / "sips"
+sips_dir = SIPS_DIR / "sips"
 if sips_dir.is_dir():
     count = 0
     size = 0
@@ -82,14 +82,14 @@ if sips_dir.is_dir():
         add("INFO", f"sips/ has {count} files, {size // 1024}KB - consider archiving")
 
 # Duplicate settings backups
-settings_baks = list(NCODE_DIR.glob("settings.json.bak-*"))
+settings_baks = list(SIPS_DIR.glob("settings.json.bak-*"))
 if len(settings_baks) > 3:
     add("INFO", f"{len(settings_baks)} settings.json backups — consider pruning old ones")
 
 # Large files anywhere in tree (excluding obvious dirs)
 skip_dirs = {"projects", "sessions", "history.jsonl", "tasks", "telemetry", "usage-data", "shell-snapshots", "paste-cache", "vision", "chrome", "file-history"}
-for f in walk_files(NCODE_DIR, max_depth=3):
-    rel = f.relative_to(NCODE_DIR)
+for f in walk_files(SIPS_DIR, max_depth=3):
+    rel = f.relative_to(SIPS_DIR)
     if rel.parts and rel.parts[0] in skip_dirs:
         continue
     try:
@@ -101,7 +101,7 @@ for f in walk_files(NCODE_DIR, max_depth=3):
 
 # Historical presence-mirror residue not matched by active source
 src_presence = Path.home() / ".codex" / "sips"
-dst_presence = NCODE_DIR / "sips"
+dst_presence = SIPS_DIR / "sips"
 if src_presence.is_dir() and dst_presence.is_dir():
     for fname in ("chat-presence.md", "rich-presence.md"):
         src = src_presence / fname

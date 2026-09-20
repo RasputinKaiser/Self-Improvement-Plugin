@@ -451,8 +451,14 @@ def test_cache_root_reports_a_versioned_install_candidate():
     assert cache_root.name
 
 
-def test_homebase_status_does_not_claim_uninspected_config_or_host_transport():
-    payload = homebase_mcp.status_payload(ROOT)
+def test_homebase_status_does_not_claim_uninspected_config_or_host_transport(tmp_path):
+    # Establish the worktree explicitly: evaluator/package copies need not be Git checkouts.
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, capture_output=True)
+    for name in (".codex-plugin/plugin.json", ".mcp.json", "hooks/hooks.json"):
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / name).read_bytes())
+    payload = homebase_mcp.status_payload(tmp_path)
 
     assert payload["status"] == "inspected"
     assert payload["proof_layers"]["repo_source"] == "inspected"
@@ -467,6 +473,17 @@ def test_homebase_status_does_not_claim_uninspected_config_or_host_transport():
         assert payload["proof_layers"][layer] == "not_inspected"
     assert "repo-local source" in payload["claim_boundary"]
     assert "task callability" in payload["claim_boundary"]
+
+
+def test_homebase_status_reports_missing_worktree_in_source_snapshot(tmp_path):
+    for name in (".codex-plugin/plugin.json", ".mcp.json"):
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / name).read_bytes())
+    payload = homebase_mcp.status_payload(tmp_path)
+    assert payload["proof_layers"]["repo_source"] == "inspected"
+    assert payload["proof_layers"]["worktree"] == "not_found"
+    assert payload["git"] == {"is_git": False}
 
 
 def test_homebase_status_marks_missing_source_and_worktree_unavailable(tmp_path):
@@ -795,3 +812,152 @@ def test_surfaces_markdown_bounds_large_lists_without_changing_payload():
     assert len(markdown) < 500
     assert payload["surfaces"]["scripts"] == scripts
     assert len(markdown) < 1000
+
+
+# ------------------------------------------------ inline widget MCP surface ----
+
+def test_tools_list_exposes_homebase_show_inline_widget():
+    response = run_mcp_jsonl({"jsonrpc": "2.0", "id": 40, "method": "tools/list", "params": {}})
+
+    names = {tool["name"] for tool in response["result"]["tools"]}
+    assert "homebase_show_inline_widget" in names
+
+    widget_tool = next(
+        tool for tool in response["result"]["tools"] if tool["name"] == "homebase_show_inline_widget"
+    )
+    kinds = widget_tool["inputSchema"]["properties"]["kind"]["enum"]
+    assert kinds == ["board", "lifecycle", "memory", "selfloop", "fleet"]
+
+
+def test_inline_widget_tool_renders_board_to_sips_home(tmp_path):
+    response = run_mcp_jsonl_with_sips_home(
+        {
+            "jsonrpc": "2.0",
+            "id": 41,
+            "method": "tools/call",
+            "params": {
+                "name": "homebase_show_inline_widget",
+                "arguments": {"root": str(ROOT), "kind": "board"},
+            },
+        },
+        tmp_path,
+    )
+    result = response["result"]
+    data = result["structuredContent"]
+    assert data["schema"] == "sips.inline-widget.v1"
+    assert data["ok"] is True
+    assert data["kind"] == "board"
+    assert data["directive"].startswith("::preview{file=")
+    assert (tmp_path / "widgets" / "board-widget.html").exists()
+    markdown = result["content"][0]["text"]
+    assert markdown.startswith("# SIPS Inline Widget")
+    assert "::preview{file=" in markdown
+    assert "does not execute, verify, or authorize" in markdown
+
+
+def test_inline_widget_tool_rejects_unknown_kind():
+    proc = subprocess.run(
+        ["python3", str(HOMEBASE_MCP)],
+        input=json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 42,
+                "method": "tools/call",
+                "params": {"name": "homebase_show_inline_widget", "arguments": {"kind": "nope"}},
+            }
+        )
+        + "\n",
+        capture_output=True,
+        text=True,
+        timeout=10,
+        cwd=str(ROOT),
+    )
+    assert proc.returncode == 0, proc.stderr
+    response = json.loads(proc.stdout)
+    assert response["error"]["code"] == -32602
+    assert "unknown widget kind" in response["error"]["message"]
+
+
+def test_inline_widget_selfloop_kind_renders_history(tmp_path):
+    env = dict(os.environ)
+    env["SIPS_HOME"] = str(tmp_path)
+    setup = subprocess.run(
+        [
+            "python3", str(ROOT / "scripts" / "goal_state.py"),
+            "selfloop-set", "tool reliability",
+        ],
+        capture_output=True, text=True, timeout=10, cwd=str(ROOT), env=env,
+    )
+    assert setup.returncode == 0, setup.stderr
+    goal = subprocess.run(
+        [
+            "python3", str(ROOT / "scripts" / "goal_state.py"),
+            "selfloop-record", "improved", "widget test cycle summary",
+        ],
+        capture_output=True, text=True, timeout=10, cwd=str(ROOT), env=env,
+    )
+    assert goal.returncode == 0, goal.stderr
+    response = run_mcp_jsonl_with_sips_home(
+        {
+            "jsonrpc": "2.0",
+            "id": 43,
+            "method": "tools/call",
+            "params": {
+                "name": "homebase_show_inline_widget",
+                "arguments": {"root": str(ROOT), "kind": "selfloop"},
+            },
+        },
+        tmp_path,
+    )
+    data = response["result"]["structuredContent"]
+    assert data["ok"] is True
+    html = (tmp_path / "widgets" / "selfloop-widget.html").read_text(encoding="utf-8")
+    assert "widget test cycle summary" in html
+    assert "Selfloop" in html
+
+
+# ------------------------------------------------------------- fleet widget ----
+
+def test_render_fleet_empty_and_populated():
+    import inline_widget as iw
+
+    empty_html = iw.render_fleet({"campaigns": [], "statuses": {}, "children_total": 0, "archived_total": 0})
+    assert "No campaigns yet" in empty_html
+
+    populated = iw.render_fleet({
+        "campaigns": [
+            {"campaign_id": "camp-1", "objective": "Do the thing <script>", "status": "active",
+             "child_count": 2, "archived_child_count": 1},
+            {"campaign_id": "camp-2", "objective": "Other", "status": "archived",
+             "child_count": 0, "archived_child_count": 0},
+        ],
+        "statuses": {"active": 1, "archived": 1},
+        "children_total": 2,
+        "archived_total": 1,
+    })
+    assert "camp-1" in populated
+    assert "2 kids · 1 archived" in populated
+    assert "<script>" not in populated  # escaped
+    assert "2 child threads · 1 archived across 2 campaign(s)" in populated
+
+
+def test_mcp_fleet_widget_round_trip(tmp_path):
+    """Fleet widget through the real MCP surface with a real campaign spine."""
+    CampaignFleet(tmp_path).create("Round trip campaign", campaign_id="camp-rt", idempotency_key="rt1")
+    response = run_mcp_jsonl_with_sips_home(
+        {
+            "jsonrpc": "2.0",
+            "id": 50,
+            "method": "tools/call",
+            "params": {
+                "name": "homebase_show_inline_widget",
+                "arguments": {"root": str(ROOT), "kind": "fleet"},
+            },
+        },
+        tmp_path,
+    )
+    data = response["result"]["structuredContent"]
+    assert data["ok"] is True
+    assert data["summary"]["statuses"] == {"active": 1}
+    html = (tmp_path / "widgets" / "fleet-widget.html").read_text(encoding="utf-8")
+    assert "Round trip campaign" in html

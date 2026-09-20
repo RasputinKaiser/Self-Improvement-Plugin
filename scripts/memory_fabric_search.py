@@ -57,7 +57,7 @@ def search_records(
         score = semantic_match_score(record, semantic_profile, fields)
         if not record_matches(
             record,
-            score=score,
+            score=score if semantic_profile["direct_terms"] else 1,
             tier_filter=tier_filter,
             scope=scope,
             status_filter=status_filter,

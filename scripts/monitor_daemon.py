@@ -14,9 +14,9 @@ external/dev-ops signals the agent can't see during a session:
   launchctl and warns if the plist is missing or unloaded.
 
 Output:
-- Appends a JSON record to ~/.ncode/monitor_results.jsonl per run
-- Writes a friendly markdown summary to ~/.ncode/monitor_status.md
-- Issues with severity >= warning append to ~/.ncode/improvements.md
+- Appends a JSON record to ~/.codex/sips/monitor_results.jsonl per run
+- Writes a friendly markdown summary to ~/.codex/sips/monitor_status.md
+- Issues with severity >= warning append to ~/.codex/sips/improvements.md
 
 CLI:
   monitor_daemon.py            # run all checks, write outputs
@@ -33,18 +33,18 @@ from pathlib import Path
 
 from sips_paths import harness_home, scripts_dir
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 SCRIPTS_DIR = scripts_dir()
-RESULTS_PATH = NCODE_DIR / "monitor_results.jsonl"
-STATUS_PATH = NCODE_DIR / "monitor_status.md"
-IMPROVEMENTS_PATH = NCODE_DIR / "improvements.md"
+RESULTS_PATH = SIPS_DIR / "monitor_results.jsonl"
+STATUS_PATH = SIPS_DIR / "monitor_status.md"
+IMPROVEMENTS_PATH = SIPS_DIR / "improvements.md"
 
 PLIST_LABEL = "com.rasputinkaiser.sips-sweep"
 SEVERITIES = ("info", "warning", "critical")
 
 
 def run_script(name, args=None, timeout=30):
-    """Run a script in ~/.ncode/scripts/. Returns CompletedProcess."""
+    """Run a script in ~/.codex/sips/scripts/. Returns CompletedProcess."""
     cmd = ["python3", str(SCRIPTS_DIR / name)] + (args or [])
     try:
         return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -137,7 +137,7 @@ def check_pip_outdated():
 
 
 def check_untested_scripts():
-    """Are there untested scripts in ~/.ncode/scripts/?"""
+    """Are there untested scripts in ~/.codex/sips/scripts/?"""
     r = run_script("proactive_drift.py", timeout=30)
     if r.returncode != 0:
         return []
@@ -218,7 +218,7 @@ def check_script_permissions():
 
 
 def check_large_debug_dirs():
-    """Are there large debug dirs bloating ~/.ncode?"""
+    """Are there large debug dirs bloating ~/.codex/sips?"""
     r = run_script("harness_gc.py", args=["--deep"], timeout=30)
     if r.returncode != 0:
         return []
@@ -237,7 +237,7 @@ def check_large_debug_dirs():
                                 issues.append({
                                     "severity": "info",
                                     "category": "disk",
-                                    "title": "large dir/file in ~/.ncode",
+                                    "title": "large dir/file in ~/.codex/sips",
                                     "detail": line.strip()[:200],
                                 })
                                 break
@@ -264,7 +264,7 @@ def run_all_checks(skip_tests=False):
 
 
 def build_markdown(issues, started_at, finished_at):
-    """Build the friendly ~/.ncode/monitor_status.md."""
+    """Build the friendly ~/.codex/sips/monitor_status.md."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines = [
         f"# Monitor status — {ts}",
@@ -303,7 +303,7 @@ def append_to_improvements(issues):
 
 
 def persist_run(issues):
-    """Append run record to ~/.ncode/monitor_results.jsonl as newline-delimited JSON."""
+    """Append run record to ~/.codex/sips/monitor_results.jsonl as newline-delimited JSON."""
     record = {
         "id": datetime.now(timezone.utc).isoformat(),
         "issues": issues,
@@ -311,7 +311,7 @@ def persist_run(issues):
         "criticalCount": sum(1 for i in issues if i.get("severity") == "critical"),
         "warningCount": sum(1 for i in issues if i.get("severity") == "warning"),
     }
-    NCODE_DIR.mkdir(parents=True, exist_ok=True)
+    SIPS_DIR.mkdir(parents=True, exist_ok=True)
     with open(RESULTS_PATH, "a", encoding="utf-8") as fp:
         fp.write(json.dumps(record) + "\n")
 

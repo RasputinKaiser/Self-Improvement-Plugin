@@ -3,6 +3,17 @@ from __future__ import annotations
 import self_correct
 
 
+def test_failure_topics_count_records_not_repeated_mentions():
+    first = {"tags": ["failure", "tool.py", "tool.py"],
+             "body": "tool.py failed; tool.py retry", "title": "tool.py"}
+    second = {"tags": ["failure"], "body": "tool.py failed again"}
+    success = {"tags": ["success"], "body": "tool.py succeeded"}
+    assert self_correct.find_failure_patterns([first]) == [("tool.py", [first])]
+    assert self_correct.find_failure_patterns([first, second, success]) == [
+        ("tool.py", [first, second])
+    ]
+
+
 def test_find_untested_scripts_recognizes_pytest_and_transitive_coverage(tmp_path, monkeypatch):
     scripts = tmp_path / "scripts"
     tests = tmp_path / "tests"

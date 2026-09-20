@@ -2,10 +2,10 @@
 """Source-first validator for the active SIPS harness.
 
 Read-only. Reports:
-- skills referenced in NCODE.md that don't exist
+- skills referenced in README.md that don't exist
 - agents/commands referenced but missing
 - scripts referenced but missing or non-executable
-- reference docs linked from NCODE.md that don't exist
+- reference docs linked from README.md that don't exist
 - malformed settings.local.json
 - skills missing SKILL.md or frontmatter
 
@@ -19,8 +19,8 @@ from pathlib import Path
 
 from sips_paths import harness_home, plugin_root
 
-NCODE_DIR = plugin_root()
-NCODE_MD = NCODE_DIR / "README.md"
+SIPS_DIR = plugin_root()
+README_PATH = SIPS_DIR / "README.md"
 SETTINGS_LOCAL = harness_home() / "settings.local.json"
 SETTINGS_GLOBAL = harness_home() / "settings.json"
 
@@ -38,18 +38,18 @@ def read(path):
         return ""
 
 
-content = read(NCODE_MD)
+content = read(README_PATH)
 if not content:
-    add("ERR", f"{NCODE_MD} missing")
+    add("ERR", f"{README_PATH} missing")
 
 # Only source-relative reference paths belong to the active harness validator.
-# The defunct ~/.ncode tree is intentionally not inspected or mutated here.
+# The defunct ~/.codex/sips tree is intentionally not inspected or mutated here.
 ref_pat = re.compile(r"references/[^)\s`'\"]+")
 backtick_pat = re.compile(r"`([a-z][a-z0-9_-]+\.(?:py|md|sh))`")
 matches = set(ref_pat.findall(content))
 backticks = set(backtick_pat.findall(content))
 
-# Normalize: extract relative paths under .ncode referring to scripts/skills/agents/commands/references
+# Normalize: extract relative paths under .codex referring to scripts/skills/agents/commands/references
 # Skip paths inside settings.json — settings.json is a referenced-as-do-not-edit, not a script target.
 # Skip glob patterns (*.py, ?[...]) and brace expansions — they're matchers, not literal paths.
 skip_patterns = ("settings.json", "settings.local.json")
@@ -64,7 +64,7 @@ for m in matches:
     if p.startswith("~"):
         p = str(Path(p).expanduser())
     elif p.startswith("references/"):
-        p = str(NCODE_DIR / p)
+        p = str(SIPS_DIR / p)
     elif p.startswith("/Users/"):
         pass
     else:
@@ -75,7 +75,7 @@ for m in matches:
 for b in backticks:
     # Look for it under scripts/, references/
     for sub in ("scripts", "references", "agents", "skills"):
-        cand = NCODE_DIR / sub / b
+        cand = SIPS_DIR / sub / b
         if cand.exists():
             checks.add(cand)
             break
@@ -85,7 +85,7 @@ for p in checks:
         add("ERR", f"README.md references missing path: {p}")
 
 # Validate skills
-skills_dir = NCODE_DIR / "skills"
+skills_dir = SIPS_DIR / "skills"
 if skills_dir.is_dir():
     for d in skills_dir.iterdir():
         if not d.is_dir():
@@ -107,7 +107,7 @@ if skills_dir.is_dir():
                 add("WARN", f"skill '{d.name}' SKILL.md frontmatter incomplete")
 
 # Validate agents
-agents_dir = NCODE_DIR / "agents"
+agents_dir = SIPS_DIR / "agents"
 if agents_dir.is_dir():
     for f in agents_dir.iterdir():
         if f.suffix == ".md":
@@ -123,14 +123,14 @@ if SETTINGS_LOCAL.exists():
         add("ERR", f"settings.local.json malformed: {e}")
 
 # Shell entry points may execute directly. Python hooks are launched via python3.
-scripts_dir = NCODE_DIR / "scripts"
+scripts_dir = SIPS_DIR / "scripts"
 if scripts_dir.is_dir():
     for f in scripts_dir.iterdir():
         if f.suffix == ".sh" and not os.access(f, os.X_OK):
             add("INFO", f"script {f.name} not executable (chmod +x)")
 
 # Ensure references exist
-refs_dir = NCODE_DIR / "references"
+refs_dir = SIPS_DIR / "references"
 if refs_dir.is_dir():
     for f in refs_dir.iterdir():
         if f.suffix == ".md" and not f.read_text(encoding="utf-8", errors="ignore").strip():

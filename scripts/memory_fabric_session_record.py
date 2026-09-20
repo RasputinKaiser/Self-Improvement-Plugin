@@ -2,7 +2,7 @@
 from __future__ import annotations
 """Memory Fabric session recorder for PostCompact.
 
-After NCode compacts the conversation, record a work-tier memory capturing the
+After Codex compacts the conversation, record a work-tier memory capturing the
 session's shipped artifacts. Evidence path points to the transcript.
 
 Advisory-only, non-blocking, silent on any failure.
@@ -50,7 +50,7 @@ def main():
     body = (
         f"Context compaction triggered for cwd={cwd}. "
         f"Transcript size: {size_kb}KB at {transcript}. "
-        f"Subject: NCode harness self-improvement session. "
+        f"Subject: Codex harness self-improvement session. "
         f"Verify transcript for shipped artifacts — scripts, hooks, and patches."
     )
 

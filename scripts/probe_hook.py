@@ -23,7 +23,7 @@ try:
 except OSError:
     pass
 
-# Emit JSON — this is what NCode should inject as additionalContext
+# Emit JSON — this is what Codex should inject as additionalContext
 sys.stdout.write(json.dumps({
     "additionalContext": f"[PROBE] hook fired; marker={MARKER}"
 }))

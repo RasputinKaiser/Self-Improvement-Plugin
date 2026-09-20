@@ -25,11 +25,11 @@ from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent
 # Golden vectors live in the plugin source tree at references/eval_grader_golden.json.
-# This script may run from ~/.ncode/scripts/ (installed) or from the source repo.
+# This script may run from ~/.codex/sips/scripts/ (installed) or from the source repo.
 # Try both: the plugin install root, then the source repo root.
 GOLDEN_PATHS = [
     SCRIPTS_DIR.parent / "references" / "eval_grader_golden.json",       # source repo
-    Path.home() / ".ncode/plugins/marketplaces/harness-local/references/eval_grader_golden.json",  # installed
+    Path.home() / ".codex/plugins/marketplaces/harness-local/references/eval_grader_golden.json",  # installed
 ]
 
 

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-family, ui-sans-serif, system-ui, sans-serif);
+  color: var(--foreground, #333);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.w { max-width: 560px; }
+.caption {
+  font-size: 11px;
+  color: var(--muted-foreground, #888);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+.card {
+  border-radius: 12px;
+  background: var(--card, rgba(127,127,127,0.06));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--foreground, #333) 8%, transparent),
+    0 1px 2px color-mix(in srgb, var(--foreground, #333) 4%, transparent),
+    0 3px 10px color-mix(in srgb, var(--foreground, #333) 6%, transparent);
+  padding: 12px;
+  animation: rise 0.3s cubic-bezier(0.2, 0, 0, 1) backwards;
+}
+@keyframes rise { from { transform: translateY(6px); } }
+.num { font-variant-numeric: tabular-nums; }
+.head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+}
+.dot.running, .dot.active { background: #eab308; color: #eab308; }
+.dot.complete, .dot.done, .dot.ok { background: #22c55e; color: #22c55e; }
+.dot.blocked, .dot.failed { background: #ef4444; color: #ef4444; }
+.obj {
+  font-weight: 600;
+  flex: 1 1 140px;
+  min-width: 120px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-wrap: balance;
+  font-size: 12.5px;
+}
+.chip {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground, #888);
+  background: color-mix(in srgb, var(--foreground, #333) 6%, transparent);
+}
+.chip.good { color: #16a34a; background: color-mix(in srgb, #22c55e 14%, transparent); }
+.chip.warn { color: #b45309; background: color-mix(in srgb, #eab308 18%, transparent); }
+.chip.bad { color: #dc2626; background: color-mix(in srgb, #ef4444 14%, transparent); }
+.chip.accent { color: var(--accent, #3b82f6); background: color-mix(in srgb, var(--accent, #3b82f6) 12%, transparent); }
+.progress {
+  margin: 10px 0 5px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground, #333) 10%, transparent);
+  overflow: hidden;
+}
+.progress > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #3b82f6) 70%, transparent), var(--accent, #3b82f6));
+  transition: width 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+.meta { font-size: 11px; color: var(--muted-foreground, #888); margin: 0; font-variant-numeric: tabular-nums; }
+.tasks { display: grid; gap: 5px; margin-top: 9px; }
+.task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  cursor: default;
+  transition: background 0.15s ease;
+  animation: rise 0.3s cubic-bezier(0.2, 0, 0, 1) backwards;
+}
+.task:nth-child(1) { animation-delay: 0.04s; }
+.task:nth-child(2) { animation-delay: 0.08s; }
+.task:nth-child(3) { animation-delay: 0.12s; }
+.task:nth-child(4) { animation-delay: 0.16s; }
+.task:nth-child(5) { animation-delay: 0.20s; }
+.task:nth-child(6) { animation-delay: 0.24s; }
+.task:nth-child(7) { animation-delay: 0.28s; }
+.task:nth-child(8) { animation-delay: 0.32s; }
+.task:hover { background: color-mix(in srgb, var(--accent, #3b82f6) 8%, transparent); }
+.task .phase {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent, #3b82f6);
+  flex: none;
+  width: 58px;
+}
+.task .t {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.task .st { font-size: 10px; flex: none; color: var(--muted-foreground, #888); font-variant-numeric: tabular-nums; }
+.actions { display: flex; gap: 6px; margin-top: 11px; }
+.actions button {
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--foreground, #333) 7%, transparent);
+  color: var(--foreground, #333);
+  padding: 6px 12px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.actions button::after { content: ""; position: absolute; inset: -6px; border-radius: 14px; }
+.actions button:hover { background: color-mix(in srgb, var(--accent, #3b82f6) 14%, transparent); }
+.actions button:active { transform: scale(0.96); }
+.bars { display: grid; gap: 7px; margin-top: 10px; }
+.bar { display: grid; grid-template-columns: 92px 1fr 52px; align-items: center; gap: 8px;
+  animation: rise 0.3s cubic-bezier(0.2, 0, 0, 1) backwards; }
+.bar:nth-child(1) { animation-delay: 0.03s; } .bar:nth-child(2) { animation-delay: 0.06s; }
+.bar:nth-child(3) { animation-delay: 0.09s; } .bar:nth-child(4) { animation-delay: 0.12s; }
+.bar:nth-child(5) { animation-delay: 0.15s; } .bar:nth-child(6) { animation-delay: 0.18s; }
+.bar:nth-child(7) { animation-delay: 0.21s; } .bar:nth-child(8) { animation-delay: 0.24s; }
+.bar .name { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .track { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--foreground, #333) 8%, transparent); overflow: hidden; }
+.bar .track > i { display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #3b82f6) 55%, transparent), var(--accent, #3b82f6)); }
+.bar .val { font-size: 11px; color: var(--muted-foreground, #888); text-align: right; font-variant-numeric: tabular-nums; }
+.spark { margin-top: 12px; }
+.spark svg { display: block; width: 100%; height: 44px; }
+.spark .cap { font-size: 10px; color: var(--muted-foreground, #888); margin: 3px 0 0; }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.recent { display: grid; gap: 6px; margin-top: 10px; }
+.rec {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 9px; border-radius: 7px;
+  transition: background 0.15s ease;
+  animation: rise 0.3s cubic-bezier(0.2, 0, 0, 1) backwards;
+}
+.rec:nth-child(1) { animation-delay: 0.04s; }
+.rec:nth-child(2) { animation-delay: 0.08s; }
+.rec:nth-child(3) { animation-delay: 0.12s; }
+.rec:nth-child(4) { animation-delay: 0.16s; }
+.rec:hover { background: color-mix(in srgb, var(--accent, #3b82f6) 8%, transparent); }
+.rec .rt { flex: 1 1 auto; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donut-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.donut { flex: none; }
+.donut svg { display: block; }
+.donut-legend { display: grid; gap: 4px; font-size: 11px; flex: 1; }
+.donut-legend .row { display: flex; align-items: center; gap: 6px; }
+.donut-legend .sw { width: 8px; height: 8px; border-radius: 3px; flex: none; }
+.donut-legend .lbl { flex: 1; color: var(--muted-foreground, #888); }
+.donut-legend .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="w">
+
+  <p class="caption">SIPS hook-event stream — hover bars and sparkline dots for detail.</p>
+  <div class="card">
+    <div class="head">
+      <span class="dot ok"></span>
+      <span class="obj">Hook event lifecycle</span>
+      <span class="chip good">10589 ok</span> <span class="chip bad">3 blocked</span> <span class="chip">87 sessions</span>
+    </div>
+    <div class="bars"><div class="bar" title="terminal: 4081 calls"><span class="name">terminal</span><span class="track"><i style="width:100%"></i></span><span class="val num">4081</span></div><div class="bar" title="patch: 1270 calls"><span class="name">patch</span><span class="track"><i style="width:31%"></i></span><span class="val num">1270</span></div><div class="bar" title="read_file: 858 calls"><span class="name">read_file</span><span class="track"><i style="width:21%"></i></span><span class="val num">858</span></div><div class="bar" title="vision_analyze: 849 calls"><span class="name">vision_analyze</span><span class="track"><i style="width:21%"></i></span><span class="val num">849</span></div><div class="bar" title="execute_code: 768 calls"><span class="name">execute_code</span><span class="track"><i style="width:19%"></i></span><span class="val num">768</span></div><div class="bar" title="skill_view: 285 calls"><span class="name">skill_view</span><span class="track"><i style="width:7%"></i></span><span class="val num">285</span></div><div class="bar" title="browser_exec: 282 calls"><span class="name">browser_exec</span><span class="track"><i style="width:7%"></i></span><span class="val num">282</span></div><div class="bar" title="search_files: 279 calls"><span class="name">search_files</span><span class="track"><i style="width:7%"></i></span><span class="val num">279</span></div></div>
+    <div class="spark">
+      <svg viewBox="0 0 520 44" preserveAspectRatio="none" role="img" aria-label="activity">
+  <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="var(--accent, #3b82f6)" stop-opacity="0.25"/>
+    <stop offset="1" stop-color="var(--accent, #3b82f6)" stop-opacity="0"/>
+  </linearGradient></defs>
+  <path d="M0,44 L0.0,39.7 L40.0,39.9 L80.0,13.7 L120.0,20.1 L160.0,12.3 L200.0,25.2 L240.0,13.3 L280.0,6.0 L320.0,21.1 L360.0,28.9 L400.0,15.9 L440.0,34.8 L480.0,40.0 L520.0,24.2 L520,44 Z" fill="url(#sg)"/>
+  <polyline points="0.0,39.7 40.0,39.9 80.0,13.7 120.0,20.1 160.0,12.3 200.0,25.2 240.0,13.3 280.0,6.0 320.0,21.1 360.0,28.9 400.0,15.9 440.0,34.8 480.0,40.0 520.0,24.2" fill="none" stroke="var(--accent, #3b82f6)" stroke-width="1.5"
+    stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+  <circle cx="0.0" cy="39.7" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 14 events</title></circle><circle cx="40.0" cy="39.9" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 5 events</title></circle><circle cx="80.0" cy="13.7" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 1305 events</title></circle><circle cx="120.0" cy="20.1" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 985 events</title></circle><circle cx="160.0" cy="12.3" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 1372 events</title></circle><circle cx="200.0" cy="25.2" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 733 events</title></circle><circle cx="240.0" cy="13.3" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 1321 events</title></circle><circle cx="280.0" cy="6.0" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 1684 events</title></circle><circle cx="320.0" cy="21.1" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 935 events</title></circle><circle cx="360.0" cy="28.9" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 550 events</title></circle><circle cx="400.0" cy="15.9" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 1194 events</title></circle><circle cx="440.0" cy="34.8" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 259 events</title></circle><circle cx="480.0" cy="40.0" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 2 events</title></circle><circle cx="520.0" cy="24.2" r="2" fill="var(--accent, #3b82f6)"><title>01-01 22:59 — 781 events</title></circle>
+</svg>
+      <p class="cap num">events per 6h · Aug 28 – Aug 31 (3.6d) · <span class="num">9836</span> tool calls</p>
+    </div>
+    <div class="actions">
+      <button data-hermes-send="Refresh the SIPS inline lifecycle widget">Refresh</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

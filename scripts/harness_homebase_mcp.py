@@ -2,7 +2,7 @@
 """SIPS Homebase MCP server for the Self-Improvement harness.
 
 This is the public harness repo's native MCP surface. It intentionally exposes
-portable homebase_* tools instead of harness-specific names so Codex, NCode, and
+portable homebase_* tools instead of harness-specific names so Codex, Claude Code, and
 future harnesses can all use the same control plane.
 """
 
@@ -21,6 +21,12 @@ from typing import Any, Sequence
 
 from sips_paths import goal_state_path
 from sips_runtime.campaign_fleet import CampaignFleet, campaign_markdown
+
+try:
+    from inline_widget import widget_markdown, widget_payload
+except ImportError:  # widget renderer is an optional presentation surface
+    widget_payload = None
+    widget_markdown = None
 
 UNKNOWN_PLUGIN_VERSION = "0.0.0"
 SIPS_PLUGIN_ID = "harness-self-improvement@harness-local"
@@ -104,14 +110,14 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "homebase_route",
         "title": "SIPS Homebase Route",
-        "description": "Choose the best home-base command, agent, script, or MCP path for a task across Codex/NCode/generic harnesses.",
+        "description": "Choose the best home-base command, agent, script, or MCP path for a task across Codex/Claude Code/generic harnesses.",
         "inputSchema": object_schema(
             {
                 "root": ROOT_PROPERTY,
                 "task": TEXT_PROPERTY,
                 "harness": {
                     "type": "string",
-                    "description": "Target harness: codex, ncode, generic, or auto. Defaults to auto.",
+                    "description": "Target harness: codex, claude, generic, or auto. Defaults to auto.",
                 },
                 "mode": {"type": "string", "description": "read-only, plan, or edit. Defaults to read-only."},
             },
@@ -304,6 +310,18 @@ TOOLS: list[dict[str, Any]] = [
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     },
     {
+        "name": "homebase_adaptation_read", "title": "SIPS Adaptation Evidence",
+        "description": "Read correction status, evidence, receipts, events, or candidate differences without mutation.",
+        "inputSchema": object_schema({"episode": TEXT_PROPERTY, "query": TEXT_PROPERTY, "context_json": TEXT_PROPERTY, "view": {"type": "string", "enum": ["status", "events", "evidence", "receipt", "diff", "investigation", "lineage", "procedures", "next", "outcomes", "dependencies", "opportunities", "visual"]}}, required=["episode"]),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_adaptation_write", "title": "SIPS Adaptation Control",
+        "description": "Revision-checked local adaptation; activation requires explicit approval of the exact reviewed digest.",
+        "inputSchema": object_schema({"action": {"type": "string", "enum": ["observe", "diagnose", "propose", "build", "evaluate", "activate", "rollback", "recover", "cancel", "investigate", "probe", "reduce", "conclude", "add_counterexamples", "artifact", "compose", "policy_trial", "analyze", "advance", "link_outcome", "notice"]}, "request_json": TEXT_PROPERTY}, required=["action", "request_json"]),
+        "annotations": {"readOnlyHint": False, "destructiveHint": True, "openWorldHint": False},
+    },
+    {
         "name": "homebase_tool_factory",
         "title": "SIPS Tool Factory",
         "description": "Decide whether to reuse, improve, or scaffold a deterministic helper.",
@@ -314,6 +332,8 @@ TOOLS: list[dict[str, Any]] = [
                 "desired_tool": TEXT_PROPERTY,
                 "existing_script": TEXT_PROPERTY,
                 "force_new": {"type": "boolean", "description": "Recommend a new helper even if a likely existing script exists."},
+                "available_types": array_schema({"type": "string"}),
+                "required_types": array_schema({"type": "string"}),
             },
             required=["task"],
         ),
@@ -352,6 +372,23 @@ TOOLS: list[dict[str, Any]] = [
                 "since_revision": {"type": "integer", "minimum": 0, "description": "Only return changes after this runtime revision."},
                 "max_changes": {"type": "integer", "minimum": 0, "maximum": 100, "description": "Maximum bounded changes to return. Defaults to 24."},
             }
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "homebase_show_inline_widget",
+        "title": "SIPS Inline Widget",
+        "description": "Render a compact HTML widget from live SIPS state for inline chat delivery via the host ::preview directive. Returns the directive to put on its own line in the reply.",
+        "inputSchema": object_schema(
+            {
+                "root": ROOT_PROPERTY,
+                "kind": {
+                    "type": "string",
+                    "enum": ["board", "lifecycle", "memory", "selfloop", "fleet"],
+                    "description": "Widget kind: goal board, hook-event lifecycle, memory fabric, selfloop cycle history, or campaign fleet.",
+                },
+            },
+            required=["kind"],
         ),
         "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False},
     },
@@ -508,6 +545,13 @@ def rel_files(root: Path, pattern: str) -> list[str]:
     if not root.exists():
         return []
     return sorted(str(path.relative_to(root)) for path in root.glob(pattern) if path.is_file())
+
+
+TOOLS.append({
+    'name':'homebase_method', 'title':'SIPS Research Methods',
+    'description':'Read-only diagnostic design, combinatorial coverage, morphology, conditional support, and exploratory process monitoring. Advisory only.',
+    'inputSchema':object_schema({'method':{'type':'string','enum':['diagnosis','coverage','morphology','assumptions','drift']},'request_json':TEXT_PROPERTY},required=['method','request_json']),
+    'annotations':{'readOnlyHint':True,'destructiveHint':False,'openWorldHint':False}})
 
 
 def git_summary(root: Path) -> dict[str, Any]:
@@ -723,6 +767,8 @@ def context_scan_payload(root: Path, patterns: list[str], limit: int, max_bytes:
 
 def recall_payload(root: Path, query: str, limit: int) -> dict[str, Any]:
     import recall_ranker
+    from sips_runtime.capabilities import intervention_memories
+    interventions = intervention_memories(root, query, limit)
 
     mf = recall_ranker.find_cli()
     if not mf:
@@ -732,6 +778,7 @@ def recall_payload(root: Path, query: str, limit: int) -> dict[str, Any]:
             "query": query,
             "status": "memory_fabric_unavailable",
             "records": [],
+            "intervention_memories": interventions,
         }
     scope = root
     receipt = run(("python3", mf, "search", "--query", query, "--scope", str(scope), "--limit", str(limit)), root, timeout=15)
@@ -747,6 +794,7 @@ def recall_payload(root: Path, query: str, limit: int) -> dict[str, Any]:
         "query": query,
         "status": "passed" if receipt["ok"] else "failed",
         "records": records,
+        "intervention_memories": interventions,
         "receipt": receipt,
         "claim_boundary": "Recall is advisory memory retrieval; verify recalled claims before relying on them.",
     }
@@ -1490,21 +1538,65 @@ def perception_plan_payload(root: Path, surface: str, target: str, expected: lis
     }
 
 
-def tool_factory_payload(root: Path, task: str, desired_tool: str, existing_script: str, force_new: bool) -> dict[str, Any]:
-    scripts = [path.name for path in (root / "scripts").glob("*.py")] if (root / "scripts").exists() else []
-    lowered = f"{task} {desired_tool} {existing_script}".lower()
-    candidates = [name for name in scripts if any(part and part in name.lower() for part in lowered.replace("_", " ").replace("-", " ").split())]
-    decision = "scaffold" if force_new or not candidates else "reuse_or_improve"
-    return {
-        "schema": "homebase.tool_factory.v1",
-        "root": str(root),
-        "task": task,
-        "desired_tool": desired_tool,
-        "existing_script": existing_script,
-        "decision": decision,
-        "candidate_scripts": candidates[:10],
-        "next_command": f"python3 scripts/tool_factory.py scaffold {desired_tool or 'new_helper'} --dry-run" if decision == "scaffold" else f"python3 scripts/tool_factory.py validate {candidates[0].removesuffix('.py')}" if candidates else "",
-    }
+def tool_factory_payload(root: Path, task: str, desired_tool: str, existing_script: str,
+                         force_new: bool, available_types=None, required_types=None) -> dict[str, Any]:
+    import shlex
+    from tool_contracts import read_contract, compose
+    from sips_runtime.capabilities import registry
+    registered = {item["id"]: item for item in registry(root)}
+    stop = {'a', 'an', 'the', 'to', 'for', 'with', 'of', 'and', 'make', 'create', 'tool', 'helper', 'py', 'sh'}
+    def tokens(value):
+        return set(re.findall(r"[a-z0-9]+", value.lower())) - stop
+    query = tokens(f"{task} {desired_tool}")
+    candidates = []
+    capabilities = []
+    for path in sorted((root / 'scripts').glob('*')):
+        if path.suffix not in {'.py', '.sh'} or not path.is_file():
+            continue
+        contract = None
+        try:
+            contract = read_contract(path)
+        except (OSError, ValueError, TypeError, KeyError):
+            pass
+        score = len(query & tokens(path.stem)) * 3
+        if contract:
+            score += len(query & tokens(contract['description']))
+            if registered.get(path.name, {}).get('validation_status') == 'current':
+                capabilities.append(registered[path.name] if contract['schema'] == 'sips.tool-contract.v2' else {'id': path.name, 'inputs': contract['inputs'] + contract['preconditions'], 'outputs': contract['outputs']})
+        exact = bool(existing_script) and Path(existing_script).name in {path.name, path.stem}
+        if exact:
+            score += 100
+        if required_types:
+            if not contract or not set(required_types) <= set(contract['outputs']):
+                continue
+            if contract['schema'] == 'sips.tool-contract.v2' or not set(contract['inputs'] + contract['preconditions']) <= set(available_types or []):
+                continue
+            score += 20
+        if score:
+            candidates.append({'script': path.name, 'score': score,
+                               'contract_status': 'implemented' if contract else 'unavailable',
+                               'validation_status': registered.get(path.name, {}).get('validation_status', 'unavailable')})
+    candidates.sort(key=lambda item: (-item['score'], item['script']))
+    composition = compose([c for c in capabilities if c.get('schema') != 'sips.tool-contract.v2'], available_types or [], required_types) if required_types else None
+    decision = 'scaffold' if force_new else ('reuse_or_improve' if candidates else
+               'compose' if composition and composition['status'] == 'proposed' else 'insufficient_fit')
+    if decision == 'reuse_or_improve':
+        candidate = Path(candidates[0]['script'])
+        argv = [sys.executable, str(Path(__file__).with_name('tool_factory.py')), 'validate', candidate.stem,
+                '--lang', candidate.suffix[1:], '--script', str((root / 'scripts' / candidate).resolve())]
+    elif decision == 'scaffold':
+        name = re.sub(r'[^A-Za-z0-9_-]', '_', desired_tool or 'new_helper')
+        if not name or not re.match(r'[A-Za-z_]', name):
+            name = 'helper_' + name
+        argv = [sys.executable, str(Path(__file__).with_name('tool_factory.py')), 'scaffold', name, '--summary', task or desired_tool or 'Local helper', '--dry-run']
+    else:
+        argv = []
+    return {'schema': 'homebase.tool_factory.v2', 'root': str(root), 'task': task,
+            'desired_tool': desired_tool, 'existing_script': existing_script, 'decision': decision,
+            'candidate_scripts': [item['script'] for item in candidates[:10]],
+            'candidates': candidates[:10], 'composition': composition, 'registry': list(registered.values()),
+            'next_argv': argv, 'next_command': shlex.join(argv),
+            'claim_boundary': 'Candidates and typed plans require behavioral validation before use.'}
 
 
 def tool_result(payload: dict[str, Any], markdown: str, *, is_error: bool = False) -> dict[str, Any]:
@@ -1530,6 +1622,18 @@ def runtime_tool_payload(root: Path, operation: str, request_json: str, *, write
     api = RuntimeAPI()
     result = api.write(operation, request) if write else api.read(operation, request)
     return dict(result)
+
+
+def inline_widget_tool_payload(root: Path, kind: str) -> dict[str, Any]:
+    """Delegate to the inline-widget renderer; fail closed if it is unavailable."""
+    if widget_payload is None or widget_markdown is None:
+        raise JsonRpcError(-32000, "inline widget renderer unavailable (inline_widget.py missing)")
+    if not kind:
+        raise JsonRpcError(-32602, "kind is required")
+    try:
+        return widget_payload(kind)
+    except KeyError as exc:
+        raise JsonRpcError(-32602, f"unknown widget kind: {kind}") from exc
 
 
 def goal_board_payload(
@@ -2077,6 +2181,25 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             safe_strings(arguments.get("expected_visible_state")),
         )
         return tool_result(payload, render(payload, "SIPS Perception Plan"))
+    if name == "homebase_method":
+        from sips_runtime.methods import analyze
+        try:
+            payload = analyze(str(arguments.get('method','')),json.loads(arguments.get('request_json') or '{}'))
+        except (ValueError,TypeError,KeyError) as exc:
+            raise JsonRpcError(-32602,str(exc)) from exc
+        return tool_result(payload,render(payload,'SIPS Research Method'))
+    if name in {"homebase_adaptation_read", "homebase_adaptation_write"}:
+        from sips_runtime.adaptation import AdaptationController
+        controller = AdaptationController()
+        try:
+            if name.endswith('_read'):
+                payload = controller.read(str(arguments.get('episode', '')), str(arguments.get('view') or 'status'), str(arguments.get('query') or ''), json.loads(arguments.get('context_json') or '{}'))
+            else:
+                request = json.loads(str(arguments.get('request_json') or '{}'))
+                payload = controller.write(str(arguments.get('action', '')), request)
+        except (ValueError, OSError, KeyError, RuntimeError) as exc:
+            raise JsonRpcError(-32602, str(exc)) from exc
+        return tool_result(payload, render(payload, 'SIPS Adaptation'))
     if name == "homebase_tool_factory":
         task = str(arguments.get("task") or "").strip()
         if not task:
@@ -2087,6 +2210,8 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             str(arguments.get("desired_tool") or ""),
             str(arguments.get("existing_script") or ""),
             bool(arguments.get("force_new")),
+            safe_strings(arguments.get("available_types")),
+            safe_strings(arguments.get("required_types")),
         )
         return tool_result(payload, render(payload, "SIPS Tool Factory"))
     if name == "sips_runtime_read":
@@ -2118,6 +2243,10 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             goal_board_markdown(payload),
             is_error=payload.get("ok") is not True,
         )
+    if name == "homebase_show_inline_widget":
+        kind = str(arguments.get("kind") or "").strip()
+        payload = inline_widget_tool_payload(root, kind)
+        return tool_result(payload, widget_markdown(payload))
     if name == "homebase_campaign_fleet_read":
         payload = campaign_fleet_read_payload(arguments)
         return tool_result(payload, campaign_fleet_markdown(payload, title="SIPS Campaign Fleet"))
@@ -2149,7 +2278,7 @@ def handle_request(message: dict[str, Any]) -> dict[str, Any] | None:
                 "protocolVersion": params.get("protocolVersion", "2025-03-26"),
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sips-homebase", "version": plugin_version()},
-                "instructions": "Use homebase_* tools as the SIPS shared harness control plane across Codex, NCode, and future harnesses.",
+                "instructions": "Use homebase_* tools as the SIPS shared harness control plane across Codex, Claude Code, and future harnesses.",
             }
         elif method == "notifications/initialized":
             return None

@@ -28,7 +28,7 @@ SEMVER_RE = re.compile(
 )
 VERSION_PATHS = (
     Path(".codex-plugin/plugin.json"),
-    Path(".ncode-plugin/marketplace.json"),
+    Path(".claude-plugin/marketplace.json"),
     Path("pyproject.toml"),
 )
 

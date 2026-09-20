@@ -1,28 +1,22 @@
 ---
-name: brainstorm
-description: Survey current capabilities, identify gaps, dispatch the escalate agent to draft a concrete build plan for the top gap. Proactive — the complement to /improve (which is reactive).
+description: Compare evidence-backed gaps and cross-disciplinary mechanisms, then propose bounded experiments.
 ---
+Follow `references/command-protocol.md`.
 
-The JSON response also includes bounded `idea_cards`. Each card has a stable
-ID, source signal, leverage/effort, and a plan card using the
-Scout → Judge → Worker → verify sequence. Cards are suggestions only:
-brainstorm does not create tasks, write code, or claim that a suggested change
-has been verified.
+Run `python3 <plugin-root>/scripts/brainstorm.py --json`. Treat capability-map
+checkboxes and leverage scores as hypotheses; verify current implemented contracts
+and task callability before declaring a capability absent.
 
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/brainstorm.py --json` to survey current capabilities and identify gaps. The response keeps the legacy `gaps` array and adds 3-5 ranked `idea_cards`, each with a stable ID, source signal, plan, effort estimate, and leverage score.
+For a demonstrated gap, use morphological analysis: define a few independent
+axes (reuse/compose/repair, evidence source, failure mechanism, evaluation family).
+Supply explicit incompatible combinations to `homebase_method` with method
+`morphology`, or `research_methods.py morphology --request-file model.json`.
+Include the no-change control. Compare at most a few coherent alternatives.
 
-Read the result. Then **dispatch the `escalate` agent** to draft a full build plan for the highest-leverage gap (the top entry). Give the escalate agent:
+Each idea needs the source domain and date, transferable mechanism, assumptions,
+where the analogy breaks, smallest falsification experiment, and expected artifact.
+Preserve competing explanations and negative evidence. Distinguish an established
+method from a new SIPS combination and from an untested novelty claim.
 
-- The gap name and description
-- The current capability map (from `references/capability_map.md` in this plugin)
-- Instruction to produce: a phased plan with concrete file paths, new types/modules, UX patterns to borrow from Codex App / Claude Code, test strategy, and risk/rollback notes
-- Constraint: do NOT write any code — produce the plan only. The user will review and decide whether to implement.
-
-Present the user with:
-
-1. **Ranked gap list** (3-5 items with effort + leverage scores)
-2. **The escalated plan** for the top gap (full architecture, phased build order)
-
-Append a one-line summary to `${SIPS_HOME:-$HOME/.codex/sips}/improvements.md` under `## /brainstorm sweep — <ts>` noting what the top gap was and whether the escalate agent produced a plan.
-
-Do not edit `${CLAUDE_PLUGIN_ROOT}/scripts/*` or the SIPS plugin source beyond the journal append. If the escalate agent suggests code changes, surface them as proposals only - the user explicitly reviews before any implementation.
+Present ranked proposals and the next discriminating experiment. The active task
+agent writes the plan. Do not dispatch another agent merely to expand an idea.

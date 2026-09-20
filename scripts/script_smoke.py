@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""PostToolUse smoke test for ~/.ncode/scripts/*.py.
+"""PostToolUse smoke test for ~/.codex/sips/scripts/*.py.
 
-After any Edit/Write to a Python script under ~/.ncode/scripts/, run the
+After any Edit/Write to a Python script under ~/.codex/sips/scripts/, run the
 script's --help (or no-args) to catch syntax errors at edit time. Non-blocking
 advisory feedback if the script is broken.
 

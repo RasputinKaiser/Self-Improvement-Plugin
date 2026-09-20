@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harness restore — restore a known-good snapshot of ~/.ncode/scripts/.
+"""Harness restore — restore a known-good snapshot of ~/.codex/sips/scripts/.
 
 Usage:
   restore_harness.py <hash>      # restore <hash>
@@ -17,9 +17,9 @@ from pathlib import Path
 
 from sips_paths import harness_home, harness_scripts_dir
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 SCRIPTS_DIR = harness_scripts_dir()
-BACKUP_ROOT = NCODE_DIR / "backups" / "snapshots"
+BACKUP_ROOT = SIPS_DIR / "backups" / "snapshots"
 
 
 def list_snapshots():
@@ -75,7 +75,7 @@ def restore(hash_str, dry_run=False):
 
     print(f"restored {restored} files from {snapshot_dir}")
     print(f"pre-restore saved at: {pre_restore_dir}")
-    print("recommended: run 'python3 ~/.ncode/scripts/run_tests.py' to verify")
+    print("recommended: run 'python3 ~/.codex/sips/scripts/run_tests.py' to verify")
     return 0
 
 

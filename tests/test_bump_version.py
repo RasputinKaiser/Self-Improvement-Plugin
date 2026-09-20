@@ -15,12 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def write_version_fixture(root: Path) -> None:
     (root / ".codex-plugin").mkdir(parents=True)
-    (root / ".ncode-plugin").mkdir(parents=True)
+    (root / ".claude-plugin").mkdir(parents=True)
     (root / ".codex-plugin" / "plugin.json").write_text(
         json.dumps({"name": "harness-self-improvement", "version": "0.3.1"}, indent=2) + "\n",
         encoding="utf-8",
     )
-    (root / ".ncode-plugin" / "marketplace.json").write_text(
+    (root / ".claude-plugin" / "marketplace.json").write_text(
         json.dumps({"plugins": [{"name": "harness-self-improvement", "version": "0.3.1"}]}, indent=2) + "\n",
         encoding="utf-8",
     )
@@ -38,11 +38,11 @@ def test_build_updates_changes_only_three_authoritative_version_files(tmp_path):
     assert current == "0.3.1"
     assert {path.relative_to(tmp_path).as_posix() for path in updates} == {
         ".codex-plugin/plugin.json",
-        ".ncode-plugin/marketplace.json",
+        ".claude-plugin/marketplace.json",
         "pyproject.toml",
     }
     assert json.loads(updates[tmp_path / ".codex-plugin" / "plugin.json"])["version"] == "0.4.0-rc.1"
-    assert json.loads(updates[tmp_path / ".ncode-plugin" / "marketplace.json"])["plugins"][0]["version"] == "0.4.0-rc.1"
+    assert json.loads(updates[tmp_path / ".claude-plugin" / "marketplace.json"])["plugins"][0]["version"] == "0.4.0-rc.1"
     assert 'version = "0.4.0-rc.1"' in updates[tmp_path / "pyproject.toml"]
     assert 'version = "0.3.1"' in (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
 
@@ -94,7 +94,7 @@ def test_cli_dry_run_lists_only_manifests_and_preserves_source_bytes():
 
     assert completed.returncode == 0, completed.stderr
     assert ".codex-plugin/plugin.json" in completed.stdout
-    assert ".ncode-plugin/marketplace.json" in completed.stdout
+    assert ".claude-plugin/marketplace.json" in completed.stdout
     assert "pyproject.toml" in completed.stdout
     assert "Cache/install/publish are outside this helper" in completed.stdout
     assert {path: path.read_bytes() for path in paths} == before

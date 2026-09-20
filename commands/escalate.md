@@ -1,20 +1,19 @@
 ---
-description: Force-route the next bounded step to the frontier (claude-opus) escalation agent.
+description: Reframe a blocked decision or explicitly delegate a bounded task using current host capabilities.
 ---
-Argument: $ARGUMENTS — the bounded subtask to escalate.
+Follow `references/command-protocol.md`.
 
-Dispatch the `escalate` agent with this single, well-scoped task:
-"$ARGUMENTS"
+State the unresolved decision, attempted approaches, evidence, competing
+hypotheses, permitted files, and independent acceptance checks. First identify
+whether the missing resource is information, an interface, an executable tool,
+or a genuinely independent judgment. More model calls do not resolve identical
+missing observations.
 
-Before dispatching, confirm the task is genuinely bounded (one decision or one
-localized fix). If it is broad, decompose it first and escalate only the slice
-the main session is stuck on — escalation is a scalpel, not a session
-swap.
+The active task may perform the second-look analysis itself. If the user's
+invocation explicitly requests delegation, discover the supported native roles
+and follow configured preflight/ownership limits. Do not hard-code a model name
+or substitute another role silently. Preserve the parent model settings.
 
-When the agent returns its `DIFF:` and `LESSON:` blocks:
-1. Apply the diff (the autonomy gate will snapshot first if it touches SIPS plugin source).
-2. Record the LESSON to Memory Fabric scoped to the touched file:
-   `python3 <mf_cli> record --tier learning --title "escalation lesson: <topic>" \
-      --body "$LESSON" --tags lesson,escalation,frontier --scope <touched_file>`
-   so the workhorse recalls it next time and solves this class itself.
-3. Run `/verify`.
+Returned DIFF/LESSON material is candidate evidence. Verify it in the isolated
+workspace; use /verify before review. Do not automatically apply a returned diff
+or promote its lesson. Report agreement and dissent with supporting evidence.
