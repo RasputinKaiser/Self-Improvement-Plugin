@@ -125,12 +125,11 @@ def install(stage_path):
                         value = value.rstrip()[:-1].rstrip().rstrip(',') + ', "'+name+'"]'
                 block = block[:match.start()] + value + block[match.end():]
                 text = text[:start] + block + text[end:]
-                try:
-                    import tomllib
-                except ImportError:
-                    tomllib = None
-                if tomllib is not None:
-                    tomllib.loads(text)
+                # TOML parsing is an optional 3.11+ stdlib capability; the
+                # surgical update also supports the declared Python 3.10 floor.
+                if sys.version_info >= (3, 11):
+                    import importlib
+                    importlib.import_module('tomllib').loads(text)
                 temp = config.with_name('config.toml.sips-release.tmp'); temp.write_text(text)
                 os.chmod(temp, config.stat().st_mode); os.replace(temp, config)
     receipt['configuration_backup'] = str(backup / 'config.toml')
