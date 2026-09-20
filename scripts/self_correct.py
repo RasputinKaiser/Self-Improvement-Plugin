@@ -4,12 +4,12 @@
 Reads recent Memory Fabric records (filtered to source_backed_agent_run to
 exclude seeded noise), identifies failure patterns, lists untested
 scripts, surfaces repeated mistakes, and proposes concrete fixes. Writes a
-markdown report to ~/.ncode/improvements.md.
+markdown report to ~/.codex/sips/improvements.md.
 
 Invoked from the weekly cron as part of the self-improvement sweep. Can also
 be called on-demand: `python3 self_correct.py`.
 
-Output is append-only to ~/.ncode/improvements.md so it builds a history.
+Output is append-only to ~/.codex/sips/improvements.md so it builds a history.
 
 Usage:
   self_correct.py                 # analyze last 50 records, append report
@@ -18,6 +18,7 @@ Usage:
 """
 import ast
 import json
+import math
 import os
 import re
 import subprocess
@@ -28,7 +29,7 @@ from pathlib import Path
 
 from sips_paths import harness_home, improvements_path, scripts_dir
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 SCRIPTS_DIR = scripts_dir()
 TESTS_DIR = SCRIPTS_DIR.parent / "tests"
 IMPROVEMENTS_PATH = improvements_path()
@@ -85,12 +86,14 @@ def find_failure_patterns(records):
         body = (rec.get("body") or "").lower()
         title = (rec.get("title") or "").lower()
         # Extract file/path mentions as topic
-        for m in re.findall(r"[\w/.\-]+\.(?:py|md|json|sh)", body + " " + title):
-            by_topic[m].append(rec)
+        topics = set(re.findall(r"[\w/.\-]+\.(?:py|md|json|sh)", body + " " + title))
         # Also use tags as topics
         for tag in rec.get("tags") or []:
             if tag not in ("failure", "outcome"):
-                by_topic[tag].append(rec)
+                topics.add(tag)
+        # Frequency measures failure records, not repeated mentions within one.
+        for topic in sorted(topics):
+            by_topic[topic].append(rec)
     # Sort by frequency
     return sorted(by_topic.items(), key=lambda x: -len(x[1]))
 
@@ -206,14 +209,14 @@ def find_never_recalled(mf, records):
 def find_eval_regressions(results_path=None, baseline_runs=3, threshold=0.2):
     """Detect eval regressions by comparing each case's latest score to its baseline.
 
-    Reads ~/.ncode/eval/results.jsonl. For each case_id:
-      - Skip runs with errorMessage (they didn't really complete).
+    Reads ~/.codex/sips/eval/results.jsonl. For each case_id:
+      - Skip errored runs and unavailable, nonnumeric, or nonfinite scores.
       - Need at least `baseline_runs + 1` runs to compute a baseline.
       - Baseline = median score of all runs except the most recent.
       - Regression = latest_score < (baseline - threshold).
     Returns list of {caseId, baseline, latest, drop, latestRunAt} dicts.
     """
-    path = results_path or (NCODE_DIR / "eval" / "results.jsonl")
+    path = results_path or (SIPS_DIR / "eval" / "results.jsonl")
     if not path.exists():
         return []
 
@@ -227,8 +230,18 @@ def find_eval_regressions(results_path=None, baseline_runs=3, threshold=0.2):
                 r = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if r.get("errorMessage"):
+            if not isinstance(r, dict) or r.get("errorMessage"):
                 continue
+            raw_score = r.get("score")
+            if raw_score is None or isinstance(raw_score, bool):
+                continue
+            try:
+                score = float(raw_score)
+            except (ValueError, TypeError, OverflowError):
+                continue
+            if not math.isfinite(score):
+                continue
+            r["score"] = score
             cid = r.get("caseId", "")
             if not cid:
                 continue
@@ -241,11 +254,11 @@ def find_eval_regressions(results_path=None, baseline_runs=3, threshold=0.2):
             continue
         history = runs[:-1]
         latest = runs[-1]
-        scores = [float(r.get("score") or 0.0) for r in history]
+        scores = [r["score"] for r in history]
         scores.sort()
         mid = len(scores) // 2
         baseline = scores[mid] if len(scores) % 2 == 1 else (scores[mid-1] + scores[mid]) / 2
-        latest_score = float(latest.get("score") or 0.0)
+        latest_score = latest["score"]
         if latest_score < baseline - threshold:
             regressions.append({
                 "caseId": cid,
@@ -387,7 +400,7 @@ def main():
 
     with open(IMPROVEMENTS_PATH, "a", encoding="utf-8") as f:
         if is_new:
-            f.write("# NCode Self-Improvement Journal\n\n")
+            f.write("# Codex Self-Improvement Journal\n\n")
             f.write("Append-only log of self-correction sweeps, ordered by recency.\n")
             f.write("Most recent entry is shown by memory_fabric_doctor on SessionStart.\n\n")
         # Each entry starts with ## Self-correction — <ts>

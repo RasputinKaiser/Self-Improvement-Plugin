@@ -1,17 +1,18 @@
 ---
-description: Tier-aware Memory Fabric search for the current scope. Prints ranked prior lessons.
+description: Retrieve scoped lessons and evaluate their assumptions, conflicts, and applicability.
 ---
-Argument: $ARGUMENTS (optional query; defaults to the current scope/recent objective).
+Follow `references/command-protocol.md`.
 
-Run the tier-aware recall:
-`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/recall_ranker.py --query "$ARGUMENTS" --json`
+Run `python3 <plugin-root>/scripts/recall_ranker.py --query "$ARGUMENTS" --json`.
+Check scope, relevance, source identity, validity, and negative applicability.
+Rank relevant failures and their verified corrections; unrelated failures do not
+outrank an applicable lesson simply because they have a failure tag.
 
-Read the result and present it as a ranked list:
-- rank, tier, confidence, title, one-line body excerpt.
-- If any record is tagged `failure`, surface it FIRST with a `⚠ prior failure`
-  marker and the matching last-successful approach beneath it.
+For a chain of conditional lessons, use method `assumptions`: identify premises,
+evidence references, positive and negative support, and derivation rules. An
+unsupported cycle establishes nothing. Recompute after withdrawing a premise.
+An inconsistent premise can support competing conclusions; disclose that conflict.
+This method does not verify cited sources or implement a complete ATMS.
 
-Do not act on the recalled lessons automatically — they are advisory. Confirm
-relevance to the current task before relying on them. If the active tier is
-`workhorse`, you may also spawn a `repo-scout` agent to map where the recalled
-file/topic sits in the current repo.
+Show why a lesson applies, what would invalidate it, and any missing verification.
+Separate user instructions from empirical claims. Return no match when appropriate.

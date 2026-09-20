@@ -1,15 +1,17 @@
 ---
-description: Snapshot the harness and write a continuity packet. Safe point before risky work.
+description: Create an identified recovery point and inspect exact restoration differences.
 ---
-Create a safe point before any risky/self-modifying work:
+Follow `references/command-protocol.md`.
 
-1. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot_harness.py --reason "before: $ARGUMENTS"`
-2. Write a continuity packet capturing the current objective and changed files so
-   the state survives a compaction or a botched edit:
-   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/compact_continuity.py` (fed the current
-   session/transcript context).
-3. Print the snapshot hash and the continuity packet path. If anything regresses,
-   restore with: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/restore_harness.py --latest`.
+Run `python3 <plugin-root>/scripts/snapshot_harness.py --reason "before: <scope>"`.
+Retain the exact snapshot ID, paths covered, workspace/ref, dirty state, and a
+continuity packet through the documented compact_continuity.py JSON-stdin hook.
+A snapshot only covers its declared files, not the entire machine.
 
-This is the proactive variant of the autonomy gate's snapshot-on-self-edit
-behavior — call it before a batch of edits, not just before a single one.
+Treat recovery as a transaction: record the before-state identity and intended
+writes; preserve user changes made after the snapshot. Inspect
+`python3 <plugin-root>/scripts/restore_harness.py <snapshot-id> --dry-run` first.
+Use an explicit snapshot ID rather than relying on a moving latest pointer.
+Restoration requires the user's authorized exact scope; the dry-run is not a
+restoration receipt. Prefer the adaptation controller's journaled rollback for
+an explicitly activated candidate.

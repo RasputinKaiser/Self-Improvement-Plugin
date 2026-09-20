@@ -1,16 +1,22 @@
 ---
-description: Run run_tests.py + script_smoke on touched files. If a coverage gap is found, offer test-author.
+description: Verify original behavior, interacting failure modes, and consumers with retained executed evidence.
 ---
-Verify the harness is still sound after edits:
+Follow `references/command-protocol.md`.
 
-1. `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/run_tests.py` — report pass/fail counts.
-2. For each file touched in this session, run
-   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/script_smoke.py` against it.
-3. If a test FAILS: do not paper over it. Either the test caught a real regression
-   (restore via `/checkpoint`'s snapshot) or the test is stale (flag it, don't
-   silently delete it).
-4. If `proactive_drift.py` reports an untested script, offer to dispatch the
-   `test-author` agent to close the gap.
+Freeze the original task check, consumer regressions, fixtures, and evaluator.
+List relevant failure dimensions (schema, environment, input edge, ordering,
+dependency freshness). Use `homebase_method` method `coverage` to propose a
+bounded 2-way or 3-way matrix with infeasible assignments declared explicitly.
+Supply independent expected results; coverage generation alone is not execution.
+Keep required regressions even when the matrix is smaller than the full product.
 
-End with a one-line verdict: `VERIFY: OK (n/n tests, k scripts smoke-clean)` or
-`VERIFY: FAIL (details above)`.
+Run focused behavioral checks, then the required project suite. For SIPS run
+`python3 <plugin-root>/scripts/run_tests.py` with an isolated temporary SIPS_HOME,
+and the full pytest collection when validating a release. `script_smoke.py` is
+a JSON-stdin hook, not a positional file-checking CLI. Use AST parsing for Python
+syntax checks and the independent evaluator for behavior.
+
+Record command, exit, collected checks, failures, unavailable checks, and scope.
+Use additive counterexamples for newly exposed interactions. Fix or report a
+failure without deleting its evidence. Inspect a checkpoint restoration diff
+before any explicit restore; do not overwrite a dirty checkout automatically.

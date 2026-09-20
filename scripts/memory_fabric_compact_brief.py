@@ -2,7 +2,7 @@
 from __future__ import annotations
 """Memory Fabric thread-brief injector for PreCompact.
 
-Before NCode compacts the conversation, inject a thread-brief so the compacted
+Before Codex compacts the conversation, inject a thread-brief so the compacted
 context retains durable memory pointers. Advisory-only, non-blocking.
 
 Hook input: {"cwd": "...", "transcript_path": "...", "trigger": "manual|auto"}

@@ -216,13 +216,18 @@ def make_idea_cards(gaps):
                 "leverage": gap["leverage"],
                 "effort": gap["effort"],
             },
-            "recommended_next": "scout_then_plan",
+            "recommended_next": "inspect_then_plan",
+            "confidence": "unmeasured",
+            "control": "no_change",
+            "falsification": "Replay the claimed gap; reject the idea if an existing validated capability satisfies it.",
+            "mechanism": "State how the proposed intervention changes the observed failure before implementation.",
+            "comparison_axes": ["reuse", "compose", "repair", "gather_evidence", "stop"],
             "plan": {
                 "objective": f"Improve {title} with a measured, reversible SIPS change.",
                 "steps": [
-                    "Scout the current source and runtime evidence.",
-                    "Judge scope, risk, and acceptance checks.",
-                    "Worker implements one bounded change, then verifies it.",
+                    "Inspect the current source and runtime evidence.",
+                    "Compare a no-change baseline and freeze independent acceptance checks.",
+                    "The active task agent authors an isolated candidate and verifies it.",
                 ],
                 "proof": [
                     "source receipt identifies changed files",
@@ -274,7 +279,7 @@ def main():
         print(f"   - Leverage: {gap['leverage']}/10")
         print(f"   - Effort: {gap['effort']}")
         print(f"   - Area: {gap['area']}")
-        print(f"   - Suggested plan: Scout → Judge → Worker → verify (idea-{i:03d})")
+        print(f"   - Suggested plan: inspect → propose → evaluate → review (idea-{i:03d})")
         print()
 
 

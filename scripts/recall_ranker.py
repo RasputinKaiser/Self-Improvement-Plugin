@@ -116,7 +116,12 @@ def rank(records):
     def key(rec):
         tags = rec.get("tags") or []
         conf = rec.get("confidence") or ""
-        ts = rec.get("created_at") or rec.get("updated_at") or ""
+        stamp = rec.get("updated_at") or rec.get("created_at") or ""
+        try:
+            ts = -datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()
+        except (ValueError, TypeError):
+            ts = 0
+
         body = rec.get("body") or ""
 
         # Eval-adjacent: tags or body mention a recently-failed caseId
@@ -127,7 +132,17 @@ def rank(records):
         if "success" in tags or conf == "high":
             return (1, ts)
         return (2, ts)
-    return sorted(records, key=key)
+    def valid(rec):
+        if rec.get('status') in {'retired', 'invalidated', 'superseded', 'rejected'}:
+            return False
+        expiry = rec.get('valid_until')
+        if expiry:
+            try:
+                return datetime.fromisoformat(expiry.replace('Z', '+00:00')).timestamp() > datetime.now(timezone.utc).timestamp()
+            except (ValueError, TypeError):
+                return False
+        return True
+    return sorted((rec for rec in records if valid(rec)), key=key)
 
 
 def emit(context):

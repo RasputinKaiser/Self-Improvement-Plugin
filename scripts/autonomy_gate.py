@@ -3,14 +3,14 @@
 
 Generalizes the .env blocker to a broader set of critical paths and commands.
 Blocking only on critical risk; high risk emits decisionFeedback (advisory)
-so bypassPermissions mode isn't disrupted.
+while preserving the configured host approval policy.
 
 Critical (block):
-  Edit/Write to: settings.json (global), ~/.local/ncode-builds/*, credential paths
+  Edit/Write to: settings.json (global), ~/.local/codex-builds/*, credential paths
   Bash: rm -rf /, git push --force, git reset --hard, sudo rm
 
 High (advisory feedback, no block):
-  Edit/Write to: ~/.ncode/scripts/* (self-modification), ~/.ncode/agents/*
+  Edit/Write to: ~/.codex/sips/scripts/* (self-modification), ~/.codex/sips/agents/*
   Bash: git push, gh pr create/merge, launchctl, sudo (non-rm)
 
 Hook input:
@@ -36,7 +36,7 @@ BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 CRITICAL_PATH_PATTERNS = [
     r"settings\.json$",  # global settings (settings.local.json is OK)
-    r"\.local/ncode-builds/.*",  # binaries
+    r"\.local/codex-builds/.*",  # binaries
     r"(?i)(credential|token|secret)",  # sensitive filenames
     r"\.env(\.|$)",  # env files (already blocked, kept for safety)
 ]
@@ -51,9 +51,9 @@ CRITICAL_BASH_PATTERNS = [
 ]
 
 HIGH_PATH_PATTERNS = [
-    r"\.ncode/scripts/.*\.py$",  # self-modification
-    r"\.ncode/agents/.*\.md$",
-    r"\.ncode/commands/.*\.md$",
+    r"\.codex/(?:sips/)?scripts/.*\.py$",  # self-modification
+    r"\.codex/(?:sips/)?agents/.*\.md$",
+    r"\.codex/(?:sips/)?commands/.*\.md$",
 ]
 
 HIGH_BASH_PATTERNS = [
@@ -72,6 +72,8 @@ def classify_path(path):
     for pat in CRITICAL_PATH_PATTERNS:
         if re.search(pat, path):
             return "critical", f"matches critical pattern: {pat}"
+    if Path(path).resolve().is_relative_to(harness_scripts_dir().resolve()):
+        return "high", "self-modification: active SIPS scripts"
     for pat in HIGH_PATH_PATTERNS:
         if re.search(pat, path):
             return "high", f"self-modification: {pat}"
@@ -181,7 +183,7 @@ def main():
             emit_feedback("high-risk-command", [
                 f"Command `{cmd[:60]}` is high-risk ({reason})",
                 "Confirm scope before executing",
-                "User has bypassPermissions — not blocking, but verify intent"
+                "Advisory gate: verify intent against the host approval policy"
             ])
             return
 

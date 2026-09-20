@@ -23,7 +23,7 @@ import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MARKETPLACE = ROOT / ".ncode-plugin" / "marketplace.json"
+MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 CODEX_MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 PLUGIN_JSON = ROOT / ".codex-plugin" / "plugin.json"
 PYPROJECT = ROOT / "pyproject.toml"
@@ -43,7 +43,7 @@ EXPECTED_SKILLS = (
     "sips-control-plane", "sips-proof-scanner", "sips-delegation-router",
     "sips-memory-fabric", "sips-repo-map", "sips-context-distiller",
     "sips-execution-repro", "sips-perception-plan", "sips-tool-factory",
-    "sips-selfloop",
+    "sips-selfloop", "sips-in-run-improvement",
 )
 NEW_SCRIPTS = (
     "escalation_advisor.py", "improvement_injector.py", "recall_ranker.py",
@@ -51,7 +51,7 @@ NEW_SCRIPTS = (
 EXPECTED_AGENT_SET = set(EXPECTED_AGENTS)
 EXPECTED_COMMAND_SET = set(EXPECTED_COMMANDS)
 EXPECTED_SKILL_SET = set(EXPECTED_SKILLS)
-EXPECTED_VERSION = "0.4.0"
+EXPECTED_VERSION = "0.11.1"
 SEMVER_IDENTIFIER = r"(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)"
 SEMVER_RE = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -435,7 +435,7 @@ if errors:
 
 lines.append("## What v2 adds over v1\n")
 lines.append("- **live-service commands** (12): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out, /retro — v1 had zero.")
-lines.append("- **Codex skill surface** (10): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, tool factory, and selfloop.")
+lines.append("- **Codex skill surface** (11): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, tool factory, selfloop, and in-run improvement.")
 lines.append("- **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.")
 lines.append("- **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).")
 lines.append("- **deterministic delegation**: escalation_advisor detects 'stuck' from live signals and suggests /escalate — never spends a model call to decide whether to delegate.")

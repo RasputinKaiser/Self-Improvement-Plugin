@@ -1,0 +1,332 @@
+{
+  "schema": "sips.tool-contract.v2",
+  "id": "research_methods",
+  "status": "implemented",
+  "description": "Bounded advisory diagnosis, coverage, morphology, assumptions and drift; never establishes acceptance.",
+  "version": "1",
+  "inputs": {
+    "method": {
+      "type": "string",
+      "enum": [
+        "diagnosis",
+        "coverage",
+        "morphology",
+        "assumptions",
+        "drift"
+      ]
+    },
+    "request_file": {
+      "type": "string"
+    }
+  },
+  "outputs": {
+    "receipt": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "enum": [
+            "sips.method-receipt.v1"
+          ]
+        },
+        "activation": {
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        "acceptance": {
+          "type": "string",
+          "enum": [
+            "not_evaluated"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "activation",
+        "acceptance"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "bindings": {
+    "method": "positional:1",
+    "request_file": "--request-file"
+  },
+  "preconditions": [
+    "python>=3.10",
+    "readable JSON request"
+  ],
+  "effects": {
+    "reads": [
+      "request_file"
+    ],
+    "writes": []
+  },
+  "resources": [
+    "memory_fabric_answer_contract.py",
+    "memory_fabric_answer_contract_actions.py",
+    "memory_fabric_answer_contract_citations.py",
+    "memory_fabric_answer_contract_claims.py",
+    "memory_fabric_answer_contract_compliance.py",
+    "memory_fabric_answer_contract_task_gate.py",
+    "memory_fabric_answer_contract_uncertainty.py",
+    "memory_fabric_answer_eval.py",
+    "memory_fabric_answer_eval_suite_checks.py",
+    "memory_fabric_answer_eval_suite_ids.py",
+    "memory_fabric_answer_use_policy.py",
+    "memory_fabric_answer_use_policy_reasons.py",
+    "memory_fabric_answer_use_policy_records.py",
+    "memory_fabric_brief_readiness.py",
+    "memory_fabric_causal_answer_policy.py",
+    "memory_fabric_causal_evidence.py",
+    "memory_fabric_claim_support.py",
+    "memory_fabric_claim_support_item.py",
+    "memory_fabric_claim_support_text.py",
+    "memory_fabric_conflict_refs.py",
+    "memory_fabric_conflict_strength.py",
+    "memory_fabric_contradiction_audit.py",
+    "memory_fabric_decision_context.py",
+    "memory_fabric_evidence_audit.py",
+    "memory_fabric_evidence_supersession.py",
+    "memory_fabric_graph.py",
+    "memory_fabric_graph_audit.py",
+    "memory_fabric_graph_edges.py",
+    "memory_fabric_graph_explicit.py",
+    "memory_fabric_graph_index.py",
+    "memory_fabric_mcp.py",
+    "memory_fabric_mcp_reload_order.py",
+    "memory_fabric_mcp_runtime.py",
+    "memory_fabric_path_use.py",
+    "memory_fabric_process_audit.py",
+    "memory_fabric_proof_boundary.py",
+    "memory_fabric_readiness_summary.py",
+    "memory_fabric_reasoning_attribution.py",
+    "memory_fabric_reasoning_brief.py",
+    "memory_fabric_reasoning_brief_causal_checks.py",
+    "memory_fabric_reasoning_brief_checks.py",
+    "memory_fabric_reasoning_brief_summaries.py",
+    "memory_fabric_reasoning_eval.py",
+    "memory_fabric_reasoning_eval_checks.py",
+    "memory_fabric_reasoning_eval_evidence.py",
+    "memory_fabric_reasoning_eval_suite.py",
+    "memory_fabric_reasoning_eval_suite_case.py",
+    "memory_fabric_reasoning_eval_suite_categories.py",
+    "memory_fabric_reasoning_eval_suite_category_checks.py",
+    "memory_fabric_reasoning_eval_suite_ids.py",
+    "memory_fabric_reasoning_eval_suite_summary.py",
+    "memory_fabric_reasoning_eval_summary.py",
+    "memory_fabric_release_host_advertisement.py",
+    "memory_fabric_release_process_attention.py",
+    "memory_fabric_release_report.py",
+    "memory_fabric_runtime_fingerprint.py",
+    "memory_fabric_schema.py",
+    "memory_fabric_schema_behavior.py",
+    "memory_fabric_search_filters.py",
+    "memory_fabric_task_cue_ledger.py",
+    "memory_fabric_task_cue_match.py",
+    "memory_fabric_task_cue_pricing.py",
+    "sips_paths.py",
+    "sips_runtime/__init__.py",
+    "sips_runtime/budget.py",
+    "sips_runtime/canonical.py",
+    "sips_runtime/context.py",
+    "sips_runtime/contracts.py",
+    "sips_runtime/controller.py",
+    "sips_runtime/dag.py",
+    "sips_runtime/events.py",
+    "sips_runtime/fanin.py",
+    "sips_runtime/leases.py",
+    "sips_runtime/memory_frontier.py",
+    "sips_runtime/methods.py",
+    "sips_runtime/projection.py",
+    "sips_runtime/promotion.py",
+    "sips_runtime/quality.py",
+    "sips_runtime/recovery.py",
+    "sips_runtime/scheduler.py",
+    "sips_runtime/semantics.py",
+    "sips_runtime/snapshots.py"
+  ],
+  "dependencies": [
+    "memory_fabric_answer_contract.py",
+    "memory_fabric_answer_contract_actions.py",
+    "memory_fabric_answer_contract_citations.py",
+    "memory_fabric_answer_contract_claims.py",
+    "memory_fabric_answer_contract_compliance.py",
+    "memory_fabric_answer_contract_task_gate.py",
+    "memory_fabric_answer_contract_uncertainty.py",
+    "memory_fabric_answer_eval.py",
+    "memory_fabric_answer_eval_suite_checks.py",
+    "memory_fabric_answer_eval_suite_ids.py",
+    "memory_fabric_answer_use_policy.py",
+    "memory_fabric_answer_use_policy_reasons.py",
+    "memory_fabric_answer_use_policy_records.py",
+    "memory_fabric_brief_readiness.py",
+    "memory_fabric_causal_answer_policy.py",
+    "memory_fabric_causal_evidence.py",
+    "memory_fabric_claim_support.py",
+    "memory_fabric_claim_support_item.py",
+    "memory_fabric_claim_support_text.py",
+    "memory_fabric_conflict_refs.py",
+    "memory_fabric_conflict_strength.py",
+    "memory_fabric_contradiction_audit.py",
+    "memory_fabric_decision_context.py",
+    "memory_fabric_evidence_audit.py",
+    "memory_fabric_evidence_supersession.py",
+    "memory_fabric_graph.py",
+    "memory_fabric_graph_audit.py",
+    "memory_fabric_graph_edges.py",
+    "memory_fabric_graph_explicit.py",
+    "memory_fabric_graph_index.py",
+    "memory_fabric_mcp.py",
+    "memory_fabric_mcp_reload_order.py",
+    "memory_fabric_mcp_runtime.py",
+    "memory_fabric_path_use.py",
+    "memory_fabric_process_audit.py",
+    "memory_fabric_proof_boundary.py",
+    "memory_fabric_readiness_summary.py",
+    "memory_fabric_reasoning_attribution.py",
+    "memory_fabric_reasoning_brief.py",
+    "memory_fabric_reasoning_brief_causal_checks.py",
+    "memory_fabric_reasoning_brief_checks.py",
+    "memory_fabric_reasoning_brief_summaries.py",
+    "memory_fabric_reasoning_eval.py",
+    "memory_fabric_reasoning_eval_checks.py",
+    "memory_fabric_reasoning_eval_evidence.py",
+    "memory_fabric_reasoning_eval_suite.py",
+    "memory_fabric_reasoning_eval_suite_case.py",
+    "memory_fabric_reasoning_eval_suite_categories.py",
+    "memory_fabric_reasoning_eval_suite_category_checks.py",
+    "memory_fabric_reasoning_eval_suite_ids.py",
+    "memory_fabric_reasoning_eval_suite_summary.py",
+    "memory_fabric_reasoning_eval_summary.py",
+    "memory_fabric_release_host_advertisement.py",
+    "memory_fabric_release_process_attention.py",
+    "memory_fabric_release_report.py",
+    "memory_fabric_runtime_fingerprint.py",
+    "memory_fabric_schema.py",
+    "memory_fabric_schema_behavior.py",
+    "memory_fabric_search_filters.py",
+    "memory_fabric_task_cue_ledger.py",
+    "memory_fabric_task_cue_match.py",
+    "memory_fabric_task_cue_pricing.py",
+    "sips_paths.py",
+    "sips_runtime/__init__.py",
+    "sips_runtime/budget.py",
+    "sips_runtime/canonical.py",
+    "sips_runtime/context.py",
+    "sips_runtime/contracts.py",
+    "sips_runtime/controller.py",
+    "sips_runtime/dag.py",
+    "sips_runtime/events.py",
+    "sips_runtime/fanin.py",
+    "sips_runtime/leases.py",
+    "sips_runtime/memory_frontier.py",
+    "sips_runtime/methods.py",
+    "sips_runtime/projection.py",
+    "sips_runtime/promotion.py",
+    "sips_runtime/quality.py",
+    "sips_runtime/recovery.py",
+    "sips_runtime/scheduler.py",
+    "sips_runtime/semantics.py",
+    "sips_runtime/snapshots.py"
+  ],
+  "consumers": [
+    "adaptation investigation",
+    "command work packages"
+  ],
+  "failure_semantics": "Invalid input exits 2; advisory unavailable is not acceptance.",
+  "cases": [
+    {
+      "id": "unseeded-cycle",
+      "args": [
+        "assumptions",
+        "--request-file",
+        "input.json"
+      ],
+      "fixtures": {
+        "input.json": "{\"facts\": {}, \"rules\": [{\"id\": \"loop\", \"premises\": {\"a\": true}, \"conclusion\": \"a\", \"value\": true}]}"
+      },
+      "json": {
+        "schema": "sips.method-receipt.v1",
+        "method": "assumptions",
+        "input_identity": "0bb81cfd566b76097d332d9940e91076f61071ca079a78cd47385d3640c3c562",
+        "activation": "none",
+        "acceptance": "not_evaluated",
+        "status": "advisory",
+        "claims": {
+          "a": {
+            "state": "unknown",
+            "evidence": []
+          }
+        },
+        "fired_rules": [],
+        "inconsistent": [],
+        "boundary": "Conditional support under supplied assumptions; reference presence is not source verification. Recompute after retraction; contradictions do not entail unrelated claims."
+      }
+    },
+    {
+      "id": "infeasible",
+      "args": [
+        "coverage",
+        "--request-file",
+        "input.json"
+      ],
+      "fixtures": {
+        "input.json": "{\"factors\": {\"x\": [1]}, \"strength\": 1, \"forbidden\": [{\"x\": 1}]}"
+      },
+      "json": {
+        "schema": "sips.method-receipt.v1",
+        "method": "coverage",
+        "input_identity": "62b42f2169ab42ab688df273d6f20d6408ade99996c15f371c54c4861d1c0838",
+        "activation": "none",
+        "acceptance": "not_evaluated",
+        "status": "no_feasible_configurations",
+        "cases": [],
+        "feasible_configurations": 0,
+        "strength": 1,
+        "covered_interactions": 0,
+        "total_interactions": 0,
+        "uncovered": [],
+        "boundary": "Coverage of feasible model interactions only; no execution or test oracle supplied."
+      }
+    },
+    {
+      "id": "unknown-probe",
+      "args": [
+        "diagnosis",
+        "--request-file",
+        "input.json"
+      ],
+      "fixtures": {
+        "input.json": "{\"hypotheses\": [\"a\", \"b\"], \"probes\": [{\"id\": \"p\", \"cost_seconds\": 1, \"predictions\": {\"a\": \"passed\", \"b\": \"unavailable\"}}]}"
+      },
+      "json": {
+        "schema": "sips.method-receipt.v1",
+        "method": "diagnosis",
+        "input_identity": "092476435c3549281d01f889c5eb022d9745348c2ab15b70ac915082f469e544",
+        "activation": "none",
+        "acceptance": "not_evaluated",
+        "status": "proposed",
+        "selected_probes": [],
+        "estimated_seconds": 0,
+        "distinguished_pairs": 0,
+        "total_pairs": 1,
+        "unresolved_pairs": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "intrinsically_unseparated_pairs": [
+          [
+            "a",
+            "b"
+          ]
+        ],
+        "boundary": "Greedy set cover of supplied predictions; not an optimal design or causal proof. Unavailable is not discriminating evidence."
+      }
+    }
+  ]
+}

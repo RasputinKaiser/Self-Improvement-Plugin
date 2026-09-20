@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Harness Browser MCP — exposes browser_* tools to ncode via MCP stdio.
+"""Harness Browser MCP — exposes browser_* tools to codex via MCP stdio.
 
 Connects to the harness-app's Unix domain socket at
 ~/Library/Application Support/HarnessApp/browser.sock
@@ -8,7 +8,7 @@ and forwards tool calls to the app's WKWebView IPC server.
 Phase 1: read-only tools (browser_get_url, browser_get_title).
 Phase 2+ will add navigate/click/extract/eval/screenshot.
 
-Usage (registered in ~/.ncode/settings.local.json as an MCP server):
+Usage (registered in ~/.codex/sips/settings.local.json as an MCP server):
   python3 harness_browser_mcp.py
 
 MCP Protocol: JSON-RPC over stdio. Tools are advertised via tools/list.
@@ -28,7 +28,7 @@ SOCKET_PATH = os.path.expanduser(
     "~/Library/Application Support/HarnessApp/browser.sock"
 )
 
-# Tool definitions exposed to ncode's MCP client
+# Tool definitions exposed to codex's MCP client
 TOOLS = [
     {
         "name": "browser_get_url",

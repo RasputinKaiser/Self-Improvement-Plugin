@@ -116,17 +116,17 @@ def record_outcome(transcript_path, session_id, cwd):
         return None
 
     # Derive success/failure signal
-    success = outcome["failures"] == 0 and outcome["edits"] > 0
+    success = None  # Transcript activity is not a task acceptance oracle.
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    title = f"Outcome {session_id[:8]} — {'OK' if success else 'FAIL'} ({outcome['tool_calls']} calls, {outcome['edits']} edits)"
+    title = f"Outcome {session_id[:8]} — {'UNVERIFIED'} ({outcome['tool_calls']} calls, {outcome['edits']} edits)"
 
     body_parts = [
         f"session: {session_id}",
         f"cwd: {cwd}",
         f"started: {outcome['started_at']}",
         f"ended: {outcome['ended_at']}",
-        f"success: {success}",
+        "acceptance: unknown",
         f"tool_calls: {outcome['tool_calls']}",
         f"edits: {outcome['edits']}",
         f"bash_runs: {outcome['bash_runs']}",
@@ -146,7 +146,7 @@ def record_outcome(transcript_path, session_id, cwd):
     if not mf:
         return None
 
-    tags = "outcome,task-metrics," + ("success" if success else "failure")
+    tags = "outcome,task-metrics," + "acceptance-unknown"
     try:
         r = subprocess.run(
             ["python3", mf, "record",
@@ -158,8 +158,8 @@ def record_outcome(transcript_path, session_id, cwd):
              "--provenance-type", "source_backed_agent_run",
              "--provenance", f"transcript={transcript_path}; session_id={session_id}",
              "--evidence-path", transcript_path,
-             "--confidence", "high" if success else "medium",
-             "--status", "active"],
+             "--confidence", "low",
+             "--status", "candidate"],
             capture_output=True, text=True, timeout=10
         )
         if r.returncode == 0:

@@ -96,3 +96,10 @@ If no hurdle meets the durability bar, report `recorded: none` and
 `No reusable lessons; wrote nothing.` That is a valid retrospective. Do not
 claim transcript, cache, host, or public-release proof that was not actually
 observed.
+
+## Cross-disciplinary method selection
+
+Follow `references/command-protocol.md`. Use diagnosis for indistinguishable
+hypotheses, coverage for interacting failure modes, and assumptions for conditional
+lessons. Preserve the no-change control, missing evidence, and falsification result.
+A method receipt is advisory and cannot replace independent evaluation.

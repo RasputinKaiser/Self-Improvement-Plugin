@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Test runner for the ~/.ncode/ harness.
+"""Test runner for the local SIPS harness.
 
-Runs all test cases under ~/.ncode/tests/ and reports pass/fail. Proves the
+Runs repository harness test cases and reports pass/fail. Proves the
 autonomy gate still blocks critical paths, scripts still produce expected
 output, and the harness validator is clean.
 
@@ -66,7 +66,7 @@ def autonomy_gate_blocks_settings_json():
 def autonomy_gate_blocks_binary_path():
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "autonomy_gate.py",
-        {"tool_name": "Edit", "tool_input": {"file_path": "/Users/x/.local/ncode-builds/foo/ncode"}}
+        {"tool_name": "Edit", "tool_input": {"file_path": "/Users/x/.local/codex-builds/foo/ncode"}}
     )
     d = json.loads(out)
     assert d.get("decision") == "block", f"expected block, got {d}"
@@ -98,7 +98,7 @@ def autonomy_gate_blocks_credentials():
 def autonomy_gate_feedback_on_scripts_edit():
     rc, out, _ = run_script_with_input(
         SCRIPTS_DIR / "autonomy_gate.py",
-        {"tool_name": "Edit", "tool_input": {"file_path": "/Users/x/.ncode/scripts/validate_harness.py"}}
+        {"tool_name": "Edit", "tool_input": {"file_path": "/Users/x/.codex/sips/scripts/validate_harness.py"}}
     )
     d = json.loads(out)
     assert "decisionFeedback" in d, f"expected decisionFeedback, got {d}"
@@ -176,11 +176,23 @@ def validator_clean():
 # --- Patch effort message (idempotency) ---
 
 def patch_effort_check_no_mutation():
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "patch_effort_message.py"), "--check"],
-        capture_output=True, text=True, timeout=10
-    )
-    assert r.returncode == 0, f"--check failed: {r.stdout} {r.stderr}"
+    # Exercise a patchable fixture, without requiring a retired host installation.
+    original = (b'Opus 4.6 only\nprimaryAlias: "glm-5.2", supportsMaxEffort: false\n'
+                b'primaryAlias: "glm-5.2[1m]", supportsMaxEffort: false\n')
+    with tempfile.TemporaryDirectory() as tmp:
+        binary = Path(tmp) / "ncode-fixture"
+        binary.write_bytes(original)
+        for _ in range(2):
+            r = subprocess.run(
+                [sys.executable, str(SCRIPTS_DIR / "patch_effort_message.py"),
+                 str(binary), "--check"],
+                capture_output=True, text=True, timeout=10
+            )
+            assert r.returncode == 2, f"retired operation must refuse execution: {r.stdout} {r.stderr}"
+            assert "Retired operation" in r.stderr
+            assert binary.read_bytes() == original, "--check mutated the binary"
+            assert sorted(p.name for p in Path(tmp).iterdir()) == [binary.name], \
+                "--check created backup or temporary files"
 
 # --- Memory Fabric preflight (silent on missing file or empty store) ---
 
@@ -589,46 +601,44 @@ def tool_factory_subcommand_scaffold_works():
 
 
 def tool_factory_validate_detects_tests_on_known_script():
-    """validate on goal_state (which has tests) returns ready_for_promote=True."""
-    r = subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "validate",
-         "goal_state", "--lang", "py"],
-        capture_output=True, text=True, timeout=10
-    )
-    assert r.returncode == 0, f"validate failed: {r.stderr}"
-    d = json.loads(r.stdout)
-    assert d["ok"] is True, f"validate not ok: {d}"
-    assert d["help_ok"] is True
-    assert d["test_mentions"] > 0, f"expected test mentions, got {d['test_mentions']}"
-    assert d["ready_for_promote"] is True
+    """A contract executes behavior; a failing assertion prevents promotion."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from tool_contracts import validate
+    with tempfile.TemporaryDirectory() as td:
+        script = Path(td) / 'example.py'
+        script.write_text('print("expected")\n')
+        contract = {'schema': 'sips.tool-contract.v1', 'status': 'implemented', 'version': '1',
+                    'description': 'fixture', 'inputs': ['none'], 'outputs': ['text'],
+                    'preconditions': ['local'], 'effects': ['stdout'], 'failure_semantics': 'nonzero',
+                    'cases': [{'id': 'output', 'args': [], 'stdout': 'expected\n'}]}
+        script.with_suffix('.contract.json').write_text(json.dumps(contract))
+        assert validate(script)['ready_for_promote']
+        contract['cases'][0]['stdout'] = 'wrong\n'
+        script.with_suffix('.contract.json').write_text(json.dumps(contract))
+        assert not validate(script)['ready_for_promote']
 
 
 def tool_factory_validate_warns_when_no_tests():
-    """validate on a freshly-scaffolded helper (no tests) returns ready_for_promote=False."""
-    # Scaffold a fresh helper with no tests referencing it
-    unique = f"_no_tests_smoke_{int(time.time())}"
-    subprocess.run(
-        ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "scaffold",
-         unique, "--summary", "no tests yet", "--lang", "py"],
-        capture_output=True, timeout=10
-    )
-    try:
-        r = subprocess.run(
-            ["python3", str(SCRIPTS_DIR / "tool_factory.py"), "validate",
-             unique, "--lang", "py"],
-            capture_output=True, text=True, timeout=10
-        )
-        # Validate exits non-zero when not ready_for_promote
-        assert r.returncode != 0, f"validate should fail when no tests, got: {r.stdout}"
-        d = json.loads(r.stdout)
-        assert d["ready_for_promote"] is False
-        assert d["test_mentions"] == 0
-    finally:
-        for path in (SCRIPTS_DIR / f"{unique}.py", SCRIPTS_DIR / f"{unique}.md"):
-            try:
-                path.unlink()
-            except OSError:
-                pass
+    """An untouched scaffold cannot promote, even with a test-name comment."""
+    with tempfile.TemporaryDirectory() as td:
+        env = {**os.environ, 'SIPS_HOME': td}
+        scaffold = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'tool_factory.py'), 'scaffold',
+             'unimplemented', '--summary', 'no implementation'],
+            capture_output=True, text=True, timeout=10, env=env)
+        assert scaffold.returncode == 0, scaffold.stderr
+        (Path(td) / 'scripts/run_tests.py').write_text('# unimplemented\n')
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'tool_factory.py'), 'validate', 'unimplemented'],
+            capture_output=True, text=True, timeout=10, env=env)
+        assert result.returncode == 1, result.stdout
+        receipt = json.loads(result.stdout)
+        assert receipt['ready_for_promote'] is False
+        assert receipt['cases'] == []
+        assert 'implemented' in receipt['errors'][0]
+        saved = json.loads(Path(receipt['receipt_path']).read_text())
+        assert saved['ready_for_promote'] is False
+
 
 def smoke_memory_fabric_compact_brief():
     """compact_brief returns valid JSON on simulated PreCompact."""
@@ -793,10 +803,7 @@ def sips_presence_mirror_copies_files_when_source_exists():
         )
         assert rc == 0, f"expected exit 0, got {rc}"
         dst = Path(td) / ".ncode" / "sips"
-        chat = (dst / "chat-presence.md").read_text()
-        rich = (dst / "rich-presence.md").read_text()
-        assert chat == "chat presence body\n", f"chat-presence.md mismatch: {chat!r}"
-        assert rich == "rich presence body\n", f"rich-presence.md mismatch: {rich!r}"
+        assert not dst.exists(), "retired host must not receive new files"
     finally:
         shutil.rmtree(td, ignore_errors=True)
 
@@ -2019,14 +2026,15 @@ def fix_drafter_produces_analysis_for_failing_case():
     }
 
     analysis = fd.analyze_failure(case, run)
-    assert analysis["fixType"] == "prompt_nudge", f"expected prompt_nudge, got {analysis['fixType']}"
-    assert "did not create" in analysis["rootCause"].lower(), f"unexpected root cause: {analysis['rootCause']}"
-    assert "strengthen" in analysis["proposedFix"].lower() or "create" in analysis["proposedFix"].lower()
-
+    assert analysis['fixType'] == 'diagnostic'
+    assert analysis['intervention'] == 'gather_evidence'
+    assert analysis['rootCause'] == 'Unestablished'
+    assert analysis['failedChecks'][0]['evidence'] == 'test.txt missing'
+    assert 'fixed during repair' in analysis['proposedFix']
     markdown = fd.draft_fix(case, run, analysis)
-    assert "Proposed Fix" in markdown
-    assert "Root cause" in markdown
-    assert "prompt_nudge" in markdown
+    assert 'Proposed Fix' in markdown
+    assert 'Hypotheses' in markdown
+    assert 'adaptation.py evaluate' in markdown
 
 
 SUITES = {
@@ -2199,11 +2207,6 @@ def main():
     ap = argparse.ArgumentParser(description="Run harness tests")
     ap.add_argument("suite", nargs="?", choices=list(SUITES.keys()) + ["all"], default="all")
     ap.add_argument("--verbose", "-v", action="store_true")
-    ap.add_argument(
-        "--include-legacy-ncode",
-        action="store_true",
-        help="include defunct NCode install/cron compatibility suites",
-    )
     args = ap.parse_args()
 
     total_pass = 0
@@ -2212,8 +2215,10 @@ def main():
 
     legacy_suites = {"install_sh", "install_cron"}
     if args.suite == "all":
-        suites = [name for name in SUITES if args.include_legacy_ncode or name not in legacy_suites]
+        suites = [name for name in SUITES if name not in legacy_suites]
     else:
+        if args.suite in legacy_suites:
+            ap.error("retired installer/cron suites are unavailable")
         suites = [args.suite]
     for s in suites:
         if args.verbose:

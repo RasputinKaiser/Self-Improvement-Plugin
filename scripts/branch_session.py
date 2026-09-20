@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """branch_session.py — session branching (Tier 5 #5).
 
-Forks an existing NCode session transcript at a specific message UUID into
+Copies an explicitly selected portable JSONL transcript at a specific message UUID into
 a new session file. The new session inherits the conversation history up
 to (and including) the target message — then diverges. The original
 session is untouched.
@@ -11,7 +11,7 @@ Usage:
   branch_session.py --source <sid> --at-index <n>  [--project-dir <dir>]
   branch_session.py --list <sid>                   # print messages with UUIDs
 
-Branches land in the same project directory as the source (so NCode finds
+Copies land in the same project directory as the source (historical tooling finds
 them via the Projects navigator). The new SID is a fresh UUID.
 
 The forked transcript preserves:
@@ -32,8 +32,8 @@ from pathlib import Path
 
 from sips_paths import harness_home
 
-NCODE_DIR = harness_home()
-PROJECTS_DIR = NCODE_DIR / "projects"
+SIPS_DIR = harness_home()
+PROJECTS_DIR = SIPS_DIR / "projects"
 
 
 def find_transcript(source_sid, project_dir=None):

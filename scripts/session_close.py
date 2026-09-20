@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Session close hook (Stop event).
 
-Fires when the NCode session is about to end. Records a work-tier Memory
+Fires when the Codex session is about to end. Records a work-tier Memory
 Fabric entry summarizing the session's shipped artifacts so future sessions
 can find what was done.
 

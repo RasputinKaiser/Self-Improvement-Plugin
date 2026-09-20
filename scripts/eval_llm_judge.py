@@ -1,32 +1,7 @@
 #!/usr/bin/env python3
-"""eval_llm_judge.py — Tier C LLM-as-judge grader for the eval harness.
+"""Optional model-review result parser. No model subprocess is launched.
 
-Spawns ncode one-shot with a rubric + the case's transcript/sandbox and asks
-it to judge PASS or FAIL. Used by eval_harness.py when a case's `grading`
-array contains an `llmJudge` check kind — the deterministic checks (fileExists,
-grep, transcriptSequence) won't suffice for open-ended refactors or
-explanations.
-
-Mitigations against self-grading bias:
-- Skip if `judge_model` == agent model (no cross-model judge available).
-  Falls back to INCONCLUSIVE rather than self-grading.
-- temperature 0 (encoded in prompt as "deterministic, no creative variation")
-- Runs the judge twice on disagreement; on persistent disagreement, runs a
-  third decider and takes majority of 3.
-- Result record carries confidence=low and is excluded from trend lines.
-
-CLI:
-  eval_llm_judge.py --case-id <id> --prompt <casePrompt> \\
-                  --sandbox <dir> --rubric <rubricText> \\
-                  [--transcript <path>] [--judge-model <name>] [--json]
-
-Writes JSON {score, evidence, passed, model_response, confidence} to stdout.
-
-If ncode binary is missing or judge invocation fails, returns score=0 with
-confidence=low and passed=false — never raises. The caller (eval_harness.py)
-is silent on judge failures.
-
-Tested by run_tests.py with a mocked ncode (--mock-response <text>).
+Mock responses are test-only; live review requires an explicit active-task action.
 """
 import argparse
 import json
@@ -36,19 +11,6 @@ import subprocess
 import sys
 import uuid
 from pathlib import Path
-
-NCODE_BIN_CANDIDATES = [
-    str(Path.home() / ".local/bin/ncode"),
-    "/usr/local/bin/ncode",
-]
-
-
-def find_ncode():
-    for p in NCODE_BIN_CANDIDATES:
-        if os.access(p, os.X_OK):
-            return p
-    return None
-
 
 JUDGE_PROMPT_TEMPLATE = """You are a strict grader. Judge the agent's work below.
 
@@ -125,7 +87,7 @@ def _parse_judge_response(response_text):
 def run_judge(case_prompt, sandbox_dir, rubric, judge_model=None, mock_response=None):
     """Run one judging invocation. Returns dict with score/evidence/passed.
 
-    If mock_response is set, return immediately without spawning ncode.
+    If mock_response is set, return immediately without launching a model.
     """
     if mock_response is not None:
         parsed = _parse_judge_response(mock_response)
@@ -141,98 +103,8 @@ def run_judge(case_prompt, sandbox_dir, rubric, judge_model=None, mock_response=
             "confidence": "low",
         }
 
-    bin_path = find_ncode()
-    if not bin_path:
-        return {"score": 0.0, "evidence": "ncode binary not found",
-                "passed": False, "model_response": "", "confidence": "low"}
-
-    prompt = JUDGE_PROMPT_TEMPLATE.format(
-        case_prompt=case_prompt,
-        sandbox_listing=_sandbox_listing(sandbox_dir),
-        rubric=rubric,
-    )
-
-    args = [
-        bin_path,
-        "--print",
-        "--input-format", "stream-json",
-        "--output-format", "stream-json",
-        "--include-partial-messages",
-        "--session-id", uuid.uuid4().hex,
-        "--permission-mode", "bypassPermissions",
-    ]
-    payload = json.dumps({
-        "type": "user",
-        "message": {"role": "user", "content": prompt},
-    }) + "\n"
-
-    full_response = ""
-    try:
-        proc = subprocess.Popen(
-            args,
-            cwd=str(sandbox_dir),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        try:
-            proc.stdin.write(payload)
-            proc.stdin.close()
-        except (BrokenPipeError, OSError):
-            pass
-
-        # Read until result event or timeout (60s for judge)
-        import time
-        deadline = time.time() + 120
-        last_text = ""
-        while time.time() < deadline:
-            line = proc.stdout.readline()
-            if not line:
-                if proc.poll() is not None:
-                    break
-                continue
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                event = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if event.get("type") == "assistant":
-                msg = event.get("message", {})
-                blocks = msg.get("content", [])
-                if isinstance(blocks, list):
-                    for block in blocks:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            last_text = block.get("text", "")
-                            full_response += last_text + "\n"
-            elif event.get("type") == "result":
-                break
-
-        if proc.poll() is None:
-            proc.terminate()
-            try:
-                proc.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-    except (FileNotFoundError, OSError) as e:
-        return {"score": 0.0, "evidence": f"spawn failed: {e}",
-                "passed": False, "model_response": "", "confidence": "low"}
-
-    parsed = _parse_judge_response(full_response)
-    if parsed is None:
-        return {"score": 0.0, "evidence": "could not parse judge response",
-                "passed": False, "model_response": full_response[:500],
-                "confidence": "low"}
-
-    return {
-        "score": 1.0 if parsed["passed"] else 0.0,
-        "evidence": parsed["evidence"],
-        "passed": parsed["passed"],
-        "model_response": full_response[:500],
-        "confidence": "low",
-    }
+    return {"score": None, "evidence": "Explicit active-task model review required; no model launched",
+            "passed": False, "status": "unavailable", "model_response": "", "confidence": "low"}
 
 
 def run_judge_majority(case_prompt, sandbox_dir, rubric, judge_model=None):
@@ -273,7 +145,7 @@ def main():
     ap.add_argument("--rubric", required=True, help="rubric text for the judge to apply")
     ap.add_argument("--judge-model", default=None, help="judge model (currently informational)")
     ap.add_argument("--mock-response", default=None,
-                    help="mock the ncode response (for testing)")
+                    help="mock a supplied judge response (for testing)")
     ap.add_argument("--majority", action="store_true",
                     help="run twice + third decider on disagreement")
     ap.add_argument("--json", action="store_true", help="emit JSON")

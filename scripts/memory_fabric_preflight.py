@@ -9,7 +9,7 @@ sees relevant lessons before writing.
 
 Advisory-only. Never blocks. Silent on any failure.
 
-Hook input (from NCode):
+Hook input (from Codex):
   {
     "cwd": "...",
     "hook_event_name": "PreToolUse",
@@ -17,7 +17,7 @@ Hook input (from NCode):
     "tool_input": {"file_path": "/abs/path" | "path": "/abs/path"}
   }
 
-Hook output (to NCode):
+Hook output (to Codex):
   {"additionalContext": "memory_fabric hits:\n..."}
 """
 import json

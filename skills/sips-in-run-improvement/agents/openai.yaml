@@ -1,0 +1,7 @@
+interface:
+  display_name: "SIPS In-Run Improvement"
+  short_description: "Capture skill and tool improvements during work"
+  icon_small: "./assets/icon-small.svg"
+  icon_large: "./assets/icon-large.svg"
+  brand_color: "#0B6E4F"
+  default_prompt: "Use $sips-in-run-improvement to turn this observed workflow gap into an evidence-linked skill or tool candidate."

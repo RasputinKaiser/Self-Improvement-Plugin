@@ -1,6 +1,6 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.4.0",
+  "version": "0.11.1",
   "description": "SIPS graph runtime and home-base for bounded task execution, memory, verification, delegation, and lifecycle automation.",
   "author": {
     "name": "RasputinKaiser",
@@ -11,14 +11,31 @@
   "license": "MIT",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
-  "keywords": ["sips", "self-improvement", "memory-fabric", "delegation", "harness", "mcp", "codex", "homebase"],
+  "keywords": [
+    "sips",
+    "self-improvement",
+    "memory-fabric",
+    "delegation",
+    "harness",
+    "mcp",
+    "codex",
+    "homebase"
+  ],
   "interface": {
     "displayName": "SIPS Homebase",
     "shortDescription": "Coordinate agent memory and verification",
     "longDescription": "SIPS is the home-base control plane for Claude Code, Codex, and future agent harnesses. It organizes the system around five surfaces: Control Plane status, Memory Fabric recall, Verification proof, Delegation routing, and Lifecycle Hooks. Host-specific commands, hooks, and agents stay as adapters while the SIPS MCP keeps the shared model portable.",
     "developerName": "RasputinKaiser",
     "category": "Developer Tools",
-    "capabilities": ["Interactive", "Read", "Write", "Verification", "Memory", "Delegation", "Task Graph"],
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write",
+      "Verification",
+      "Memory",
+      "Delegation",
+      "Task Graph"
+    ],
     "websiteURL": "https://github.com/RasputinKaiser/Self-Improvement-Plugin",
     "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
     "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",

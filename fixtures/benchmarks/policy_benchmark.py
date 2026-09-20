@@ -4260,6 +4260,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--store", default="", help="Optional benchmark store path.")
     parser.add_argument("--output", default="", help="Optional JSON receipt path.")
+    parser.add_argument("--compact", action="store_true",
+                        help="Emit lossless compact JSON on stdout; receipt files stay indented.")
     return parser
 
 
@@ -4272,7 +4274,10 @@ def main(argv: list[str] | None = None) -> int:
             output = Path(args.output).expanduser().resolve()
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print(json.dumps(result, indent=2, sort_keys=True))
+        if args.compact:
+            print(json.dumps(result, sort_keys=True, separators=(",", ":")))
+        else:
+            print(json.dumps(result, indent=2, sort_keys=True))
         return 0 if result["ok"] else 1
 
 

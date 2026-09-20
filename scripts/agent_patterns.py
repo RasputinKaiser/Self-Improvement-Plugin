@@ -79,8 +79,8 @@ def classify_outcomes(records, since_dt=None):
         outcomes.append(rec)
 
     total = len(outcomes)
-    successes = sum(1 for o in outcomes if "success" in (o.get("tags") or []))
-    failures = sum(1 for o in outcomes if "failure" in (o.get("tags") or []))
+    successes = sum(1 for o in outcomes if "success" in (o.get("tags") or []) and "failure" not in (o.get("tags") or []))
+    failures = sum(1 for o in outcomes if "failure" in (o.get("tags") or []) and "success" not in (o.get("tags") or []))
     total_calls = 0
     total_edits = 0
     for o in outcomes:
@@ -97,10 +97,12 @@ def classify_outcomes(records, since_dt=None):
                 except ValueError:
                     pass
     return {
+        "interpretation": "observational association; unknown/conflicting outcomes excluded from rate; not a causal selector",
         "total": total,
         "successes": successes,
         "failures": failures,
-        "success_rate": (successes / total) if total else 0,
+        "success_rate": successes / (successes + failures) if successes + failures else None,
+        "unknown": total - successes - failures,
         "total_tool_calls": total_calls,
         "total_edits": total_edits,
     }
@@ -131,6 +133,8 @@ def extract_approach_metrics(records):
         tags = rec.get("tags") or []
         if "outcome" not in tags and "task-metrics" not in tags:
             continue
+        if ("success" in tags) == ("failure" in tags):
+            continue
         success = "success" in tags
         body = rec.get("body", "")
         m = {"success": success, "title": rec.get("title", "")[:80]}
@@ -138,16 +142,16 @@ def extract_approach_metrics(records):
             line = line.strip()
             if line.startswith("tool_calls:"):
                 try: m["tool_calls"] = int(line.split(":", 1)[1].strip())
-                except ValueError: m["tool_calls"] = 0
+                except ValueError: pass
             elif line.startswith("edits:"):
                 try: m["edits"] = int(line.split(":", 1)[1].strip())
-                except ValueError: m["edits"] = 0
+                except ValueError: pass
             elif line.startswith("bash_runs:"):
                 try: m["bash_runs"] = int(line.split(":", 1)[1].strip())
-                except ValueError: m["bash_runs"] = 0
+                except ValueError: pass
             elif line.startswith("attempts:"):
                 try: m["attempts"] = int(line.split(":", 1)[1].strip())
-                except ValueError: m["attempts"] = 0
+                except ValueError: pass
         outcomes.append(m)
     return outcomes
 
@@ -166,8 +170,9 @@ def correlate_approach_outcome(records):
     results = {}
 
     for metric in ("tool_calls", "edits", "bash_runs", "attempts"):
-        values = [m.get(metric, 0) for m in outcomes]
-        if not values or max(values) == 0:
+        measured = [m for m in outcomes if metric in m and m[metric] >= 0]
+        values = [m[metric] for m in measured]
+        if len(values) < 3:
             continue
         # tertiles
         sorted_vals = sorted(values)
@@ -176,8 +181,8 @@ def correlate_approach_outcome(records):
         p67 = sorted_vals[(2 * n) // 3] if n >= 3 else 0
 
         buckets = {"low": [], "medium": [], "high": []}
-        for o in outcomes:
-            v = o.get(metric, 0)
+        for o in measured:
+            v = o[metric]
             if v <= p33:
                 bucket = "low"
             elif v <= p67:
@@ -194,7 +199,7 @@ def correlate_approach_outcome(records):
                     "success": succ,
                     "total": len(items),
                     "rate": succ / len(items),
-                    "avg_val": sum(o.get(metric, 0) for o in items) / len(items),
+                    "avg_val": sum(o[metric] for o in items) / len(items),
                 }
         results[metric] = bucket_stats
 
@@ -205,7 +210,7 @@ def format_correlation(corr):
     """Human-readable correlation summary."""
     if not corr:
         return None
-    lines = ["Approach → outcome correlation (bucket success rates):"]
+    lines = ["Approach → outcome correlation (bucket success rates):", "Observational associations only; small samples and confounding do not establish an effective policy."]
     for metric, buckets in corr.items():
         if not buckets:
             continue
@@ -229,7 +234,7 @@ def main():
     mf = find_cli()
     if not mf:
         if args.json:
-            print("[]")
+            print(json.dumps({"outcomes": classify_outcomes([]), "patterns": [], "correlation": None, "record_count": 0}))
         return
 
     since_dt = parse_since(args.since)
@@ -238,7 +243,7 @@ def main():
         if args.brief:
             return
         if args.json:
-            print("[]")
+            print(json.dumps({"outcomes": classify_outcomes([]), "patterns": [], "correlation": None, "record_count": 0}))
         else:
             print("no records found")
         return
@@ -250,9 +255,9 @@ def main():
     if args.brief:
         if outcomes["total"] == 0:
             return
-        rate = outcomes["success_rate"] * 100
+        rate = outcomes["success_rate"] * 100 if outcomes["success_rate"] is not None else None
         msg = (f"agent_patterns: {outcomes['total']} outcomes, "
-               f"{rate:.0f}% success, "
+               f"{str(round(rate)) + '%' if rate is not None else 'unknown'} success, "
                f"{outcomes['total_tool_calls']} tool calls, "
                f"{outcomes['total_edits']} edits.")
         if patterns:
@@ -266,7 +271,7 @@ def main():
                 # Find the bucket with highest success rate
                 best = max(buckets.items(), key=lambda x: x[1]["rate"])
                 if best[1]["total"] >= 2:
-                    msg += f" {metric}={best[0]} correlates with success ({best[1]['rate']*100:.0f}%)."
+                    msg += f" Observed {metric}={best[0]} success {best[1]['rate']*100:.0f}% (n={best[1]['total']}); confounding unmeasured, not a policy recommendation."
                     break
         sys.stdout.write(json.dumps({"additionalContext": msg}))
         sys.stdout.flush()
@@ -283,10 +288,10 @@ def main():
 
     print("=== Agent Patterns ===\n")
     if outcomes["total"]:
-        rate = outcomes["success_rate"] * 100
+        rate = outcomes["success_rate"] * 100 if outcomes["success_rate"] is not None else None
         avg_calls = outcomes["total_tool_calls"] / outcomes["total"] if outcomes["total"] else 0
         avg_edits = outcomes["total_edits"] / outcomes["total"] if outcomes["total"] else 0
-        print(f"Outcomes: {outcomes['total']} total, {rate:.0f}% success")
+        print(f"Outcomes: {outcomes['total']} total, {str(round(rate)) + '%' if rate is not None else 'unknown'} success")
         print(f"  successes: {outcomes['successes']}")
         print(f"  failures: {outcomes['failures']}")
         print(f"  total tool calls: {outcomes['total_tool_calls']} (avg {avg_calls:.1f}/task)")

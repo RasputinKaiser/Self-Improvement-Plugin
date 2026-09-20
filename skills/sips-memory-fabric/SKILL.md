@@ -12,3 +12,15 @@ Do not present recall as current proof. If a memory-derived fact is likely to dr
 When recall finds a relevant fix, cite the remembered boundary in the final answer and run the live command that proves the current repo still matches it.
 
 After fixing any bump (failed command, wrong path, retry chain), record it immediately: run `python3 scripts/memory_fabric_cli.py record` from the SIPS plugin root with the symptom, the working fix, and repo scope (or `memory_fabric_record` on the codex-memory-fabric MCP when that host exposes it), then confirm it surfaces via `homebase_recall`. Unrecorded fixes recur across sessions.
+
+## SIPS 0.6 evidence workflow
+
+Use the shared adaptation controller for structured investigations and bounded probes.
+Prefer current v2 contracts and joint-prerequisite composition before new helpers.
+Use additive counterexamples; preserve raw episodes when proposing procedures.
+Policy trials are declarative proposals, never changes to evaluation or activation.
+See `docs/sips-06.md` for request shapes, supported schemas, and research limits.
+
+## Research methods (0.7)
+
+Use `assumptions` to expose conditional support and contradictions. Unverified evidence references do not establish truth; recompute after retraction. Manual teaching does not establish high confidence. See [method API](../../references/research-methods.md) and [command protocol](../../references/command-protocol.md).

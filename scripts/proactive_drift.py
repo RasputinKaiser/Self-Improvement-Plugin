@@ -19,7 +19,7 @@ from pathlib import Path
 import self_correct
 from sips_paths import harness_home, harness_scripts_dir
 
-NCODE_DIR = harness_home()
+SIPS_DIR = harness_home()
 SCRIPTS_DIR = harness_scripts_dir()
 STALE_SCRIPT_DAYS = 60
 STALE_TEST_DAYS = 30
@@ -35,7 +35,7 @@ def emit(context):
 
 
 def stale_scripts():
-    """Scripts under ~/.ncode/scripts/ untouched in STALE_SCRIPT_DAYS."""
+    """Scripts under ~/.codex/sips/scripts/ untouched in STALE_SCRIPT_DAYS."""
     if not SCRIPTS_DIR.is_dir():
         return []
     threshold = time.time() - (STALE_SCRIPT_DAYS * 86400)
@@ -59,8 +59,8 @@ def untested_scripts():
 
 
 def large_debug_dir():
-    """Flag if ~/.ncode/debug/ exceeds 100MB."""
-    debug_dir = NCODE_DIR / "debug"
+    """Flag if ~/.codex/sips/debug/ exceeds 100MB."""
+    debug_dir = SIPS_DIR / "debug"
     if not debug_dir.is_dir():
         return 0
     total = 0

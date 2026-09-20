@@ -1,15 +1,16 @@
 ---
-description: Show the full agent_patterns report — success rate, approach→outcome correlation, top patterns.
+description: Report observed outcomes, missing data, and possible drift without causal promotion.
 ---
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/agent_patterns.py` (full report, not
---brief) and present it to the user verbatim with light formatting.
+Follow `references/command-protocol.md`.
 
-Then add a one-line interpretation:
-- If success rate < 70% → "success rate is low; consider `/improve` to attack the
-  top failure topic."
-- If an approach→outcome correlation shows a bucket with >=80% success and >=3
-  samples → "approach `<metric>=<bucket>` correlates with success — lean into it."
-- If no outcomes recorded → "no outcomes yet; complete tasks with the Stop hook
-  active to populate metrics."
+Run `python3 <plugin-root>/scripts/agent_patterns.py --json`. Report the denominator,
+unknown/conflicting outcomes, and missing metric fields alongside observed rates.
+A small successful bucket is a hypothesis for a matched comparison, not a policy
+recommendation. Edit counts, fewer tool calls, and absent errors are not acceptance.
 
-Do not edit anything. This is a read-only dashboard.
+For comparable chronological measurements, method `drift` accepts a frozen stable
+baseline, explicit measurement identity, and numeric or missing observations.
+Its EWMA signal suggests investigation; it identifies neither cause nor a win.
+Do not pool different task families, environments, or evaluators into one chart.
+No baseline, changed identity, or zero variance means no usable control chart.
+Keep this command read-only and return an evidence-gathering next step.
