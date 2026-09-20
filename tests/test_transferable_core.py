@@ -85,11 +85,24 @@ def test_probe_recovery_and_timeout_cannot_support(tmp_path):
     r=step(c,r,'recover');assert r['state']=='unavailable' and r['evaluation_seconds']>=1
 
 
-def test_reducer_and_property_checks(tmp_path):
+def test_reducer_and_property_checks(tmp_path, monkeypatch):
     spec={'kind':'command','argv':['{python}','-c','import sys;print("bug" if "x" in sys.argv[1] else "ok")','{input}'],'stdout':'bug\n'}
-    a=reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10)
-    b=reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10)
-    assert a['reduced']==b['reduced']=='x' and a['status']=='deletion_minimal'
+    # Verify the subprocess contract once; reduction order must not depend on
+    # interpreter startup latency under CI or concurrent host load.
+    original={**spec,'argv':[a.replace('{input}','abcxdef') for a in spec['argv']]}
+    assert check(original,tmp_path,tmp_path,5)['status']=='passed'
+    with monkeypatch.context() as patch:
+        patch.setattr('sips_runtime.investigation.check',lambda case,*args:
+                      {'status':'passed' if 'x' in case['argv'][-1] else 'failed'})
+        a=reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10)
+        b=reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10)
+        assert a['reduced']==b['reduced']=='x'
+        assert a['status']==b['status']=='deletion_minimal'
+        assert [r['input'] for r in a['checks']]==[r['input'] for r in b['checks']]
+        bounded=reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10,max_checks=1)
+        assert bounded['status']=='bounded' and bounded['reduced']=='abcxdef'
+        patch.setattr('sips_runtime.investigation.check',lambda *args: {'status':'unavailable'})
+        assert reduce_failure(spec,'abcxdef',tmp_path,tmp_path,1,10)['status']=='unavailable'
     for relation in ['identity','idempotent']:
         case={'kind':'property','seed':4,'samples':4,'generator':{'min':-3,'max':3},'relation':relation,'argv':['{python}','-c','import sys;print(sys.argv[1])','{input}']}
         assert check(case,tmp_path,tmp_path,5)['status']=='passed'
