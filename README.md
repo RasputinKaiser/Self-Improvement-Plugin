@@ -14,7 +14,7 @@ It does not try to make an agent smarter by swapping models. It improves the *wo
 
 > **SIPS 0.11 — visual evidence and explainable memory reuse.** Compose tools with declared units, roles and context identities; inspect dependency drift; run bounded diagnostic policies against recorded probe outcomes. Frozen behavioral cases independently evaluate proposed policies. Passing tests never activate a change automatically. [Workflow and migration guide](docs/sips-09.md).
 
-*Companion app: a very very very experimental, free, native macOS control surface — [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness).*
+*Historical companion: [Swift Harness](https://github.com/RasputinKaiser/Swift-Harness), an experimental macOS control surface for the retired NCode setup. Its repository is marked RIP; compatibility with current SIPS is not established.*
 
 Each session can answer:
 
@@ -26,6 +26,15 @@ Each session can answer:
 - Which agent patterns have worked or failed before?
 
 **Suggested GitHub topics:** `agent-harness`, `ai-agents`, `claude-code`, `codex`, `memory-fabric`, `self-improvement`, `automation`, `evals`, `python`, `developer-tools`
+
+## Start here
+
+- [Install](#install) the plugin in your host, then try the [first-session checks](#first-session-checks)
+- [Verify](#verify) a source checkout before changing the harness
+- [Troubleshooting](docs/troubleshooting.md) covers missing tools, stale installs, hooks, and state paths
+- [Architecture](ARCHITECTURE.md) and [Graph runtime docs](Graph-Theory/README.md) explain the internals
+- [In-run improvement](docs/sips-in-run-improvement.md) and [visual evidence](docs/sips-visual-evidence.md) describe newer workflows
+- [Contributing](CONTRIBUTING.md), [evaluation evidence](EVAL.md), and [decision history](LEDGER.md) provide contributor context
 
 ## Supported hosts
 
@@ -44,22 +53,59 @@ Delegation agents declare `model: inherit`, so they run on whatever model the ho
 /plugin marketplace add RasputinKaiser/Self-Improvement-Plugin
 ```
 
-Then install **`harness-self-improvement`** from the marketplace UI.
+Then install **`harness-self-improvement`** from the marketplace UI, or use the
+marketplace name declared in this repository:
+
+```text
+/plugin install harness-self-improvement@sips-local
+```
 
 ### ChatGPT / Codex
 
-Add the repo as a local marketplace, then install:
+Register the local checkout as a marketplace in a Codex host with plugin support.
+The repository ships `.agents/plugins/marketplace.json` with marketplace name
+`harness-local`; select that marketplace and install:
 
 ```text
 harness-self-improvement@harness-local
 ```
+
+For a staged local distribution, `install.sh` delegates to
+`scripts/local_release.py`. From a source checkout, this creates a new staging
+directory and a `release.json` receipt without installing into a host:
+
+```bash
+bash install.sh --stage /tmp/sips-local-stage
+```
+
+Choose a directory that does not already exist. The separate `--install` action
+changes the Codex cache and configuration, backs them up under the stage's
+`recovery/` directory, and probes a fresh MCP subprocess. Review
+[`local_release.py`](scripts/local_release.py) before using it. A successful
+subprocess probe does not prove an already-open host session has refreshed.
+
+## First-session checks
+
+After installation, restart or reload the host if it has not discovered the plugin.
+Begin with inspection before starting an improvement loop:
+
+- On Codex: “Use `$sips-control-plane` to show SIPS status and available routes”
+- On Codex: “Use `$sips-proof-scanner` to inspect this repository's verification surfaces”
+- On Claude Code: use `/recall` to inspect relevant prior lessons, then `/verify` when you want to run harness checks
+
+The control-plane skill uses `homebase_status`, `homebase_routes`, and freshness
+checks when native `sips-homebase` tools are available. If tools are deferred,
+discover the exact capability before treating it as missing. See
+[troubleshooting](docs/troubleshooting.md) for the source/cache/session boundary.
+Commands such as `/improve`, `/goal`, and `/selfloop` can change durable state;
+choose them deliberately for the task you want to run.
 
 ## Requirements
 
 | Requirement | Notes |
 |---|---|
 | Python 3.10+ | Runs the hook and utility scripts. CI covers 3.10 and 3.12 on macOS and Linux. |
-| Claude Code or Codex | Host harness that loads the plugin's hooks, commands, agents, and MCP server. |
+| Claude Code or Codex with plugin support | Each host loads its supported adapter surfaces. The Codex manifest declares skills and MCP; Claude Code also has command, agent, and hook files. Do not assume identical host discovery behavior. |
 | POSIX host | macOS / Linux. Windows is untested. |
 
 Runtime scripts resolve `$SIPS_HOME` first, otherwise `~/.codex/sips`. Retired host directories are never a runtime fallback. The SIPS-owned Memory Fabric subsystem is vendored in-repo — no external memory plugin is required.
@@ -132,8 +178,9 @@ Delegation agents keep the parent session from getting overloaded. Each agent ge
 
 | Event | Matchers | Scripts |
 |---|---|---|
-| `PreToolUse` | `Edit`, `Write`, `MultiEdit`, `Bash`, `apply_patch` | `autonomy_gate.py`, `memory_fabric_preflight.py` |
-| `PostToolUse` | `Edit`, `Write`, `MultiEdit`, `Bash`, `apply_patch`, `mcp__.*` | `script_smoke.py`, `escalation_advisor.py`, `sips_presence_mirror.py` |
+| `PreToolUse` | `Edit`, `Write`, `MultiEdit` | `autonomy_gate.py`, `memory_fabric_preflight.py` |
+| `PreToolUse` | `Bash`, `apply_patch` | `autonomy_gate.py` |
+| `PostToolUse` | `Edit`, `Write`, `MultiEdit` | `script_smoke.py`, `escalation_advisor.py`, `retry_lesson_reminder.py` |
 | `SessionStart` | `startup`, `resume`, `clear`, `compact` | `validate_harness.py`, `memory_fabric_doctor.py`, `proactive_drift.py`, `agent_patterns.py --brief`, `improvement_injector.py` |
 | `UserPromptSubmit` | all prompts | `recall_ranker.py`, `probe_hook.py` |
 | `PreCompact` | `manual`, `auto` | `memory_fabric_compact_brief.py`, `compact_continuity.py` |
@@ -147,7 +194,7 @@ Hook commands are portable: they run `python3` against `${PLUGIN_ROOT}` and fall
 - **Startup** — `validate_harness.py` (harness health), `memory_fabric_doctor.py` (memory health + recent work), `proactive_drift.py` (drift and untested scripts), `agent_patterns.py --brief` (success/failure brief), `improvement_injector.py` (loop-closure guidance).
 - **Prompt submit** — `recall_ranker.py` (ranks prior lessons for the prompt and scope), `probe_hook.py` (markers for hook tests).
 - **Before tool use** — `autonomy_gate.py` (blocks or warns on risky autonomous actions), `memory_fabric_preflight.py` (surfaces lessons before edits).
-- **After tool use** — `script_smoke.py` (syntax/smoke checks changed scripts), `escalation_advisor.py` (flags when a bounded escalation may help), `sips_presence_mirror.py` (mirrors SIPS presence files into the local host surface).
+- **After tool use** — `script_smoke.py` (syntax/smoke checks changed scripts), `escalation_advisor.py` (flags when a bounded escalation may help), `retry_lesson_reminder.py` (reminds the session to capture lessons from retries).
 - **Compaction** — `memory_fabric_compact_brief.py` and `compact_continuity.py` preserve continuity before compaction; `memory_fabric_session_record.py` records learnings after.
 - **Stop** — `session_close.py` (session closeout), `task_outcome_tracker.py --record` (outcome capture for pattern analysis).
 
@@ -194,10 +241,21 @@ SIPS exposes compact skill rows for the major Homebase surfaces, so the plugin r
 | `sips-execution-repro` | Turn failures, logs, and symptoms into repro plans. |
 | `sips-perception-plan` | Plan screenshot, browser, app, or UI runtime proof. |
 | `sips-tool-factory` | Decide whether to reuse, improve, or scaffold deterministic helpers. |
+| `sips-selfloop` | Coordinate a persistent self-improvement loop with bounded evidence and review. |
+| `sips-in-run-improvement` | Capture source-backed opportunities to create, extend, refresh, or repair skills and tools. |
 
-## Current release — v0.8.0
+## Source version and workflow history
 
-SIPS now issues resumable work packets to the active task agent, tests evaluator
+The plugin manifests and `pyproject.toml` currently declare **0.11.1**. This is
+the source-tree version, not evidence of a published GitHub Release or a refreshed
+host installation. Feature guides retain the versions in which their workflows
+were introduced; use [the 0.9 guide](docs/sips-09.md),
+[in-run improvement](docs/sips-in-run-improvement.md), and
+[visual evidence](docs/sips-visual-evidence.md) for the newer surfaces.
+
+### Foreground workflow introduced in 0.8
+
+SIPS issues resumable work packets to the active task agent, tests evaluator
 sensitivity against frozen wrong implementations, and links subsequent authored
 evaluations to reviewed candidates. Evaluation receipts are content-pinned.
 Unknown probe predictions no longer count as contradictions.
@@ -218,7 +276,7 @@ experiments; broad self-improvement effectiveness remains unmeasured.
 | Hook event tap | Works | Silent by default; `SIPS_DEBUG=1` writes failure details to `logs/hook_errors.jsonl`. |
 | Regression runner | Works | `scripts/run_tests.py`; actual release results are recorded in the ledger. |
 | pytest suite | Works | Repo-local coverage for adaptive evaluation, graph execution, interfaces, recovery, and compatibility; release counts come from the final collected suite. |
-| CI | Not run for this local release | GitHub Actions compiles scripts, checks the Python floor, validates the manifest, and runs the suites on Ubuntu and macOS (3.10 / 3.12). |
+| CI definition | Configured | [GitHub Actions](.github/workflows/ci.yml) compiles scripts, checks the Python floor, validates the manifest, and runs the suites on Ubuntu and macOS (3.10 / 3.12). Check the run for your exact commit before claiming it passed. |
 | Packaging | Partial | `pyproject.toml` declares metadata and the Python floor; no package entry points yet. |
 | Memory schema versioning | Partial | New records and the published schema carry `schema_version: 1.0`; migration tooling is planned. |
 | Windows support | Untested | Current target is macOS / Linux POSIX hosts. |
@@ -323,7 +381,7 @@ This plugin is built around a few rules:
 
 ## Related project
 
-**[Swift Harness](https://github.com/RasputinKaiser/Swift-Harness)** is the companion macOS GUI. Use this plugin for the harness logic; use Swift Harness when you want a native desktop control surface for status, tests, memory, snapshots, hooks, browser control, evals, agents, telemetry, and plugin surfaces.
+**[Swift Harness](https://github.com/RasputinKaiser/Swift-Harness)** preserves an experimental macOS GUI from the NCode era. Its documented `.ncode` paths differ from current SIPS state resolution, and its repository is marked RIP. Treat it as historical design context; no current SIPS integration or installation is required.
 
 ## Security
 
@@ -348,3 +406,4 @@ independent checks and exact-candidate activation; useful task-local findings ca
 inform the current task immediately.
 
 Episode and dependency diagrams plus explicit procedure-rejection reasons are available through [visual evidence views](docs/sips-visual-evidence.md).
+
