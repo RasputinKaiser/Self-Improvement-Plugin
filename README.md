@@ -161,6 +161,7 @@ The intent is to make each session leave behind useful state instead of vanishin
 | `/fan-out` | Decomposes a parent task into parallel slice agents and merges their outputs. | A task can be split into independent research, coding, or inspection slices. |
 | `/selfloop` | Starts or controls a persistent self-improvement loop that iterates on SIPS through measured, verified steps. | You want the harness to keep improving itself across steps toward a focus. |
 | `/retro` | Runs an evidence-gated retrospective and records only durable, provenance-backed lessons. | You want to turn this session's hurdles into reusable SIPS memory and one concrete fix-up. |
+| `/devloop` | Measures the edit-build-verify loop, audits recent work for soft choices (micro-wins, symptom patches, retreats), then lands and re-measures the highest-leverage structural fix. | Development feels slow, or agents keep choosing safe low-impact changes over harder high-impact ones. |
 
 ## Delegation agents
 
@@ -246,7 +247,7 @@ SIPS exposes compact skill rows for the major Homebase surfaces, so the plugin r
 
 ## Source version and workflow history
 
-The plugin manifests and `pyproject.toml` currently declare **0.11.1**. This is
+The plugin manifests and `pyproject.toml` currently declare **0.11.2**. This is
 the source-tree version, not evidence of a published GitHub Release or a refreshed
 host installation. Feature guides retain the versions in which their workflows
 were introduced; use [the 0.9 guide](docs/sips-09.md),

@@ -4,7 +4,7 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 ## Summary
 
-- **checks passed**: 147/147 (100%)
+- **checks passed**: 148/148 (100%)
 - **errors**: 0
 - **warnings**: 0
 - **verdict**: COHERENT — v2 manifest is wired end-to-end (inherit-only)
@@ -14,7 +14,7 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | Layer | Surface | Count | Status |
 |---|---|---|---|
 | L0 live surface | hooks wired | 19 | ok |
-| L0 live surface | slash commands | 12 | ok |
+| L0 live surface | slash commands | 13 | ok |
 | L0 live surface | Codex skills | 11 | ok |
 | L0 live surface | subagents (all model: inherit) | 5 | ok |
 | L1 guardrails | autonomy_gate + script_smoke + snapshot | 3 | ok |
@@ -42,15 +42,15 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 
 | # | Check | Result |
 |---|---|---|
-| 1 | pyproject.toml project version 0.11.1 | PASS |
-| 2 | marketplace.json valid + version 0.11.1 | PASS |
+| 1 | pyproject.toml project version 0.11.2 | PASS |
+| 2 | marketplace.json valid + version 0.11.2 | PASS |
 | 3 | marketplace declares delegation/inherit keywords | PASS |
 | 4 | Codex marketplace name harness-local | PASS |
 | 5 | Codex marketplace declares harness-self-improvement | PASS |
 | 6 | Codex marketplace source points at named plugin wrapper | PASS |
 | 7 | Codex marketplace has install policy | PASS |
 | 8 | Codex marketplace category present | PASS |
-| 9 | plugin.json version 0.11.1 | PASS |
+| 9 | plugin.json version 0.11.2 | PASS |
 | 10 | plugin.json surfaces skills | PASS |
 | 11 | plugin.json surfaces mcpServers | PASS |
 | 12 | plugin.json omits host hooks field | PASS |
@@ -68,7 +68,7 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 24 | MCP server uses stdio | PASS |
 | 25 | MCP server points at harness_homebase_mcp.py | PASS |
 | 26 | home-base MCP script exists+exec | PASS |
-| 27 | pyproject.toml project version 0.11.1 | PASS |
+| 27 | pyproject.toml project version 0.11.2 | PASS |
 | 28 | 0.4 graph runtime modules present | PASS |
 | 29 | 0.4 graph runtime CLI exists+exec | PASS |
 | 30 | Graph-Theory canonical docs present | PASS |
@@ -131,68 +131,69 @@ Self-validation of the v2 plugin manifest coherence. Run command: `python3 scrip
 | 87 | all 5 agents present | PASS |
 | 88 | command brainstorm has description | PASS |
 | 89 | command checkpoint has description | PASS |
-| 90 | command escalate has description | PASS |
-| 91 | command fan-out has description | PASS |
-| 92 | command goal has description | PASS |
-| 93 | command improve has description | PASS |
-| 94 | command patterns has description | PASS |
-| 95 | command recall has description | PASS |
-| 96 | command retro has description | PASS |
-| 97 | command selfloop has description | PASS |
-| 98 | command teach has description | PASS |
-| 99 | command verify has description | PASS |
-| 100 | all 12 commands present | PASS |
-| 101 | selfloop command wires state, proof, and learning cycle | PASS |
-| 102 | retro command wires evidence, provenance, and candidate-first learning | PASS |
-| 103 | homebase route exposes retro workflow | PASS |
-| 104 | skill sips-context-distiller has SKILL.md frontmatter | PASS |
-| 105 | skill sips-context-distiller has Codex display metadata | PASS |
-| 106 | skill sips-context-distiller icons exist | PASS |
-| 107 | skill sips-control-plane has SKILL.md frontmatter | PASS |
-| 108 | skill sips-control-plane has Codex display metadata | PASS |
-| 109 | skill sips-control-plane icons exist | PASS |
-| 110 | skill sips-delegation-router has SKILL.md frontmatter | PASS |
-| 111 | skill sips-delegation-router has Codex display metadata | PASS |
-| 112 | skill sips-delegation-router icons exist | PASS |
-| 113 | skill sips-execution-repro has SKILL.md frontmatter | PASS |
-| 114 | skill sips-execution-repro has Codex display metadata | PASS |
-| 115 | skill sips-execution-repro icons exist | PASS |
-| 116 | skill sips-in-run-improvement has SKILL.md frontmatter | PASS |
-| 117 | skill sips-in-run-improvement has Codex display metadata | PASS |
-| 118 | skill sips-in-run-improvement icons exist | PASS |
-| 119 | skill sips-memory-fabric has SKILL.md frontmatter | PASS |
-| 120 | skill sips-memory-fabric has Codex display metadata | PASS |
-| 121 | skill sips-memory-fabric icons exist | PASS |
-| 122 | skill sips-perception-plan has SKILL.md frontmatter | PASS |
-| 123 | skill sips-perception-plan has Codex display metadata | PASS |
-| 124 | skill sips-perception-plan icons exist | PASS |
-| 125 | skill sips-proof-scanner has SKILL.md frontmatter | PASS |
-| 126 | skill sips-proof-scanner has Codex display metadata | PASS |
-| 127 | skill sips-proof-scanner icons exist | PASS |
-| 128 | skill sips-repo-map has SKILL.md frontmatter | PASS |
-| 129 | skill sips-repo-map has Codex display metadata | PASS |
-| 130 | skill sips-repo-map icons exist | PASS |
-| 131 | skill sips-selfloop has SKILL.md frontmatter | PASS |
-| 132 | skill sips-selfloop has Codex display metadata | PASS |
-| 133 | skill sips-selfloop icons exist | PASS |
-| 134 | skill sips-tool-factory has SKILL.md frontmatter | PASS |
-| 135 | skill sips-tool-factory has Codex display metadata | PASS |
-| 136 | skill sips-tool-factory icons exist | PASS |
-| 137 | all 11 SIPS skills present | PASS |
-| 138 | new script escalation_advisor.py exec | PASS |
-| 139 | new script improvement_injector.py exec | PASS |
-| 140 | new script recall_ranker.py exec | PASS |
-| 141 | no runtime script imports model_router (v2 pivot) | PASS |
-| 142 | observe (Stop: task_outcome_tracker) | PASS |
-| 143 | distill (self_correct.py exists) | PASS |
-| 144 | inject (SessionStart: improvement_injector) | PASS |
-| 145 | recall (UserPromptSubmit: recall_ranker) | PASS |
-| 146 | delegate (PostToolUse: escalation_advisor) | PASS |
-| 147 | delegate target (escalate agent exists, model: inherit) | PASS |
+| 90 | command devloop has description | PASS |
+| 91 | command escalate has description | PASS |
+| 92 | command fan-out has description | PASS |
+| 93 | command goal has description | PASS |
+| 94 | command improve has description | PASS |
+| 95 | command patterns has description | PASS |
+| 96 | command recall has description | PASS |
+| 97 | command retro has description | PASS |
+| 98 | command selfloop has description | PASS |
+| 99 | command teach has description | PASS |
+| 100 | command verify has description | PASS |
+| 101 | all 13 commands present | PASS |
+| 102 | selfloop command wires state, proof, and learning cycle | PASS |
+| 103 | retro command wires evidence, provenance, and candidate-first learning | PASS |
+| 104 | homebase route exposes retro workflow | PASS |
+| 105 | skill sips-context-distiller has SKILL.md frontmatter | PASS |
+| 106 | skill sips-context-distiller has Codex display metadata | PASS |
+| 107 | skill sips-context-distiller icons exist | PASS |
+| 108 | skill sips-control-plane has SKILL.md frontmatter | PASS |
+| 109 | skill sips-control-plane has Codex display metadata | PASS |
+| 110 | skill sips-control-plane icons exist | PASS |
+| 111 | skill sips-delegation-router has SKILL.md frontmatter | PASS |
+| 112 | skill sips-delegation-router has Codex display metadata | PASS |
+| 113 | skill sips-delegation-router icons exist | PASS |
+| 114 | skill sips-execution-repro has SKILL.md frontmatter | PASS |
+| 115 | skill sips-execution-repro has Codex display metadata | PASS |
+| 116 | skill sips-execution-repro icons exist | PASS |
+| 117 | skill sips-in-run-improvement has SKILL.md frontmatter | PASS |
+| 118 | skill sips-in-run-improvement has Codex display metadata | PASS |
+| 119 | skill sips-in-run-improvement icons exist | PASS |
+| 120 | skill sips-memory-fabric has SKILL.md frontmatter | PASS |
+| 121 | skill sips-memory-fabric has Codex display metadata | PASS |
+| 122 | skill sips-memory-fabric icons exist | PASS |
+| 123 | skill sips-perception-plan has SKILL.md frontmatter | PASS |
+| 124 | skill sips-perception-plan has Codex display metadata | PASS |
+| 125 | skill sips-perception-plan icons exist | PASS |
+| 126 | skill sips-proof-scanner has SKILL.md frontmatter | PASS |
+| 127 | skill sips-proof-scanner has Codex display metadata | PASS |
+| 128 | skill sips-proof-scanner icons exist | PASS |
+| 129 | skill sips-repo-map has SKILL.md frontmatter | PASS |
+| 130 | skill sips-repo-map has Codex display metadata | PASS |
+| 131 | skill sips-repo-map icons exist | PASS |
+| 132 | skill sips-selfloop has SKILL.md frontmatter | PASS |
+| 133 | skill sips-selfloop has Codex display metadata | PASS |
+| 134 | skill sips-selfloop icons exist | PASS |
+| 135 | skill sips-tool-factory has SKILL.md frontmatter | PASS |
+| 136 | skill sips-tool-factory has Codex display metadata | PASS |
+| 137 | skill sips-tool-factory icons exist | PASS |
+| 138 | all 11 SIPS skills present | PASS |
+| 139 | new script escalation_advisor.py exec | PASS |
+| 140 | new script improvement_injector.py exec | PASS |
+| 141 | new script recall_ranker.py exec | PASS |
+| 142 | no runtime script imports model_router (v2 pivot) | PASS |
+| 143 | observe (Stop: task_outcome_tracker) | PASS |
+| 144 | distill (self_correct.py exists) | PASS |
+| 145 | inject (SessionStart: improvement_injector) | PASS |
+| 146 | recall (UserPromptSubmit: recall_ranker) | PASS |
+| 147 | delegate (PostToolUse: escalation_advisor) | PASS |
+| 148 | delegate target (escalate agent exists, model: inherit) | PASS |
 
 ## What v2 adds over v1
 
-- **live-service commands** (12): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out, /retro — v1 had zero.
+- **live-service commands** (13): /improve, /recall, /escalate, /checkpoint, /verify, /patterns, /teach, /goal, /selfloop, /brainstorm, /fan-out, /retro, /devloop — v1 had zero.
 - **Codex skill surface** (11): SIPS control plane, proof scanner, delegation router, Memory Fabric, repo map, context distiller, execution repro, perception plan, tool factory, selfloop, and in-run improvement.
 - **delegation agent surface** (5): escalate, repo-scout, memory-curator, test-author, fan-out — all `model: inherit` — v1 had none.
 - **loop closure**: improvement_injector reads self_correct output back into each session (v1 wrote it, never consumed).

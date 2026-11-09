@@ -1,6 +1,6 @@
 {
   "name": "harness-self-improvement",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "description": "SIPS graph runtime and home-base for bounded task execution, memory, verification, delegation, and lifecycle automation.",
   "author": {
     "name": "RasputinKaiser",
